@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: wuye-backend
+  profiles:
+    active: dev
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+app:
+  jwt:
+    issuer: wuye-backend
+    secret: change-this-secret-change-this-secret
+    expire-hours: 12
