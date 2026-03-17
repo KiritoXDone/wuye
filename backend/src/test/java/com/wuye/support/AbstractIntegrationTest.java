@@ -42,6 +42,7 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected void resetDynamicData() {
+        jdbcTemplate.update("DELETE FROM audit_log");
         jdbcTemplate.update("DELETE FROM dunning_log");
         jdbcTemplate.update("DELETE FROM dunning_task");
         jdbcTemplate.update("DELETE FROM invoice_application");
