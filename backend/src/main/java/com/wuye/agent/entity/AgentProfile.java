@@ -6,6 +6,7 @@ public class AgentProfile {
     private Long accountId;
     private String agentCode;
     private String orgName;
+    private Long orgUnitId;
     private Integer status;
 
     public Long getId() {
@@ -38,6 +39,14 @@ public class AgentProfile {
 
     public void setOrgName(String orgName) {
         this.orgName = orgName;
+    }
+
+    public Long getOrgUnitId() {
+        return orgUnitId;
+    }
+
+    public void setOrgUnitId(Long orgUnitId) {
+        this.orgUnitId = orgUnitId;
     }
 
     public Integer getStatus() {

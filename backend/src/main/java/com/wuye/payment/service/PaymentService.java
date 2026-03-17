@@ -36,6 +36,7 @@ public class PaymentService {
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
+    private final PaymentVoucherService paymentVoucherService;
 
     public PaymentService(BillMapper billMapper,
                           PayOrderMapper payOrderMapper,
@@ -43,7 +44,8 @@ public class PaymentService {
                           RoomBindingService roomBindingService,
                           AccessGuard accessGuard,
                           ObjectMapper objectMapper,
-                          CouponService couponService) {
+                          CouponService couponService,
+                          PaymentVoucherService paymentVoucherService) {
         this.billMapper = billMapper;
         this.payOrderMapper = payOrderMapper;
         this.payTransactionMapper = payTransactionMapper;
@@ -51,6 +53,7 @@ public class PaymentService {
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
         this.couponService = couponService;
+        this.paymentVoucherService = paymentVoucherService;
     }
 
     @Transactional
@@ -115,6 +118,7 @@ public class PaymentService {
         }
         PaymentStatusVO status = payOrderMapper.findStatus(payOrderNo);
         status.setRewardIssuedCount(couponService.countRewardIssuedByPayOrderNo(payOrderNo));
+        status.setVoucherIssued(paymentVoucherService.hasVoucher(payOrderNo));
         return status;
     }
 

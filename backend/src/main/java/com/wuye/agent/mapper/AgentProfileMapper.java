@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 public interface AgentProfileMapper {
 
     @Select("""
-            SELECT id, account_id, agent_code, org_name, status
+            SELECT id, account_id, agent_code, org_name, org_unit_id, status
             FROM agent_profile
             WHERE account_id = #{accountId}
               AND status = 1
@@ -17,7 +17,7 @@ public interface AgentProfileMapper {
     AgentProfile findByAccountId(@Param("accountId") Long accountId);
 
     @Select("""
-            SELECT id, account_id, agent_code, org_name, status
+            SELECT id, account_id, agent_code, org_name, org_unit_id, status
             FROM agent_profile
             WHERE agent_code = #{agentCode}
             """)

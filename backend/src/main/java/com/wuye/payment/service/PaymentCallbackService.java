@@ -30,6 +30,7 @@ public class PaymentCallbackService {
     private final BillMapper billMapper;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
+    private final PaymentVoucherService paymentVoucherService;
     private final String wechatMerchantId;
     private final String wechatCallbackSecret;
     private final String alipayMerchantId;
@@ -40,6 +41,7 @@ public class PaymentCallbackService {
                                   BillMapper billMapper,
                                   ObjectMapper objectMapper,
                                   CouponService couponService,
+                                  PaymentVoucherService paymentVoucherService,
                                   @Value("${app.payment.wechat.merchant-id}") String wechatMerchantId,
                                   @Value("${app.payment.wechat.callback-secret}") String wechatCallbackSecret,
                                   @Value("${app.payment.alipay.merchant-id}") String alipayMerchantId,
@@ -49,6 +51,7 @@ public class PaymentCallbackService {
         this.billMapper = billMapper;
         this.objectMapper = objectMapper;
         this.couponService = couponService;
+        this.paymentVoucherService = paymentVoucherService;
         this.wechatMerchantId = wechatMerchantId;
         this.wechatCallbackSecret = wechatCallbackSecret;
         this.alipayMerchantId = alipayMerchantId;
@@ -102,6 +105,7 @@ public class PaymentCallbackService {
             billMapper.markPaid(bill.getId(), payOrder.getPayAmount(), paidAt);
             bill.setAmountPaid(payOrder.getPayAmount());
         }
+        paymentVoucherService.ensureVoucher(payOrder, bill, paidAt);
         couponService.markCouponUsed(payOrder.getCouponInstanceId(), payOrder.getPayOrderNo(), payOrder.getAccountId());
         int rewardIssuedCount = bill == null ? 0 : couponService.issueRewardCoupons(bill, payOrder.getAccountId(), payOrder.getPayOrderNo());
         insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,

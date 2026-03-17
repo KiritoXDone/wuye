@@ -41,10 +41,14 @@ public interface AgentGroupMapper {
             SELECT ug.id AS group_id,
                    ug.group_code,
                    ug.name AS group_name,
-                   ag.permission
+                   ag.permission,
+                   ug.org_unit_id,
+                   ou.name AS org_unit_name,
+                   ou.tenant_code
             FROM agent_group ag
             JOIN user_group ug ON ug.id = ag.group_id
             JOIN agent_profile ap ON ap.id = ag.agent_id
+            LEFT JOIN org_unit ou ON ou.id = ug.org_unit_id
             WHERE ap.account_id = #{accountId}
               AND ap.status = 1
               AND ag.status = 1
@@ -70,10 +74,14 @@ public interface AgentGroupMapper {
             SELECT ug.id AS group_id,
                    ug.group_code,
                    CONCAT(ug.name, ' / ', ap.agent_code) AS group_name,
-                   ag.permission
+                   ag.permission,
+                   ug.org_unit_id,
+                   ou.name AS org_unit_name,
+                   ou.tenant_code
             FROM agent_group ag
             JOIN user_group ug ON ug.id = ag.group_id
             JOIN agent_profile ap ON ap.id = ag.agent_id
+            LEFT JOIN org_unit ou ON ou.id = ug.org_unit_id
             WHERE ag.status = 1
               AND ug.status = 1
               AND ap.status = 1

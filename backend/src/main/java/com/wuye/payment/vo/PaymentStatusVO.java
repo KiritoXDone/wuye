@@ -9,6 +9,7 @@ public class PaymentStatusVO {
     private String status;
     private LocalDateTime paidAt;
     private Integer rewardIssuedCount;
+    private Boolean voucherIssued;
 
     public String getPayOrderNo() {
         return payOrderNo;
@@ -48,5 +49,13 @@ public class PaymentStatusVO {
 
     public void setRewardIssuedCount(Integer rewardIssuedCount) {
         this.rewardIssuedCount = rewardIssuedCount;
+    }
+
+    public Boolean getVoucherIssued() {
+        return voucherIssued;
+    }
+
+    public void setVoucherIssued(Boolean voucherIssued) {
+        this.voucherIssued = voucherIssued;
     }
 }

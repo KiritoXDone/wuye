@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -181,4 +182,15 @@ public interface BillMapper {
             WHERE id = #{billId}
             """)
     int updateDiscountAmount(@Param("billId") Long billId, @Param("discountAmount") BigDecimal discountAmount);
+
+    @Select("""
+            SELECT b.id, b.bill_no, b.room_id, b.group_id, b.fee_type, b.period_year, b.period_month, b.amount_due,
+                   b.discount_amount_total, b.amount_paid, b.due_date, b.status, b.paid_at, b.cancelled_at,
+                   b.source_type, b.remark
+            FROM bill b
+            WHERE b.status = 'ISSUED'
+              AND b.due_date < #{triggerDate}
+            ORDER BY b.due_date ASC, b.id ASC
+            """)
+    List<Bill> listOverdueBills(@Param("triggerDate") LocalDate triggerDate);
 }

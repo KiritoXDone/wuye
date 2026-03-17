@@ -2,9 +2,11 @@ package com.wuye.agent.service;
 
 import com.wuye.agent.dto.AgentGroupAssignDTO;
 import com.wuye.agent.entity.AgentGroup;
+import com.wuye.agent.entity.OrgUnit;
 import com.wuye.agent.entity.AgentProfile;
 import com.wuye.agent.entity.UserGroup;
 import com.wuye.agent.mapper.AgentGroupMapper;
+import com.wuye.agent.mapper.OrgUnitMapper;
 import com.wuye.agent.mapper.AgentProfileMapper;
 import com.wuye.agent.mapper.UserGroupMapper;
 import com.wuye.agent.vo.AgentGroupVO;
@@ -22,15 +24,18 @@ public class AgentAuthorizationService {
 
     private final AgentProfileMapper agentProfileMapper;
     private final AgentGroupMapper agentGroupMapper;
+    private final OrgUnitMapper orgUnitMapper;
     private final UserGroupMapper userGroupMapper;
     private final AccessGuard accessGuard;
 
     public AgentAuthorizationService(AgentProfileMapper agentProfileMapper,
                                      AgentGroupMapper agentGroupMapper,
+                                     OrgUnitMapper orgUnitMapper,
                                      UserGroupMapper userGroupMapper,
                                      AccessGuard accessGuard) {
         this.agentProfileMapper = agentProfileMapper;
         this.agentGroupMapper = agentGroupMapper;
+        this.orgUnitMapper = orgUnitMapper;
         this.userGroupMapper = userGroupMapper;
         this.accessGuard = accessGuard;
     }
@@ -88,6 +93,14 @@ public class AgentAuthorizationService {
         vo.setGroupCode(userGroup.getGroupCode());
         vo.setGroupName(userGroup.getName());
         vo.setPermission(permission);
+        vo.setOrgUnitId(userGroup.getOrgUnitId());
+        if (userGroup.getOrgUnitId() != null) {
+            OrgUnit orgUnit = orgUnitMapper.findById(userGroup.getOrgUnitId());
+            if (orgUnit != null) {
+                vo.setOrgUnitName(orgUnit.getName());
+                vo.setTenantCode(orgUnit.getTenantCode());
+            }
+        }
         return vo;
     }
 }

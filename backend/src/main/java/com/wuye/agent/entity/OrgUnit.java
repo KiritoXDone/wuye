@@ -1,13 +1,13 @@
 package com.wuye.agent.entity;
 
-public class UserGroup {
+public class OrgUnit {
 
     private Long id;
-    private String groupCode;
+    private String tenantCode;
+    private String orgCode;
     private String name;
-    private String scopeType;
+    private Long parentId;
     private Long communityId;
-    private Long orgUnitId;
     private Integer status;
 
     public Long getId() {
@@ -18,12 +18,20 @@ public class UserGroup {
         this.id = id;
     }
 
-    public String getGroupCode() {
-        return groupCode;
+    public String getTenantCode() {
+        return tenantCode;
     }
 
-    public void setGroupCode(String groupCode) {
-        this.groupCode = groupCode;
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode;
+    }
+
+    public String getOrgCode() {
+        return orgCode;
+    }
+
+    public void setOrgCode(String orgCode) {
+        this.orgCode = orgCode;
     }
 
     public String getName() {
@@ -34,12 +42,12 @@ public class UserGroup {
         this.name = name;
     }
 
-    public String getScopeType() {
-        return scopeType;
+    public Long getParentId() {
+        return parentId;
     }
 
-    public void setScopeType(String scopeType) {
-        this.scopeType = scopeType;
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
     }
 
     public Long getCommunityId() {
@@ -48,14 +56,6 @@ public class UserGroup {
 
     public void setCommunityId(Long communityId) {
         this.communityId = communityId;
-    }
-
-    public Long getOrgUnitId() {
-        return orgUnitId;
-    }
-
-    public void setOrgUnitId(Long orgUnitId) {
-        this.orgUnitId = orgUnitId;
     }
 
     public Integer getStatus() {

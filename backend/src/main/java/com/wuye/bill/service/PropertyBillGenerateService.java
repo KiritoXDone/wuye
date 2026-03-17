@@ -8,6 +8,7 @@ import com.wuye.bill.entity.BillLine;
 import com.wuye.bill.entity.FeeRule;
 import com.wuye.bill.mapper.BillLineMapper;
 import com.wuye.bill.mapper.BillMapper;
+import com.wuye.room.mapper.GroupRoomMapper;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
@@ -32,6 +33,7 @@ public class PropertyBillGenerateService {
     private final FeeRuleService feeRuleService;
     private final BillMapper billMapper;
     private final BillLineMapper billLineMapper;
+    private final GroupRoomMapper groupRoomMapper;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
 
@@ -39,12 +41,14 @@ public class PropertyBillGenerateService {
                                        FeeRuleService feeRuleService,
                                        BillMapper billMapper,
                                        BillLineMapper billLineMapper,
+                                       GroupRoomMapper groupRoomMapper,
                                        AccessGuard accessGuard,
                                        ObjectMapper objectMapper) {
         this.roomMapper = roomMapper;
         this.feeRuleService = feeRuleService;
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
+        this.groupRoomMapper = groupRoomMapper;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
     }
@@ -71,6 +75,7 @@ public class PropertyBillGenerateService {
             Bill bill = new Bill();
             bill.setBillNo(NoGenerator.billNo());
             bill.setRoomId(room.getId());
+            bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(room.getId()));
             bill.setFeeType("PROPERTY");
             bill.setPeriodYear(dto.getYear());
             bill.setPeriodMonth(dto.getMonth());
