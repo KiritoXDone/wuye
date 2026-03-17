@@ -25,6 +25,7 @@ import com.wuye.importexport.mapper.ImportRowErrorMapper;
 import com.wuye.room.entity.Room;
 import com.wuye.room.mapper.CommunityMapper;
 import com.wuye.room.mapper.RoomMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +54,7 @@ public class ImportExportService {
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
+    private final String exportRootDir;
 
     public ImportExportService(ImportBatchMapper importBatchMapper,
                                ImportRowErrorMapper importRowErrorMapper,
@@ -65,7 +67,8 @@ public class ImportExportService {
                                ImportExportFileService importExportFileService,
                                AccessGuard accessGuard,
                                ObjectMapper objectMapper,
-                               AuditLogService auditLogService) {
+                               AuditLogService auditLogService,
+                               @Value("${app.import-export.export-dir:exports/bills}") String exportRootDir) {
         this.importBatchMapper = importBatchMapper;
         this.importRowErrorMapper = importRowErrorMapper;
         this.exportJobMapper = exportJobMapper;
@@ -78,6 +81,7 @@ public class ImportExportService {
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
+        this.exportRootDir = exportRootDir;
     }
 
     @Transactional
@@ -128,7 +132,11 @@ public class ImportExportService {
 
     public ImportBatch getImportBatch(LoginUser loginUser, Long batchId) {
         accessGuard.requireRole(loginUser, "ADMIN");
-        return importBatchMapper.findById(batchId);
+        ImportBatch batch = importBatchMapper.findById(batchId);
+        if (batch == null) {
+            throw new BusinessException("NOT_FOUND", "导入批次不存在", HttpStatus.NOT_FOUND);
+        }
+        return batch;
     }
 
     public List<ImportRowError> listImportErrors(LoginUser loginUser, Long batchId) {
@@ -148,7 +156,7 @@ public class ImportExportService {
 
         try {
             List<List<String>> rows = buildExportRows(dto);
-            Path exportDirectory = Path.of("exports", "bills");
+            Path exportDirectory = Path.of(exportRootDir);
             String extension = "xlsx";
             Path filePath = exportDirectory.resolve(FileNoGenerator.exportFileName(extension));
             importExportFileService.writeXlsx(filePath, "账单导出", exportHeaders(), rows);
@@ -159,7 +167,6 @@ public class ImportExportService {
             exportJob.setStatus("FAILED");
             exportJob.setFileUrl(null);
             exportJobMapper.updateResult(exportJob);
-            throw new BusinessException("INTERNAL_ERROR", "导出文件生成失败", HttpStatus.INTERNAL_SERVER_ERROR);
         }
         ExportJob savedJob = exportJobMapper.findById(exportJob.getId());
         auditLogService.record(loginUser, "EXPORT", String.valueOf(savedJob.getId()), "EXPORT", buildExportAuditDetail(savedJob, dto));
@@ -168,7 +175,11 @@ public class ImportExportService {
 
     public ExportJob getExportJob(LoginUser loginUser, Long jobId) {
         accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
-        return exportJobMapper.findById(jobId);
+        ExportJob exportJob = exportJobMapper.findById(jobId);
+        if (exportJob == null) {
+            throw new BusinessException("NOT_FOUND", "导出任务不存在", HttpStatus.NOT_FOUND);
+        }
+        return exportJob;
     }
 
     private void importBillRow(Map<String, String> row) {

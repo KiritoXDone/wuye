@@ -56,7 +56,7 @@ async function handleCreateImport() {
   try {
     importBatch.value = await createBillImport(importForm)
     queryForm.importBatchId = importBatch.value.id
-    ElMessage.success(`导入批次创建成功，批次号 ${importBatch.value.batchNo}`)
+    ElMessage.success(`导入批次已创建，当前状态 ${importBatch.value.status}，批次号 ${importBatch.value.batchNo}`)
     importErrors.value = []
   } finally {
     importLoading.value = false
@@ -98,7 +98,7 @@ async function handleCreateExport() {
   try {
     exportJob.value = await createBillExport(exportForm)
     queryForm.exportJobId = exportJob.value.id
-    ElMessage.success(`导出任务创建成功，任务 ID ${exportJob.value.id}`)
+    ElMessage.success(`导出任务已创建，当前状态 ${exportJob.value.status}，任务 ID ${exportJob.value.id}`)
   } finally {
     exportLoading.value = false
   }
