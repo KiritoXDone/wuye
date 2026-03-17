@@ -89,6 +89,46 @@ public interface BillMapper {
                    b.room_id,
                    CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
                    b.fee_type,
+                   CONCAT(b.period_year, '-', LPAD(b.period_month, 2, '0')) AS period,
+                   b.amount_due,
+                   b.amount_paid,
+                   b.status,
+                   b.due_date
+            FROM bill b
+            JOIN room r ON r.id = b.room_id
+            WHERE (#{periodYear} IS NULL OR b.period_year = #{periodYear})
+              AND (#{periodMonth} IS NULL OR b.period_month = #{periodMonth})
+              AND (#{feeType} IS NULL OR #{feeType} = '' OR b.fee_type = #{feeType})
+              AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+            ORDER BY b.period_year DESC, b.period_month DESC, b.id DESC
+            LIMIT #{limit} OFFSET #{offset}
+            """)
+    List<BillListItemVO> listAdminBills(@Param("periodYear") Integer periodYear,
+                                        @Param("periodMonth") Integer periodMonth,
+                                        @Param("feeType") String feeType,
+                                        @Param("status") String status,
+                                        @Param("offset") int offset,
+                                        @Param("limit") int limit);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM bill b
+            WHERE (#{periodYear} IS NULL OR b.period_year = #{periodYear})
+              AND (#{periodMonth} IS NULL OR b.period_month = #{periodMonth})
+              AND (#{feeType} IS NULL OR #{feeType} = '' OR b.fee_type = #{feeType})
+              AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+            """)
+    long countAdminBills(@Param("periodYear") Integer periodYear,
+                         @Param("periodMonth") Integer periodMonth,
+                         @Param("feeType") String feeType,
+                         @Param("status") String status);
+
+    @Select("""
+            SELECT b.id AS bill_id,
+                   b.bill_no,
+                   b.room_id,
+                   CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   b.fee_type,
                    b.period_year,
                    b.period_month,
                    b.amount_due,

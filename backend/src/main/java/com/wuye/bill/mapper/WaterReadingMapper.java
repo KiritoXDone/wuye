@@ -1,6 +1,7 @@
 package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.WaterMeterReading;
+import com.wuye.bill.vo.AdminWaterReadingVO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -45,4 +46,24 @@ public interface WaterReadingMapper {
     List<WaterMeterReading> listByCommunityAndPeriod(@Param("communityId") Long communityId,
                                                      @Param("year") Integer year,
                                                      @Param("month") Integer month);
+
+    @Select("""
+            SELECT wr.id,
+                   wr.room_id,
+                   CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   wr.period_year,
+                   wr.period_month,
+                   wr.prev_reading,
+                   wr.curr_reading,
+                   wr.usage_amount,
+                   wr.read_at,
+                   wr.status
+            FROM water_meter_reading wr
+            JOIN room r ON r.id = wr.room_id
+            WHERE (#{periodYear} IS NULL OR wr.period_year = #{periodYear})
+              AND (#{periodMonth} IS NULL OR wr.period_month = #{periodMonth})
+            ORDER BY wr.period_year DESC, wr.period_month DESC, wr.room_id ASC
+            """)
+    List<AdminWaterReadingVO> listAdminReadings(@Param("periodYear") Integer periodYear,
+                                                @Param("periodMonth") Integer periodMonth);
 }

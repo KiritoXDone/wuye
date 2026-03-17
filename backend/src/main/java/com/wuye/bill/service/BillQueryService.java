@@ -3,9 +3,12 @@ package com.wuye.bill.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.bill.dto.BillListQuery;
+import com.wuye.bill.dto.AdminBillListQuery;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.mapper.BillLineMapper;
 import com.wuye.bill.mapper.BillMapper;
+import com.wuye.bill.mapper.WaterReadingMapper;
+import com.wuye.bill.vo.AdminWaterReadingVO;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillLineVO;
 import com.wuye.bill.vo.BillListItemVO;
@@ -27,17 +30,20 @@ public class BillQueryService {
 
     private final BillMapper billMapper;
     private final BillLineMapper billLineMapper;
+    private final WaterReadingMapper waterReadingMapper;
     private final RoomBindingService roomBindingService;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
 
     public BillQueryService(BillMapper billMapper,
                             BillLineMapper billLineMapper,
+                            WaterReadingMapper waterReadingMapper,
                             RoomBindingService roomBindingService,
                             AccessGuard accessGuard,
                             ObjectMapper objectMapper) {
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
+        this.waterReadingMapper = waterReadingMapper;
         this.roomBindingService = roomBindingService;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
@@ -78,6 +84,21 @@ public class BillQueryService {
         detail.setBillLines(lines);
         detail.setAvailableCoupons(Collections.emptyList());
         return detail;
+    }
+
+    public PageResponse<BillListItemVO> listAdminBills(LoginUser loginUser, AdminBillListQuery query) {
+        accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
+        int pageNo = query.getPageNo() == null || query.getPageNo() < 1 ? 1 : query.getPageNo();
+        int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
+        int offset = (pageNo - 1) * pageSize;
+        List<BillListItemVO> list = billMapper.listAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus(), offset, pageSize);
+        long total = billMapper.countAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus());
+        return new PageResponse<>(list, pageNo, pageSize, total);
+    }
+
+    public List<AdminWaterReadingVO> listAdminWaterReadings(LoginUser loginUser, Integer periodYear, Integer periodMonth) {
+        accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
+        return waterReadingMapper.listAdminReadings(periodYear, periodMonth);
     }
 
     private Map<String, Object> parseExt(BillLineVO line) {
