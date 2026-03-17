@@ -114,6 +114,7 @@
 
       <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">创建支付单并查看结果</button>
       <button wx:else class="button-secondary" bindtap="openPaymentResultFromPaid">查看支付结果</button>
+      <button wx:if="{{billDetail.status === 'PAID' && (latestPayOrderNo || entryPayOrderNo)}}" class="button-ghost" bindtap="openVoucher">查看电子凭证</button>
     </view>
   </block>
 </view>

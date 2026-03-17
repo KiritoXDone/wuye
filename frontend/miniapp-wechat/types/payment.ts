@@ -31,4 +31,5 @@ export interface PaymentStatusResponse {
   status: string
   paidAt?: string
   rewardIssuedCount?: number
+  voucherIssued?: boolean
 }

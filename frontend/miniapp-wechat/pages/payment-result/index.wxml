@@ -1,6 +1,6 @@
 <view class="page-shell safe-bottom">
   <view class="page-hero">
-    <view class="page-eyebrow">Payment Polling</view>
+    <view class="page-eyebrow">支付结果轮询</view>
     <view class="page-title">支付结果</view>
     <view class="page-subtitle">进入页面会立即查询一次支付状态；若仍为支付中，则继续轮询 {{pollLimit}} 次以内。</view>
   </view>
@@ -34,6 +34,10 @@
         <view class="info-value">{{rewardIssuedCount}} 张</view>
       </view>
       <view class="info-row">
+        <view class="info-key">电子凭证</view>
+        <view class="info-value">{{voucherIssued ? '已生成' : '待生成'}}</view>
+      </view>
+      <view class="info-row">
         <view class="info-key">轮询进度</view>
         <view class="info-value">{{pollAttempt}} / {{pollLimit}}</view>
       </view>
@@ -57,6 +61,7 @@
 
   <view class="fixed-action-bar button-row">
     <button class="button-primary" bindtap="refreshStatus" loading="{{loading}}" disabled="{{loading}}">立即刷新状态</button>
+    <button wx:if="{{paymentStatus === 'SUCCESS' && voucherIssued}}" class="button-secondary" bindtap="openVoucher">查看电子凭证</button>
     <button class="button-secondary" bindtap="openBillDetail">返回账单详情</button>
     <button class="button-ghost" bindtap="backToRooms">回到我的房间</button>
   </view>

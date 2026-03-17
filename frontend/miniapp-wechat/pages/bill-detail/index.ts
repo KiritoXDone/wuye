@@ -101,6 +101,7 @@ Page({
     errorMessage: '',
     billDetail: null as BillDetailView | null,
     latestPayOrderNo: '',
+    entryPayOrderNo: '',
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
     selectedChannel: 'WECHAT' as PaymentCreatePayload['channel'],
@@ -111,7 +112,10 @@ Page({
   },
 
   onLoad(query: Record<string, string>) {
-    this.setData({ billId: Number(query.billId || 0) })
+    this.setData({
+      billId: Number(query.billId || 0),
+      entryPayOrderNo: query.payOrderNo || ''
+    })
   },
 
   onShow() {
@@ -267,7 +271,8 @@ Page({
   },
 
   openPaymentResultFromPaid() {
-    if (!this.data.latestPayOrderNo) {
+    const payOrderNo = this.data.latestPayOrderNo || this.data.entryPayOrderNo
+    if (!payOrderNo) {
       wx.showToast({
         title: '当前没有最近支付单号，请重新发起一次支付查看结果',
         icon: 'none'
@@ -276,7 +281,22 @@ Page({
     }
 
     wx.navigateTo({
-      url: `/pages/payment-result/index?payOrderNo=${this.data.latestPayOrderNo}&billId=${this.data.billId}`
+      url: `/pages/payment-result/index?payOrderNo=${payOrderNo}&billId=${this.data.billId}`
+    })
+  },
+
+  openVoucher() {
+    const payOrderNo = this.data.latestPayOrderNo || this.data.entryPayOrderNo
+    if (!payOrderNo) {
+      wx.showToast({
+        title: '当前缺少支付单号，无法查看电子凭证',
+        icon: 'none'
+      })
+      return
+    }
+
+    wx.navigateTo({
+      url: `/pages/voucher/index?payOrderNo=${payOrderNo}`
     })
   }
 })

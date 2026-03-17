@@ -47,6 +47,7 @@ Page({
     rewardIssuedCount: null as number | null,
     rewardIssuedVisible: false,
     rewardIssuedText: '',
+    voucherIssued: false,
     pollAttempt: 0,
     pollLimit: PAYMENT_POLL_LIMIT
   },
@@ -106,6 +107,7 @@ Page({
         paidAtText: formatDateTime(response.paidAt),
         rewardIssuedCount: hasRewardIssuedCount ? response.rewardIssuedCount || 0 : null,
         rewardIssuedVisible: hasRewardIssuedCount,
+        voucherIssued: !!response.voucherIssued,
         rewardIssuedText: hasRewardIssuedCount
           ? (response.rewardIssuedCount || 0) > 0
             ? `本次支付已发放 ${response.rewardIssuedCount || 0} 张奖励券，可在后续账单支付时继续使用。`
@@ -133,7 +135,16 @@ Page({
       return
     }
     wx.navigateTo({
-      url: `/pages/bill-detail/index?billId=${this.data.billId}`
+      url: `/pages/bill-detail/index?billId=${this.data.billId}&payOrderNo=${this.data.payOrderNo}`
+    })
+  },
+
+  openVoucher() {
+    if (!this.data.payOrderNo) {
+      return
+    }
+    wx.navigateTo({
+      url: `/pages/voucher/index?payOrderNo=${this.data.payOrderNo}`
     })
   },
 
