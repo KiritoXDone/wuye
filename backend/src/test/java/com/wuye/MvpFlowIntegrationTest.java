@@ -549,6 +549,60 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
         assertThat(Files.exists(Path.of(exportFileUrl))).isTrue();
     }
 
+    @Test
+    void paymentIdempotencyKeyCannotBeReusedAcrossDifferentCouponSelections() throws Exception {
+        createFeeRule("PROPERTY", "2.5000");
+
+        mockMvc.perform(post("/api/v1/admin/bills/generate/property")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "year": 2026,
+                                  "month": 6,
+                                  "overwriteStrategy": "SKIP"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        MvcResult billResult = mockMvc.perform(get("/api/v1/me/bills")
+                        .param("pageNo", "1")
+                        .param("pageSize", "20")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode billsJson = read(billResult);
+        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-06");
+
+        mockMvc.perform(post("/api/v1/payments")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "channel": "ALIPAY",
+                                  "couponInstanceId": 92001,
+                                  "idempotencyKey": "idem-coupon-selection-001"
+                                }
+                                """.formatted(propertyBillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountAmount").value(10.0));
+
+        mockMvc.perform(post("/api/v1/payments")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "channel": "ALIPAY",
+                                  "idempotencyKey": "idem-coupon-selection-001"
+                                }
+                                """.formatted(propertyBillId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
     private Path createImportXlsx() throws Exception {
         Path file = Files.createTempFile("bill-import-", ".xlsx");
         try (Workbook workbook = new XSSFWorkbook(); OutputStream out = Files.newOutputStream(file)) {

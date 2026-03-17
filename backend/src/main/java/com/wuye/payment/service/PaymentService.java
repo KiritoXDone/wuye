@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class PaymentService {
@@ -74,7 +75,8 @@ public class PaymentService {
         if (existed != null) {
             if (!existed.getAccountId().equals(loginUser.accountId())
                     || !existed.getBillId().equals(dto.getBillId())
-                    || !existed.getChannel().equalsIgnoreCase(dto.getChannel())) {
+                    || !existed.getChannel().equalsIgnoreCase(dto.getChannel())
+                    || !Objects.equals(existed.getCouponInstanceId(), dto.getCouponInstanceId())) {
                 throw new BusinessException("CONFLICT", "idempotencyKey 已被其他支付请求占用", HttpStatus.CONFLICT);
             }
             return toCreateVO(existed);
