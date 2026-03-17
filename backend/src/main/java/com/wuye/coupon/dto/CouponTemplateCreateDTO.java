@@ -1,5 +1,6 @@
 package com.wuye.coupon.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -21,8 +22,10 @@ public class CouponTemplateCreateDTO {
     @NotNull(message = "thresholdAmount 不能为空")
     private BigDecimal thresholdAmount;
     @NotNull(message = "validFrom 不能为空")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime validFrom;
     @NotNull(message = "validTo 不能为空")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime validTo;
 
     public String getTemplateCode() { return templateCode; }
