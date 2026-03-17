@@ -24,6 +24,7 @@ export interface BillLine {
 export interface AvailableCoupon {
   couponInstanceId: number
   templateCode: string
+  name?: string
   discountAmount: number
   expiresAt: string
 }

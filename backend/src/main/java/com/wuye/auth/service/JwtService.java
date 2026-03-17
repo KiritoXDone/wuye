@@ -25,13 +25,16 @@ public class JwtService {
     private final SecretKey secretKey;
     private final String issuer;
     private final long expireHours;
+    private final com.wuye.agent.service.AgentAuthorizationService agentAuthorizationService;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.issuer}") String issuer,
-                      @Value("${app.jwt.expire-hours}") long expireHours) {
+                      @Value("${app.jwt.expire-hours}") long expireHours,
+                      com.wuye.agent.service.AgentAuthorizationService agentAuthorizationService) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.issuer = issuer;
         this.expireHours = expireHours;
+        this.agentAuthorizationService = agentAuthorizationService;
     }
 
     public LoginVO issueLogin(Account account) {
@@ -96,9 +99,16 @@ public class JwtService {
                 .claim("realName", account.getRealName())
                 .claim("roles", List.of(account.getAccountType()))
                 .claim("dataScope", resolveDataScope(account.getAccountType()))
-                .claim("groupIds", Collections.emptyList())
+                .claim("groupIds", resolveGroupIds(account))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    private List<Long> resolveGroupIds(Account account) {
+        if (!"AGENT".equals(account.getAccountType())) {
+            return Collections.emptyList();
+        }
+        return agentAuthorizationService.loadAuthorizedGroupIds(account.getId());
     }
 
     private String resolveDataScope(String accountType) {

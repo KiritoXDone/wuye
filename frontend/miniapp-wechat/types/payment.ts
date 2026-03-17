@@ -28,4 +28,5 @@ export interface PaymentStatusResponse {
   billId: number
   status: string
   paidAt?: string
+  rewardIssuedCount?: number
 }

@@ -15,6 +15,10 @@ const menus = [
   { path: '/fee-rules', label: '费用规则', icon: Notebook },
   { path: '/water-readings', label: '水表与抄表', icon: SetUp },
   { path: '/billing-generate', label: '账单生成', icon: DataBoard },
+  { path: '/import-export', label: '导入导出', icon: Document },
+  { path: '/coupon-templates', label: '券模板', icon: Notebook },
+  { path: '/coupon-rules', label: '发券规则', icon: DataBoard },
+  { path: '/agent-groups', label: 'Agent 授权', icon: SetUp },
 ]
 
 const activeMenu = computed(() => route.path)

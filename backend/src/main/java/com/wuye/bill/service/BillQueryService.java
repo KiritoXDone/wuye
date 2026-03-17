@@ -16,6 +16,7 @@ import com.wuye.common.api.PageResponse;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import com.wuye.coupon.service.CouponService;
 import com.wuye.room.service.RoomBindingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,19 +35,22 @@ public class BillQueryService {
     private final RoomBindingService roomBindingService;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
+    private final CouponService couponService;
 
     public BillQueryService(BillMapper billMapper,
                             BillLineMapper billLineMapper,
-                            WaterReadingMapper waterReadingMapper,
-                            RoomBindingService roomBindingService,
-                            AccessGuard accessGuard,
-                            ObjectMapper objectMapper) {
+                             WaterReadingMapper waterReadingMapper,
+                             RoomBindingService roomBindingService,
+                             AccessGuard accessGuard,
+                             ObjectMapper objectMapper,
+                             CouponService couponService) {
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
         this.waterReadingMapper = waterReadingMapper;
         this.roomBindingService = roomBindingService;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
+        this.couponService = couponService;
     }
 
     public PageResponse<BillListItemVO> listMyBills(LoginUser loginUser, BillListQuery query) {
@@ -82,7 +86,11 @@ public class BillQueryService {
         List<BillLineVO> lines = billLineMapper.findByBillId(billId);
         lines.forEach(line -> line.setExt(parseExt(line)));
         detail.setBillLines(lines);
-        detail.setAvailableCoupons(Collections.emptyList());
+        if (loginUser.hasRole("RESIDENT")) {
+            detail.setAvailableCoupons(Collections.unmodifiableList(couponService.listBillCoupons(loginUser, bill)));
+        } else {
+            detail.setAvailableCoupons(Collections.emptyList());
+        }
         return detail;
     }
 

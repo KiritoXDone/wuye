@@ -389,6 +389,131 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
 
+    @Test
+    void couponDiscountAlipayCallbackAgentReportAndImportExportWork() throws Exception {
+        createFeeRule("PROPERTY", "2.5000");
+
+        mockMvc.perform(post("/api/v1/admin/bills/generate/property")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "year": 2026,
+                                  "month": 6,
+                                  "overwriteStrategy": "SKIP"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        MvcResult billResult = mockMvc.perform(get("/api/v1/me/bills")
+                        .param("pageNo", "1")
+                        .param("pageSize", "20")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode billsJson = read(billResult);
+        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-06");
+
+        mockMvc.perform(get("/api/v1/bills/" + propertyBillId)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.availableCoupons[0].couponInstanceId").value(92001));
+
+        mockMvc.perform(post("/api/v1/coupons/validate")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "couponInstanceId": 92001
+                                }
+                                """.formatted(propertyBillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.valid").value(true))
+                .andExpect(jsonPath("$.data.discountAmount").value(10.0));
+
+        MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "channel": "ALIPAY",
+                                  "couponInstanceId": 92001,
+                                  "idempotencyKey": "idem-alipay-coupon-001"
+                                }
+                                """.formatted(propertyBillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.channel").value("ALIPAY"))
+                .andExpect(jsonPath("$.data.discountAmount").value(10.0))
+                .andReturn();
+
+        String payOrderNo = read(paymentResult).path("data").path("payOrderNo").asText();
+
+        mockMvc.perform(post("/api/v1/callbacks/alipay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "payOrderNo": "%s",
+                                  "outTradeNo": "ALI-202603170001"
+                                }
+                                """.formatted(payOrderNo)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accepted").value(true))
+                .andExpect(jsonPath("$.data.rewardIssuedCount").value(1));
+
+        mockMvc.perform(get("/api/v1/payments/" + payOrderNo)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.rewardIssuedCount").value(1));
+
+        mockMvc.perform(get("/api/v1/agent/groups")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].groupCode").value("G-COMM001-1-2"));
+
+        mockMvc.perform(get("/api/v1/agent/reports/monthly")
+                        .header("Authorization", "Bearer " + agentToken)
+                        .param("groupId", "5001")
+                        .param("periodYear", "2026")
+                        .param("periodMonth", "6"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groupId").value(5001))
+                .andExpect(jsonPath("$.data.totalCount").value(2));
+
+        mockMvc.perform(post("/api/v1/admin/imports/bills")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileUrl": "https://example.com/imports/bills-2026-06.xlsx"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.failCount").value(1));
+
+        mockMvc.perform(get("/api/v1/admin/imports/1/errors")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].errorCode").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(post("/api/v1/admin/exports/bills")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodYear": 2026,
+                                  "periodMonth": 6,
+                                  "feeType": "PROPERTY",
+                                  "status": "PAID"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+    }
+
     private void createFeeRule(String feeType, String unitPrice) throws Exception {
         mockMvc.perform(post("/api/v1/admin/fee-rules")
                         .header("Authorization", "Bearer " + adminToken)

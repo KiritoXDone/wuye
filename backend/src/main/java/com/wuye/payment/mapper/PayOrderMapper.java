@@ -16,16 +16,16 @@ public interface PayOrderMapper {
 
     @Insert("""
             INSERT INTO pay_order(pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                                  idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason)
+                                  coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason)
             VALUES(#{payOrderNo}, #{billId}, #{accountId}, #{channel}, #{originAmount}, #{discountAmount}, #{payAmount},
-                   #{idempotencyKey}, #{status}, #{channelTradeNo}, #{paidAt}, #{expiredAt}, #{closeReason})
+                   #{couponInstanceId}, #{idempotencyKey}, #{status}, #{channelTradeNo}, #{paidAt}, #{expiredAt}, #{closeReason})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(PayOrder payOrder);
 
     @Select("""
             SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                   idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
             FROM pay_order
             WHERE idempotency_key = #{idempotencyKey}
             """)
@@ -33,7 +33,7 @@ public interface PayOrderMapper {
 
     @Select("""
             SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                   idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
             FROM pay_order
             WHERE pay_order_no = #{payOrderNo}
             """)

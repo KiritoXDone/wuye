@@ -1,4 +1,5 @@
 import { getBillDetail } from '../../services/bill'
+import { validateCoupon } from '../../services/coupon'
 import { createPayment } from '../../services/payment'
 import type { BillDetail, BillLine } from '../../types/bill'
 import { hasAuthSession } from '../../utils/auth'
@@ -16,6 +17,8 @@ type BillLineView = BillLine & {
 type CouponView = {
   couponInstanceId: number
   templateCode: string
+  name: string
+  discountAmount: number
   discountAmountText: string
   expiresAtText: string
 }
@@ -67,9 +70,25 @@ function normalizeBillDetail(detail: BillDetail): BillDetailView {
     availableCoupons: detail.availableCoupons.map((coupon) => ({
       couponInstanceId: coupon.couponInstanceId,
       templateCode: coupon.templateCode,
+      name: coupon.name || coupon.templateCode,
+      discountAmount: Number(coupon.discountAmount),
       discountAmountText: formatMoney(coupon.discountAmount),
       expiresAtText: formatDate(coupon.expiresAt)
     }))
+  }
+}
+
+function buildDefaultAmountState(detail: BillDetailView | null) {
+  const amountDue = Number(detail?.amountDue ?? 0)
+  return {
+    selectedCouponInstanceId: 0,
+    selectedCouponName: '',
+    couponHint: detail?.availableCoupons.length
+      ? '点击可用券后会实时校验并更新实付金额。'
+      : '当前账单暂无可用券。',
+    couponValidating: false,
+    discountAmountText: formatMoney(0),
+    payAmountText: formatMoney(amountDue)
   }
 }
 
@@ -80,7 +99,13 @@ Page({
     paying: false,
     errorMessage: '',
     billDetail: null as BillDetailView | null,
-    latestPayOrderNo: ''
+    latestPayOrderNo: '',
+    selectedCouponInstanceId: 0,
+    selectedCouponName: '',
+    couponHint: '',
+    couponValidating: false,
+    discountAmountText: formatMoney(0),
+    payAmountText: formatMoney(0)
   },
 
   onLoad(query: Record<string, string>) {
@@ -109,11 +134,85 @@ Page({
 
     try {
       const detail = await getBillDetail(this.data.billId)
-      this.setData({ billDetail: normalizeBillDetail(detail) })
+      const billDetail = normalizeBillDetail(detail)
+      this.setData({
+        billDetail,
+        ...buildDefaultAmountState(billDetail)
+      })
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '账单详情加载失败' })
     } finally {
       this.setData({ loading: false })
+    }
+  },
+
+  clearCouponSelection() {
+    if (!this.data.billDetail) {
+      return
+    }
+    this.setData(buildDefaultAmountState(this.data.billDetail))
+  },
+
+  async handleCouponSelect(event: WechatMiniprogram.TouchEvent) {
+    if (!this.data.billDetail || this.data.couponValidating || this.data.billDetail.status === 'PAID') {
+      return
+    }
+
+    const couponInstanceId = Number(event.currentTarget.dataset.couponId || 0)
+    if (!couponInstanceId) {
+      this.clearCouponSelection()
+      return
+    }
+
+    const coupon = this.data.billDetail.availableCoupons.find((item) => item.couponInstanceId === couponInstanceId)
+    if (!coupon) {
+      return
+    }
+
+    if (this.data.selectedCouponInstanceId === couponInstanceId) {
+      this.clearCouponSelection()
+      return
+    }
+
+    this.setData({
+      couponValidating: true,
+      couponHint: `正在校验 ${coupon.name}...`
+    })
+
+    try {
+      const result = await validateCoupon({
+        billId: this.data.billDetail.billId,
+        couponInstanceId
+      })
+
+      if (!result.valid) {
+        this.clearCouponSelection()
+        wx.showToast({
+          title: result.message || '当前优惠券不可使用',
+          icon: 'none',
+          duration: 2200
+        })
+        return
+      }
+
+      const payAmount = Math.max(Number(this.data.billDetail.amountDue) - Number(result.discountAmount || 0), 0)
+
+      this.setData({
+        selectedCouponInstanceId: couponInstanceId,
+        selectedCouponName: coupon.name,
+        couponHint: result.message || `已选择 ${coupon.name}`,
+        discountAmountText: formatMoney(result.discountAmount),
+        payAmountText: formatMoney(payAmount)
+      })
+    } catch (error) {
+      this.clearCouponSelection()
+      wx.showToast({
+        title: error instanceof Error ? error.message : '优惠券校验失败',
+        icon: 'none',
+        duration: 2200
+      })
+    } finally {
+      this.setData({ couponValidating: false })
     }
   },
 
@@ -128,6 +227,7 @@ Page({
       const payment = await createPayment({
         billId: this.data.billDetail.billId,
         channel: 'WECHAT',
+        couponInstanceId: this.data.selectedCouponInstanceId || undefined,
         idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId)
       })
 

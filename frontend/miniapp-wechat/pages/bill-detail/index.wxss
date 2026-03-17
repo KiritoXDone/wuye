@@ -5,3 +5,22 @@
 .amount-primary {
   margin-top: 8rpx;
 }
+
+.coupon-option {
+  min-width: 100%;
+}
+
+.coupon-option--active {
+  border-color: rgba(23, 92, 211, 0.18);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.coupon-option__name {
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.action-summary-row {
+  align-items: flex-end;
+}

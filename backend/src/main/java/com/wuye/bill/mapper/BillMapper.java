@@ -18,16 +18,16 @@ import java.util.List;
 public interface BillMapper {
 
     @Insert("""
-            INSERT INTO bill(bill_no, room_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
+            INSERT INTO bill(bill_no, room_id, group_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
                              amount_paid, due_date, status, source_type, remark)
-            VALUES(#{billNo}, #{roomId}, #{feeType}, #{periodYear}, #{periodMonth}, #{amountDue}, #{discountAmountTotal},
+            VALUES(#{billNo}, #{roomId}, #{groupId}, #{feeType}, #{periodYear}, #{periodMonth}, #{amountDue}, #{discountAmountTotal},
                    #{amountPaid}, #{dueDate}, #{status}, #{sourceType}, #{remark})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Bill bill);
 
     @Select("""
-            SELECT id, bill_no, room_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
+            SELECT id, bill_no, room_id, group_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
                    amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
             FROM bill
             WHERE room_id = #{roomId}
@@ -41,7 +41,7 @@ public interface BillMapper {
                          @Param("month") Integer month);
 
     @Select("""
-            SELECT id, bill_no, room_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
+            SELECT id, bill_no, room_id, group_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
                    amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
             FROM bill
             WHERE id = #{billId}
@@ -173,4 +173,12 @@ public interface BillMapper {
     int markPaid(@Param("billId") Long billId,
                  @Param("amountPaid") BigDecimal amountPaid,
                  @Param("paidAt") LocalDateTime paidAt);
+
+    @Update("""
+            UPDATE bill
+            SET discount_amount_total = #{discountAmount},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{billId}
+            """)
+    int updateDiscountAmount(@Param("billId") Long billId, @Param("discountAmount") BigDecimal discountAmount);
 }

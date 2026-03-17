@@ -1,9 +1,10 @@
 package com.wuye.bill.vo;
 
+import com.wuye.coupon.vo.AvailableCouponVO;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 public class BillDetailVO {
 
@@ -19,7 +20,7 @@ public class BillDetailVO {
     private String status;
     private LocalDate dueDate;
     private List<BillLineVO> billLines;
-    private List<Map<String, Object>> availableCoupons;
+    private List<AvailableCouponVO> availableCoupons;
 
     public Long getBillId() {
         return billId;
@@ -117,11 +118,11 @@ public class BillDetailVO {
         this.billLines = billLines;
     }
 
-    public List<Map<String, Object>> getAvailableCoupons() {
+    public List<AvailableCouponVO> getAvailableCoupons() {
         return availableCoupons;
     }
 
-    public void setAvailableCoupons(List<Map<String, Object>> availableCoupons) {
+    public void setAvailableCoupons(List<AvailableCouponVO> availableCoupons) {
         this.availableCoupons = availableCoupons;
     }
 }

@@ -31,17 +31,27 @@ public abstract class AbstractIntegrationTest {
 
     protected String adminToken;
     protected String residentToken;
+    protected String agentToken;
 
     @BeforeEach
     void initTokens() throws Exception {
         resetDynamicData();
         adminToken = loginAdmin();
         residentToken = loginResident("resident-zhangsan");
+        agentToken = loginResident("agent-a");
     }
 
     protected void resetDynamicData() {
+        jdbcTemplate.update("DELETE FROM coupon_redemption");
         jdbcTemplate.update("DELETE FROM pay_transaction");
         jdbcTemplate.update("DELETE FROM pay_order");
+        jdbcTemplate.update("UPDATE coupon_instance SET status = 'NEW', source_ref_no = NULL, owner_account_id = CASE WHEN id = 92001 THEN 10001 ELSE owner_account_id END WHERE id >= 92001");
+        jdbcTemplate.update("DELETE FROM coupon_instance WHERE id > 92001");
+        jdbcTemplate.update("DELETE FROM coupon_issue_rule WHERE id > 91001");
+        jdbcTemplate.update("DELETE FROM coupon_template WHERE id > 90002");
+        jdbcTemplate.update("DELETE FROM export_job");
+        jdbcTemplate.update("DELETE FROM import_row_error");
+        jdbcTemplate.update("DELETE FROM import_batch");
         jdbcTemplate.update("DELETE FROM bill_line");
         jdbcTemplate.update("DELETE FROM bill");
         jdbcTemplate.update("DELETE FROM water_meter_reading");

@@ -9,6 +9,7 @@ public class Bill {
     private Long id;
     private String billNo;
     private Long roomId;
+    private Long groupId;
     private String feeType;
     private Integer periodYear;
     private Integer periodMonth;
@@ -44,6 +45,14 @@ public class Bill {
 
     public void setRoomId(Long roomId) {
         this.roomId = roomId;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
     }
 
     public String getFeeType() {

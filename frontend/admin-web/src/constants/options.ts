@@ -3,6 +3,11 @@ export const feeTypeOptions = [
   { label: '水费', value: 'WATER' },
 ]
 
+export const feeTypeWithAllOptions = [
+  { label: '全部费种', value: 'ALL' },
+  ...feeTypeOptions,
+]
+
 export const billStatusOptions = [
   { label: '已出账', value: 'ISSUED' },
   { label: '已支付', value: 'PAID' },
@@ -15,4 +20,24 @@ export const cycleTypeOptions = [
 
 export const overwriteStrategyOptions = [
   { label: '跳过已存在账单', value: 'SKIP' },
+]
+
+export const couponTemplateTypeOptions = [
+  { label: '支付前抵扣券', value: 'PAYMENT' },
+  { label: '支付后奖励券', value: 'VOUCHER' },
+]
+
+export const discountModeOptions = [
+  { label: '固定金额', value: 'FIXED' },
+  { label: '比例折扣', value: 'PERCENT' },
+]
+
+export const permissionOptions = [
+  { label: '查看', value: 'VIEW' },
+  { label: '管理', value: 'MANAGE' },
+]
+
+export const enabledStatusOptions = [
+  { label: '启用', value: 1 },
+  { label: '停用', value: 0 },
 ]

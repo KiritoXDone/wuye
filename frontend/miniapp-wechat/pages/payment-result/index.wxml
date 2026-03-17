@@ -29,11 +29,20 @@
         <view class="info-key">支付时间</view>
         <view class="info-value">{{paidAtText}}</view>
       </view>
+      <view wx:if="{{rewardIssuedVisible}}" class="info-row">
+        <view class="info-key">奖励券发放</view>
+        <view class="info-value">{{rewardIssuedCount}} 张</view>
+      </view>
       <view class="info-row">
         <view class="info-key">轮询进度</view>
         <view class="info-value">{{pollAttempt}} / {{pollLimit}}</view>
       </view>
     </view>
+  </view>
+
+  <view wx:if="{{rewardIssuedVisible}}" class="panel card-stack">
+    <view class="section-title">奖励发放结果</view>
+    <view class="text-muted">{{rewardIssuedText}}</view>
   </view>
 
   <view wx:if="{{errorMessage}}" class="panel state-card">

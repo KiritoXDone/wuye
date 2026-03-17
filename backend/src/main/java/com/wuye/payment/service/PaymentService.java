@@ -8,6 +8,7 @@ import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
 import com.wuye.common.util.NoGenerator;
+import com.wuye.coupon.service.CouponService;
 import com.wuye.payment.dto.PaymentCreateDTO;
 import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.entity.PayTransaction;
@@ -34,26 +35,29 @@ public class PaymentService {
     private final RoomBindingService roomBindingService;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
+    private final CouponService couponService;
 
     public PaymentService(BillMapper billMapper,
                           PayOrderMapper payOrderMapper,
                           PayTransactionMapper payTransactionMapper,
                           RoomBindingService roomBindingService,
                           AccessGuard accessGuard,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          CouponService couponService) {
         this.billMapper = billMapper;
         this.payOrderMapper = payOrderMapper;
         this.payTransactionMapper = payTransactionMapper;
         this.roomBindingService = roomBindingService;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
+        this.couponService = couponService;
     }
 
     @Transactional
     public PaymentCreateVO create(LoginUser loginUser, PaymentCreateDTO dto) {
         accessGuard.requireRole(loginUser, "RESIDENT");
-        if (!"WECHAT".equalsIgnoreCase(dto.getChannel())) {
-            throw new BusinessException("INVALID_ARGUMENT", "当前仅支持 WECHAT 渠道", HttpStatus.BAD_REQUEST);
+        if (!"WECHAT".equalsIgnoreCase(dto.getChannel()) && !"ALIPAY".equalsIgnoreCase(dto.getChannel())) {
+            throw new BusinessException("INVALID_ARGUMENT", "当前仅支持 WECHAT 或 ALIPAY 渠道", HttpStatus.BAD_REQUEST);
         }
         Bill bill = billMapper.findById(dto.getBillId());
         if (bill == null) {
@@ -77,14 +81,17 @@ public class PaymentService {
         payOrder.setPayOrderNo(NoGenerator.payOrderNo());
         payOrder.setBillId(bill.getId());
         payOrder.setAccountId(loginUser.accountId());
-        payOrder.setChannel("WECHAT");
+        payOrder.setChannel(dto.getChannel().toUpperCase());
         payOrder.setOriginAmount(bill.getAmountDue());
-        payOrder.setDiscountAmount(BigDecimal.ZERO.setScale(2));
-        payOrder.setPayAmount(bill.getAmountDue());
+        BigDecimal discountAmount = couponService.lockCoupon(loginUser.accountId(), bill, dto.getCouponInstanceId());
+        payOrder.setDiscountAmount(discountAmount);
+        payOrder.setCouponInstanceId(dto.getCouponInstanceId());
+        payOrder.setPayAmount(bill.getAmountDue().subtract(discountAmount));
         payOrder.setIdempotencyKey(dto.getIdempotencyKey());
         payOrder.setStatus("PAYING");
         payOrder.setExpiredAt(LocalDateTime.now().plusMinutes(30));
         payOrderMapper.insert(payOrder);
+        billMapper.updateDiscountAmount(bill.getId(), discountAmount);
 
         PayTransaction transaction = new PayTransaction();
         transaction.setPayOrderNo(payOrder.getPayOrderNo());
@@ -106,7 +113,9 @@ public class PaymentService {
             Bill bill = billMapper.findById(payOrder.getBillId());
             accessGuard.requireSelfRoom(loginUser, bill != null && roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
         }
-        return payOrderMapper.findStatus(payOrderNo);
+        PaymentStatusVO status = payOrderMapper.findStatus(payOrderNo);
+        status.setRewardIssuedCount(couponService.countRewardIssuedByPayOrderNo(payOrderNo));
+        return status;
     }
 
     private PaymentCreateVO toCreateVO(PayOrder payOrder) {
@@ -122,12 +131,19 @@ public class PaymentService {
 
     private Map<String, Object> buildPayParams(PayOrder payOrder) {
         Map<String, Object> payParams = new LinkedHashMap<>();
-        payParams.put("appId", "wx-dev-mock");
-        payParams.put("timeStamp", String.valueOf(System.currentTimeMillis() / 1000));
-        payParams.put("nonceStr", payOrder.getPayOrderNo());
-        payParams.put("package", "prepay_id=" + payOrder.getPayOrderNo());
-        payParams.put("signType", "RSA");
-        payParams.put("paySign", "mock-signature");
+        if ("ALIPAY".equals(payOrder.getChannel())) {
+            payParams.put("appId", "alipay-dev-mock");
+            payParams.put("tradeNo", "trade_" + payOrder.getPayOrderNo());
+            payParams.put("orderString", "app_id=alipay-dev-mock&out_trade_no=" + payOrder.getPayOrderNo());
+            payParams.put("paySign", "mock-alipay-signature");
+        } else {
+            payParams.put("appId", "wx-dev-mock");
+            payParams.put("timeStamp", String.valueOf(System.currentTimeMillis() / 1000));
+            payParams.put("nonceStr", payOrder.getPayOrderNo());
+            payParams.put("package", "prepay_id=" + payOrder.getPayOrderNo());
+            payParams.put("signType", "RSA");
+            payParams.put("paySign", "mock-signature");
+        }
         return payParams;
     }
 

@@ -5,11 +5,13 @@ import { formatBillStatus, formatDateTime } from '../../utils/format'
 
 let pollTimer: number | null = null
 
-function resolveStatusMeta(status: string) {
+function resolveStatusMeta(status: string, rewardIssuedCount?: number) {
   if (status === 'SUCCESS') {
     return {
       statusTitle: '支付成功',
-      statusDescription: '账单与支付单状态已经完成闭环，可以返回房间或账单详情继续查看。',
+      statusDescription: typeof rewardIssuedCount === 'number'
+        ? `账单与支付单状态已经完成闭环，本次奖励券发放结果：${rewardIssuedCount} 张。`
+        : '账单与支付单状态已经完成闭环，可以返回房间或账单详情继续查看。',
       statusEmoji: '✓'
     }
   }
@@ -42,6 +44,9 @@ Page({
     statusEmoji: '…',
     billIdText: '--',
     paidAtText: '--',
+    rewardIssuedCount: null as number | null,
+    rewardIssuedVisible: false,
+    rewardIssuedText: '',
     pollAttempt: 0,
     pollLimit: PAYMENT_POLL_LIMIT
   },
@@ -88,7 +93,8 @@ Page({
 
     try {
       const response = await getPaymentStatus(this.data.payOrderNo)
-      const statusMeta = resolveStatusMeta(response.status)
+      const hasRewardIssuedCount = typeof response.rewardIssuedCount === 'number'
+      const statusMeta = resolveStatusMeta(response.status, response.rewardIssuedCount)
       this.setData({
         billId: response.billId || this.data.billId,
         billIdText: String(response.billId || this.data.billId || '--'),
@@ -97,7 +103,14 @@ Page({
         statusTitle: statusMeta.statusTitle,
         statusDescription: statusMeta.statusDescription,
         statusEmoji: statusMeta.statusEmoji,
-        paidAtText: formatDateTime(response.paidAt)
+        paidAtText: formatDateTime(response.paidAt),
+        rewardIssuedCount: hasRewardIssuedCount ? response.rewardIssuedCount || 0 : null,
+        rewardIssuedVisible: hasRewardIssuedCount,
+        rewardIssuedText: hasRewardIssuedCount
+          ? (response.rewardIssuedCount || 0) > 0
+            ? `本次支付已发放 ${response.rewardIssuedCount || 0} 张奖励券，可在后续账单支付时继续使用。`
+            : '本次支付未触发奖励券发放规则。'
+          : ''
       })
 
       if (response.status === 'PAYING' && nextAttempt < PAYMENT_POLL_LIMIT) {

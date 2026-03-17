@@ -8,6 +8,7 @@ public class PaymentStatusVO {
     private Long billId;
     private String status;
     private LocalDateTime paidAt;
+    private Integer rewardIssuedCount;
 
     public String getPayOrderNo() {
         return payOrderNo;
@@ -39,5 +40,13 @@ public class PaymentStatusVO {
 
     public void setPaidAt(LocalDateTime paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public Integer getRewardIssuedCount() {
+        return rewardIssuedCount;
+    }
+
+    public void setRewardIssuedCount(Integer rewardIssuedCount) {
+        this.rewardIssuedCount = rewardIssuedCount;
     }
 }

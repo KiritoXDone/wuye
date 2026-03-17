@@ -49,24 +49,62 @@
 
     <view class="panel card-stack">
       <view class="section-title">可用券</view>
-      <view wx:if="{{billDetail.availableCoupons.length}}" class="tag-grid">
-        <view wx:for="{{billDetail.availableCoupons}}" wx:key="couponInstanceId" class="coupon-chip">
-          {{item.templateCode}} - ¥{{item.discountAmountText}} · 截止 {{item.expiresAtText}}
+      <view wx:if="{{billDetail.availableCoupons.length}}" class="card-stack">
+        <view class="chip-row">
+          <view class="pill {{selectedCouponInstanceId === 0 ? 'pill-active' : ''}}" bindtap="clearCouponSelection">不使用优惠券</view>
+          <view
+            wx:for="{{billDetail.availableCoupons}}"
+            wx:key="couponInstanceId"
+            class="coupon-chip coupon-option {{selectedCouponInstanceId === item.couponInstanceId ? 'coupon-option--active' : ''}}"
+            data-coupon-id="{{item.couponInstanceId}}"
+            bindtap="handleCouponSelect"
+          >
+            <view class="coupon-option__name">{{item.name}}</view>
+            <view>{{item.templateCode}} · ¥{{item.discountAmountText}} · 截止 {{item.expiresAtText}}</view>
+          </view>
+        </view>
+        <view class="text-muted">{{couponValidating ? '正在校验优惠券，请稍候…' : couponHint}}</view>
+        <view wx:if="{{selectedCouponName}}" class="text-muted">当前已选择：{{selectedCouponName}}</view>
+      </view>
+      <view wx:else class="text-muted">当前账单暂无可用券。</view>
+    </view>
+
+    <view class="panel card-stack">
+      <view class="section-title">支付确认</view>
+      <view class="info-list">
+        <view class="info-row">
+          <view class="info-key">当前房间</view>
+          <view class="info-value">{{billDetail.roomLabel}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">当前账期</view>
+          <view class="info-value">{{billDetail.periodText}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">应收金额</view>
+          <view class="info-value">¥ {{billDetail.amountDueText}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">优惠金额</view>
+          <view class="info-value">¥ {{discountAmountText}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">实付金额</view>
+          <view class="info-value">¥ {{payAmountText}}</view>
         </view>
       </view>
-      <view wx:else class="text-muted">当前最小 MVP 不做券选择页，这里仅展示接口返回的可用券摘要。</view>
     </view>
 
     <view class="fixed-action-bar button-row">
-      <view class="info-row">
+      <view class="info-row action-summary-row">
         <view>
-          <view class="info-key">当前应付</view>
-          <view class="amount-secondary">¥ {{billDetail.amountDueText}}</view>
+          <view class="info-key">实付金额</view>
+          <view class="amount-secondary">¥ {{payAmountText}}</view>
         </view>
         <view wx:if="{{billDetail.status === 'PAID'}}" class="status-chip status-chip--PAID">已支付</view>
       </view>
 
-      <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying}}">创建支付单并查看结果</button>
+      <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">创建支付单并查看结果</button>
       <button wx:else class="button-secondary" bindtap="openPaymentResultFromPaid">查看支付结果</button>
     </view>
   </block>

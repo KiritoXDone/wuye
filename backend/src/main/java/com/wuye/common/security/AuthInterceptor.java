@@ -21,6 +21,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             "/api/v1/auth/refresh",
             "/api/v1/admin/auth/login/password",
             "/api/v1/callbacks/wechatpay",
+            "/api/v1/callbacks/alipay",
             "/error"
     );
 

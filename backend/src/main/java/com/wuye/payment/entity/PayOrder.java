@@ -13,6 +13,7 @@ public class PayOrder {
     private BigDecimal originAmount;
     private BigDecimal discountAmount;
     private BigDecimal payAmount;
+    private Long couponInstanceId;
     private String idempotencyKey;
     private String status;
     private String channelTradeNo;
@@ -82,6 +83,14 @@ public class PayOrder {
 
     public void setPayAmount(BigDecimal payAmount) {
         this.payAmount = payAmount;
+    }
+
+    public Long getCouponInstanceId() {
+        return couponInstanceId;
+    }
+
+    public void setCouponInstanceId(Long couponInstanceId) {
+        this.couponInstanceId = couponInstanceId;
     }
 
     public String getIdempotencyKey() {
