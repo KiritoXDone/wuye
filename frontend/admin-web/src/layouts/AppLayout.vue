@@ -22,6 +22,7 @@ const menus = [
   { path: '/org-units', label: '组织架构', icon: OfficeBuilding },
   { path: '/water-alerts', label: '水量预警', icon: Bell },
   { path: '/dunning', label: '催缴任务', icon: DataBoard },
+  { path: '/audit-logs', label: '审计日志', icon: Files },
   { path: '/invoice-applications', label: '发票申请', icon: Files },
 ]
 

@@ -90,6 +90,12 @@ const router = createRouter({
           meta: { title: '催缴任务' },
         },
         {
+          path: 'audit-logs',
+          name: 'audit-logs',
+          component: () => import('@/views/audit/AuditLogsView.vue'),
+          meta: { title: '审计日志' },
+        },
+        {
           path: 'invoice-applications',
           name: 'invoice-applications',
           component: () => import('@/views/invoices/InvoiceApplicationsView.vue'),
