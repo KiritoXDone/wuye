@@ -53,13 +53,13 @@ async function handleProcess() {
     <div class="page-header">
       <div>
         <h1 class="page-title">发票申请</h1>
-        <p class="page-description">当前后端已开放住户端申请列表与后台处理接口，但未提供后台申请列表查询。本页保留最小处理入口，并明确说明该限制。</p>
+        <p class="page-description">当前后端已开放住户端申请列表与后台处理接口，但未提供后台申请列表查询。本页保留最小处理入口，并对齐 APPLIED / APPROVED / REJECTED 三态处理口径。</p>
       </div>
     </div>
 
     <div class="two-column-grid">
-      <PageSection title="处理申请" description="输入申请 ID 后，可将状态更新为已通过或已驳回，并写入备注。">
-        <el-alert title="请先从住户侧申请记录或联调结果中拿到 applicationId，再在此页执行处理。" type="info" :closable="false" show-icon style="margin-bottom: 16px" />
+        <PageSection title="处理申请" description="输入申请 ID 后，可将状态从 APPLIED 推进到 APPROVED 或 REJECTED，并写入处理备注。">
+        <el-alert title="请先从住户侧申请记录或联调结果中拿到 applicationId；当前后台页面仅提供处理入口，不提供后台申请列表接口。" type="info" :closable="false" show-icon style="margin-bottom: 16px" />
         <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
           <div class="form-card-grid">
             <el-form-item label="申请 ID" prop="applicationId">

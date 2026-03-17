@@ -36,7 +36,7 @@ onMounted(loadData)
     <div class="page-header">
       <div>
         <h1 class="page-title">水量预警</h1>
-        <p class="page-description">按账期查看异常用水预警，帮助快速识别绝对阈值或倍数阈值触发的房间。</p>
+        <p class="page-description">按账期查看异常用水预警，帮助快速识别绝对阈值（ABS_THRESHOLD）或倍数阈值（MULTIPLIER_THRESHOLD）触发的房间。</p>
       </div>
       <div class="filter-form">
         <el-input-number v-model="filters.periodYear" :min="2020" :max="2100" controls-position="right" />
@@ -47,7 +47,7 @@ onMounted(loadData)
       </div>
     </div>
 
-    <PageSection title="预警列表" description="阈值与实际值统一保留三位小数，便于与抄表规则核对。">
+    <PageSection title="预警列表" description="阈值与实际值统一保留三位小数；当前后端仅返回 OPEN 状态预警事件，用于提示与追踪，不阻断开单。">
       <AsyncState :loading="loading" :error="error" :empty="!list.length" empty-description="当前账期暂无水量预警">
         <el-table :data="list" stripe>
           <el-table-column prop="roomLabel" label="房间" min-width="140" />

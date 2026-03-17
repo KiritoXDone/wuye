@@ -34,14 +34,14 @@ async function loadTasks() {
 
 async function handleTrigger() {
   triggerLoading.value = true
-  try {
-    const result = await triggerDunning({ triggerDate: form.triggerDate || undefined })
-    tasks.value = result
-    ElMessage.success(`催缴触发完成，本次返回 ${result.length} 条任务`)
-  } finally {
-    triggerLoading.value = false
+    try {
+      const result = await triggerDunning({ triggerDate: form.triggerDate || undefined })
+      tasks.value = result
+      ElMessage.success(`催缴触发完成，当前返回 ${result.length} 条任务；仅包含逾期未支付账单生成的任务。`)
+    } finally {
+      triggerLoading.value = false
+    }
   }
-}
 
 async function handleLoadLogs(billId: number) {
   selectedBillId.value = billId
@@ -61,7 +61,7 @@ onMounted(loadTasks)
     <div class="page-header">
       <div>
         <h1 class="page-title">催缴任务</h1>
-        <p class="page-description">支持手动触发催缴，并按账单查看发送日志，用于核对组织与用户组范围是否正确。</p>
+        <p class="page-description">支持手动触发催缴，并按账单查看发送日志。当前后端仅对逾期未支付账单生成任务，日志状态以接口返回的 SENT 为准。</p>
       </div>
     </div>
 
