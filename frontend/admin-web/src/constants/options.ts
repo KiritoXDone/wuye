@@ -18,6 +18,11 @@ export const cycleTypeOptions = [
   { label: '按月', value: 'MONTH' },
 ]
 
+export const pricingModeOptions = [
+  { label: '固定单价', value: 'FLAT' },
+  { label: '阶梯水价', value: 'TIERED' },
+]
+
 export const overwriteStrategyOptions = [
   { label: '跳过已存在账单', value: 'SKIP' },
 ]
@@ -40,4 +45,10 @@ export const permissionOptions = [
 export const enabledStatusOptions = [
   { label: '启用', value: 1 },
   { label: '停用', value: 0 },
+]
+
+export const invoiceStatusOptions = [
+  { label: '已申请', value: 'APPLIED' },
+  { label: '已通过', value: 'APPROVED' },
+  { label: '已驳回', value: 'REJECTED' },
 ]

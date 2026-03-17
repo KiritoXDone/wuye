@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { DataBoard, Document, Notebook, Odometer, SetUp } from '@element-plus/icons-vue'
+import { Bell, DataBoard, Document, Files, Notebook, OfficeBuilding, Odometer, SetUp } from '@element-plus/icons-vue'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -19,6 +19,10 @@ const menus = [
   { path: '/coupon-templates', label: '券模板', icon: Notebook },
   { path: '/coupon-rules', label: '发券规则', icon: DataBoard },
   { path: '/agent-groups', label: 'Agent 授权', icon: SetUp },
+  { path: '/org-units', label: '组织架构', icon: OfficeBuilding },
+  { path: '/water-alerts', label: '水量预警', icon: Bell },
+  { path: '/dunning', label: '催缴任务', icon: DataBoard },
+  { path: '/invoice-applications', label: '发票申请', icon: Files },
 ]
 
 const activeMenu = computed(() => route.path)
