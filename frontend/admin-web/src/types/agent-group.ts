@@ -3,6 +3,9 @@ export interface AgentGroup {
   groupCode: string
   groupName: string
   permission: string
+  orgUnitId?: number
+  orgUnitName?: string
+  tenantCode?: string
 }
 
 export interface AgentGroupCreatePayload {

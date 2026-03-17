@@ -32,6 +32,17 @@ public class AgentReportService {
         AgentMonthlyReportVO vo = reportMapper.agentMonthly(groupId, periodYear, periodMonth);
         vo.setGroupId(groupId);
         vo.setGroupName(userGroup == null ? "" : userGroup.getName());
+        vo.setOrgUnitId(userGroup == null ? null : userGroup.getOrgUnitId());
+        if (userGroup != null && userGroup.getOrgUnitId() != null) {
+            var authorizedGroups = agentAuthorizationService.listMyGroups(loginUser);
+            authorizedGroups.stream()
+                    .filter(group -> groupId.equals(group.getGroupId()))
+                    .findFirst()
+                    .ifPresent(group -> {
+                        vo.setOrgUnitName(group.getOrgUnitName());
+                        vo.setTenantCode(group.getTenantCode());
+                    });
+        }
         vo.setPeriod(periodYear + "-" + String.format("%02d", periodMonth));
         if (vo.getPaidCount() == null) {
             vo.setPaidCount(0L);

@@ -6,6 +6,9 @@ public class AgentMonthlyReportVO {
 
     private Long groupId;
     private String groupName;
+    private Long orgUnitId;
+    private String orgUnitName;
+    private String tenantCode;
     private String period;
     private Long paidCount;
     private Long totalCount;
@@ -18,6 +21,12 @@ public class AgentMonthlyReportVO {
     public void setGroupId(Long groupId) { this.groupId = groupId; }
     public String getGroupName() { return groupName; }
     public void setGroupName(String groupName) { this.groupName = groupName; }
+    public Long getOrgUnitId() { return orgUnitId; }
+    public void setOrgUnitId(Long orgUnitId) { this.orgUnitId = orgUnitId; }
+    public String getOrgUnitName() { return orgUnitName; }
+    public void setOrgUnitName(String orgUnitName) { this.orgUnitName = orgUnitName; }
+    public String getTenantCode() { return tenantCode; }
+    public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
     public String getPeriod() { return period; }
     public void setPeriod(String period) { this.period = period; }
     public Long getPaidCount() { return paidCount; }

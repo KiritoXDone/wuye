@@ -76,6 +76,16 @@ onMounted(loadData)
             <el-table-column prop="groupId" label="组ID" width="88" />
             <el-table-column prop="groupCode" label="组编码" min-width="160" />
             <el-table-column prop="groupName" label="组名称" min-width="160" />
+            <el-table-column label="组织单元" min-width="180">
+              <template #default="scope">
+                {{ scope.row.orgUnitName || '--' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="租户编码" min-width="160">
+              <template #default="scope">
+                {{ scope.row.tenantCode || '--' }}
+              </template>
+            </el-table-column>
             <el-table-column label="权限" width="100">
               <template #default="scope">
                 <StatusTag :value="scope.row.permission" />
