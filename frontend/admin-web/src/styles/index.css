@@ -1,0 +1,330 @@
+:root {
+  --color-primary: #2563eb;
+  --color-primary-soft: #eff6ff;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-border: #dbe3f0;
+  --color-border-strong: #c6d2e3;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-page: #f2f5fa;
+  --shadow-card: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --radius-input: 10px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --font-title: 600 24px/32px "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-section: 600 18px/26px "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-body: 400 14px/22px "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-caption: 400 12px/18px "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  font: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-surface-page);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.page-title {
+  margin: 0;
+  font: var(--font-title);
+  color: var(--color-text);
+}
+
+.page-description {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.panel-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.panel-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 20px 20px 0;
+}
+
+.panel-card__title {
+  margin: 0;
+  font: var(--font-section);
+}
+
+.panel-card__body {
+  padding: 20px;
+}
+
+.page-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.two-column-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-3);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.kpi-card {
+  padding: 20px;
+}
+
+.kpi-card__label {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.kpi-card__value {
+  margin: 10px 0 6px;
+  font: 700 28px/34px "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: var(--color-text);
+}
+
+.kpi-card__hint {
+  margin: 0;
+  font: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.status-stack,
+.empty-state,
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+
+.table-toolbar,
+.filter-form,
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.table-toolbar {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.filter-form {
+  align-items: flex-end;
+}
+
+.form-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.layout-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font: var(--font-caption);
+}
+
+.amount-text {
+  font-variant-numeric: tabular-nums;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 460px;
+  background: linear-gradient(135deg, #eef4ff 0%, #f8fafc 52%, #ffffff 100%);
+}
+
+.login-hero {
+  padding: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.login-hero__eyebrow {
+  color: var(--color-primary);
+  font: var(--font-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-hero__title {
+  margin: 0;
+  font: 700 40px/52px "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.login-hero__description {
+  max-width: 520px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 28px;
+}
+
+.login-card-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 32px;
+}
+
+.login-card__title {
+  margin: 0 0 8px;
+  font: var(--font-title);
+}
+
+.login-card__subtitle {
+  margin: 0 0 24px;
+  color: var(--color-text-secondary);
+}
+
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  border-right: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #0f172a 0%, #162441 100%);
+}
+
+.app-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 20px;
+  color: #ffffff;
+}
+
+.app-logo__title {
+  font: 700 20px/28px "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.app-logo__subtitle {
+  color: rgba(255, 255, 255, 0.72);
+  font: var(--font-caption);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: 72px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.app-main {
+  padding: var(--space-3);
+}
+
+.drawer-field-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.drawer-field {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--color-surface-muted);
+}
+
+.drawer-field__label {
+  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  font: var(--font-caption);
+}
+
+.drawer-field__value {
+  word-break: break-word;
+}
+
+@media (max-width: 1200px) {
+  .kpi-grid,
+  .two-column-grid,
+  .form-card-grid,
+  .drawer-field-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .login-shell,
+  .two-column-grid,
+  .kpi-grid,
+  .form-card-grid,
+  .drawer-field-list {
+    grid-template-columns: 1fr;
+  }
+
+  .login-hero {
+    padding: 40px 24px 0;
+  }
+}
