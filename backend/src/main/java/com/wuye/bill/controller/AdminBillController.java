@@ -11,9 +11,11 @@ import com.wuye.bill.service.BillQueryService;
 import com.wuye.bill.service.PropertyBillGenerateService;
 import com.wuye.bill.service.WaterBillGenerateService;
 import com.wuye.bill.service.WaterReadingService;
+import com.wuye.bill.service.WaterUsageAlertService;
 import com.wuye.bill.vo.AdminWaterReadingVO;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillListItemVO;
+import com.wuye.bill.vo.WaterUsageAlertVO;
 import com.wuye.common.api.ApiResponse;
 import com.wuye.common.api.PageResponse;
 import com.wuye.common.security.CurrentUser;
@@ -38,15 +40,18 @@ public class AdminBillController {
     private final WaterReadingService waterReadingService;
     private final WaterBillGenerateService waterBillGenerateService;
     private final BillQueryService billQueryService;
+    private final WaterUsageAlertService waterUsageAlertService;
 
     public AdminBillController(PropertyBillGenerateService propertyBillGenerateService,
                                WaterReadingService waterReadingService,
                                WaterBillGenerateService waterBillGenerateService,
-                               BillQueryService billQueryService) {
+                               BillQueryService billQueryService,
+                               WaterUsageAlertService waterUsageAlertService) {
         this.propertyBillGenerateService = propertyBillGenerateService;
         this.waterReadingService = waterReadingService;
         this.waterBillGenerateService = waterBillGenerateService;
         this.billQueryService = billQueryService;
+        this.waterUsageAlertService = waterUsageAlertService;
     }
 
     @GetMapping("/bills")
@@ -76,6 +81,13 @@ public class AdminBillController {
                                                                     @RequestParam(value = "periodYear", required = false) Integer periodYear,
                                                                     @RequestParam(value = "periodMonth", required = false) Integer periodMonth) {
         return ApiResponse.success(billQueryService.listAdminWaterReadings(loginUser, periodYear, periodMonth));
+    }
+
+    @GetMapping("/water-alerts")
+    public ApiResponse<List<WaterUsageAlertVO>> listWaterAlerts(@CurrentUser LoginUser loginUser,
+                                                                @RequestParam(value = "periodYear", required = false) Integer periodYear,
+                                                                @RequestParam(value = "periodMonth", required = false) Integer periodMonth) {
+        return ApiResponse.success(waterUsageAlertService.listAdminAlerts(loginUser, periodYear, periodMonth));
     }
 
     @PostMapping("/water-readings")

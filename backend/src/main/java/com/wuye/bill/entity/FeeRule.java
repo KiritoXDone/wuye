@@ -2,6 +2,7 @@ package com.wuye.bill.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class FeeRule {
 
@@ -11,10 +12,14 @@ public class FeeRule {
     private String ruleName;
     private BigDecimal unitPrice;
     private String cycleType;
+    private String pricingMode;
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
     private Integer status;
     private String remark;
+    private BigDecimal abnormalAbsThreshold;
+    private BigDecimal abnormalMultiplierThreshold;
+    private List<FeeRuleWaterTier> waterTiers;
 
     public Long getId() {
         return id;
@@ -64,6 +69,14 @@ public class FeeRule {
         this.cycleType = cycleType;
     }
 
+    public String getPricingMode() {
+        return pricingMode;
+    }
+
+    public void setPricingMode(String pricingMode) {
+        this.pricingMode = pricingMode;
+    }
+
     public LocalDate getEffectiveFrom() {
         return effectiveFrom;
     }
@@ -94,5 +107,29 @@ public class FeeRule {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public BigDecimal getAbnormalAbsThreshold() {
+        return abnormalAbsThreshold;
+    }
+
+    public void setAbnormalAbsThreshold(BigDecimal abnormalAbsThreshold) {
+        this.abnormalAbsThreshold = abnormalAbsThreshold;
+    }
+
+    public BigDecimal getAbnormalMultiplierThreshold() {
+        return abnormalMultiplierThreshold;
+    }
+
+    public void setAbnormalMultiplierThreshold(BigDecimal abnormalMultiplierThreshold) {
+        this.abnormalMultiplierThreshold = abnormalMultiplierThreshold;
+    }
+
+    public List<FeeRuleWaterTier> getWaterTiers() {
+        return waterTiers;
+    }
+
+    public void setWaterTiers(List<FeeRuleWaterTier> waterTiers) {
+        this.waterTiers = waterTiers;
     }
 }

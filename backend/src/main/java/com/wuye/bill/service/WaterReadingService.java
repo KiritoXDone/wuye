@@ -24,15 +24,21 @@ public class WaterReadingService {
     private final WaterMeterMapper waterMeterMapper;
     private final WaterReadingMapper waterReadingMapper;
     private final RoomMapper roomMapper;
+    private final FeeRuleService feeRuleService;
+    private final WaterUsageAlertService waterUsageAlertService;
     private final AccessGuard accessGuard;
 
     public WaterReadingService(WaterMeterMapper waterMeterMapper,
                                WaterReadingMapper waterReadingMapper,
                                RoomMapper roomMapper,
+                               FeeRuleService feeRuleService,
+                               WaterUsageAlertService waterUsageAlertService,
                                AccessGuard accessGuard) {
         this.waterMeterMapper = waterMeterMapper;
         this.waterReadingMapper = waterReadingMapper;
         this.roomMapper = roomMapper;
+        this.feeRuleService = feeRuleService;
+        this.waterUsageAlertService = waterUsageAlertService;
         this.accessGuard = accessGuard;
     }
 
@@ -66,6 +72,10 @@ public class WaterReadingService {
         if (dto.getCurrReading().compareTo(dto.getPrevReading()) < 0) {
             throw new BusinessException("INVALID_ARGUMENT", "currReading 不能小于 prevReading", HttpStatus.BAD_REQUEST);
         }
+        Room room = roomMapper.findById(dto.getRoomId());
+        if (room == null) {
+            throw new BusinessException("NOT_FOUND", "房间不存在", HttpStatus.NOT_FOUND);
+        }
         WaterMeter meter = waterMeterMapper.findByRoomId(dto.getRoomId());
         if (meter == null) {
             throw new BusinessException("NOT_FOUND", "请先配置水表", HttpStatus.NOT_FOUND);
@@ -89,6 +99,9 @@ public class WaterReadingService {
         reading.setRemark(dto.getRemark());
         reading.setStatus("NORMAL");
         waterReadingMapper.insert(reading);
+        reading.setStatus(waterUsageAlertService.evaluateAndPersist(reading,
+                feeRuleService.requireActiveRule(room.getCommunityId(), "WATER", dto.getReadAt().toLocalDate())));
+        waterReadingMapper.updateStatus(reading.getId(), reading.getStatus());
         return reading;
     }
 }

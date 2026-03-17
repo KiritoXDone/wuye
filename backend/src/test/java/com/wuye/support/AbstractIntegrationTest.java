@@ -42,6 +42,11 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected void resetDynamicData() {
+        jdbcTemplate.update("DELETE FROM dunning_log");
+        jdbcTemplate.update("DELETE FROM dunning_task");
+        jdbcTemplate.update("DELETE FROM invoice_application");
+        jdbcTemplate.update("DELETE FROM payment_voucher");
+        jdbcTemplate.update("DELETE FROM water_usage_alert");
         jdbcTemplate.update("DELETE FROM coupon_redemption");
         jdbcTemplate.update("DELETE FROM pay_transaction");
         jdbcTemplate.update("DELETE FROM pay_order");
@@ -56,6 +61,7 @@ public abstract class AbstractIntegrationTest {
         jdbcTemplate.update("DELETE FROM bill");
         jdbcTemplate.update("DELETE FROM water_meter_reading");
         jdbcTemplate.update("DELETE FROM water_meter");
+        jdbcTemplate.update("DELETE FROM fee_rule_water_tier");
         jdbcTemplate.update("DELETE FROM fee_rule");
         jdbcTemplate.update("UPDATE account_room SET status = 'ACTIVE', bind_source = 'IMPORT', confirmed_at = CURRENT_TIMESTAMP WHERE id IN (40001, 40002)");
     }

@@ -2,6 +2,7 @@ package com.wuye.bill.vo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class FeeRuleVO {
 
@@ -11,9 +12,13 @@ public class FeeRuleVO {
     private String ruleName;
     private BigDecimal unitPrice;
     private String cycleType;
+    private String pricingMode;
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
     private String remark;
+    private BigDecimal abnormalAbsThreshold;
+    private BigDecimal abnormalMultiplierThreshold;
+    private List<FeeRuleWaterTierVO> waterTiers;
 
     public Long getId() {
         return id;
@@ -63,6 +68,14 @@ public class FeeRuleVO {
         this.cycleType = cycleType;
     }
 
+    public String getPricingMode() {
+        return pricingMode;
+    }
+
+    public void setPricingMode(String pricingMode) {
+        this.pricingMode = pricingMode;
+    }
+
     public LocalDate getEffectiveFrom() {
         return effectiveFrom;
     }
@@ -85,5 +98,29 @@ public class FeeRuleVO {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public BigDecimal getAbnormalAbsThreshold() {
+        return abnormalAbsThreshold;
+    }
+
+    public void setAbnormalAbsThreshold(BigDecimal abnormalAbsThreshold) {
+        this.abnormalAbsThreshold = abnormalAbsThreshold;
+    }
+
+    public BigDecimal getAbnormalMultiplierThreshold() {
+        return abnormalMultiplierThreshold;
+    }
+
+    public void setAbnormalMultiplierThreshold(BigDecimal abnormalMultiplierThreshold) {
+        this.abnormalMultiplierThreshold = abnormalMultiplierThreshold;
+    }
+
+    public List<FeeRuleWaterTierVO> getWaterTiers() {
+        return waterTiers;
+    }
+
+    public void setWaterTiers(List<FeeRuleWaterTierVO> waterTiers) {
+        this.waterTiers = waterTiers;
     }
 }

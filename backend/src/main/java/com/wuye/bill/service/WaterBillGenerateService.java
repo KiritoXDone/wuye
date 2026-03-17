@@ -6,6 +6,7 @@ import com.wuye.bill.dto.WaterBillGenerateDTO;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.entity.BillLine;
 import com.wuye.bill.entity.FeeRule;
+import com.wuye.bill.entity.FeeRuleWaterTier;
 import com.wuye.bill.entity.WaterMeterReading;
 import com.wuye.bill.mapper.BillLineMapper;
 import com.wuye.bill.mapper.BillMapper;
@@ -15,6 +16,7 @@ import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
 import com.wuye.common.util.MoneyUtils;
 import com.wuye.common.util.NoGenerator;
+import com.wuye.room.mapper.GroupRoomMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class WaterBillGenerateService {
     private final FeeRuleService feeRuleService;
     private final BillMapper billMapper;
     private final BillLineMapper billLineMapper;
+    private final GroupRoomMapper groupRoomMapper;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
 
@@ -39,12 +43,14 @@ public class WaterBillGenerateService {
                                     FeeRuleService feeRuleService,
                                     BillMapper billMapper,
                                     BillLineMapper billLineMapper,
+                                    GroupRoomMapper groupRoomMapper,
                                     AccessGuard accessGuard,
                                     ObjectMapper objectMapper) {
         this.waterReadingMapper = waterReadingMapper;
         this.feeRuleService = feeRuleService;
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
+        this.groupRoomMapper = groupRoomMapper;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
     }
@@ -67,14 +73,15 @@ public class WaterBillGenerateService {
                 }
                 throw new BusinessException("CONFLICT", "存在重复水费账单: roomId=" + reading.getRoomId(), HttpStatus.CONFLICT);
             }
-            BigDecimal amountDue = MoneyUtils.scaleMoney(reading.getUsageAmount().multiply(feeRule.getUnitPrice()));
+            WaterChargeResult chargeResult = calculateCharge(feeRule, reading.getUsageAmount());
             Bill bill = new Bill();
             bill.setBillNo(NoGenerator.billNo());
             bill.setRoomId(reading.getRoomId());
+            bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(reading.getRoomId()));
             bill.setFeeType("WATER");
             bill.setPeriodYear(dto.getYear());
             bill.setPeriodMonth(dto.getMonth());
-            bill.setAmountDue(amountDue);
+            bill.setAmountDue(chargeResult.amountDue());
             bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
             bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
             bill.setDueDate(targetDate.with(TemporalAdjusters.lastDayOfMonth()));
@@ -88,19 +95,61 @@ public class WaterBillGenerateService {
             line.setLineNo(1);
             line.setLineType("WATER");
             line.setItemName(dto.getYear() + "-" + String.format("%02d", dto.getMonth()) + " 水费");
-            line.setUnitPrice(feeRule.getUnitPrice());
+            line.setUnitPrice(chargeResult.displayUnitPrice());
             line.setQuantity(reading.getUsageAmount());
-            line.setLineAmount(amountDue);
+            line.setLineAmount(chargeResult.amountDue());
             line.setExtJson(writeJson(new LinkedHashMap<>() {{
                 put("prevReading", reading.getPrevReading());
                 put("currReading", reading.getCurrReading());
                 put("usage", reading.getUsageAmount());
                 put("meterId", reading.getMeterId());
+                put("pricingMode", feeRule.getPricingMode());
+                put("tierBreakdown", chargeResult.tierBreakdown());
             }}));
             billLineMapper.insert(line);
             generated++;
         }
         return generated;
+    }
+
+    private WaterChargeResult calculateCharge(FeeRule feeRule, BigDecimal usageAmount) {
+        if (!"TIERED".equalsIgnoreCase(feeRule.getPricingMode())
+                || feeRule.getWaterTiers() == null
+                || feeRule.getWaterTiers().isEmpty()) {
+            BigDecimal amountDue = MoneyUtils.scaleMoney(usageAmount.multiply(feeRule.getUnitPrice()));
+            return new WaterChargeResult(amountDue, feeRule.getUnitPrice(), List.of());
+        }
+        BigDecimal remaining = usageAmount;
+        BigDecimal total = BigDecimal.ZERO;
+        List<LinkedHashMap<String, Object>> breakdown = new ArrayList<>();
+        for (FeeRuleWaterTier tier : feeRule.getWaterTiers()) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+            BigDecimal start = tier.getStartUsage();
+            BigDecimal end = tier.getEndUsage();
+            BigDecimal capacity = end == null ? remaining : end.subtract(start);
+            if (capacity.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            BigDecimal tierUsage = remaining.min(capacity);
+            BigDecimal tierAmount = MoneyUtils.scaleMoney(tierUsage.multiply(tier.getUnitPrice()));
+            total = total.add(tierAmount);
+            LinkedHashMap<String, Object> tierItem = new LinkedHashMap<>();
+            tierItem.put("startUsage", start);
+            tierItem.put("endUsage", end);
+            tierItem.put("unitPrice", tier.getUnitPrice());
+            tierItem.put("usage", tierUsage);
+            tierItem.put("amount", tierAmount);
+            breakdown.add(tierItem);
+            remaining = remaining.subtract(tierUsage);
+        }
+        return new WaterChargeResult(MoneyUtils.scaleMoney(total), feeRule.getUnitPrice(), breakdown);
+    }
+
+    private record WaterChargeResult(BigDecimal amountDue,
+                                     BigDecimal displayUnitPrice,
+                                     List<LinkedHashMap<String, Object>> tierBreakdown) {
     }
 
     private String writeJson(Object value) {

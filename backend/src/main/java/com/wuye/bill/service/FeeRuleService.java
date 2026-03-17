@@ -1,11 +1,16 @@
 package com.wuye.bill.service;
 
 import com.wuye.bill.dto.FeeRuleCreateDTO;
+import com.wuye.bill.dto.FeeRuleWaterTierDTO;
 import com.wuye.bill.entity.FeeRule;
+import com.wuye.bill.entity.FeeRuleWaterTier;
 import com.wuye.bill.mapper.FeeRuleMapper;
+import com.wuye.bill.mapper.FeeRuleWaterTierMapper;
 import com.wuye.bill.vo.FeeRuleVO;
+import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +21,14 @@ import java.util.List;
 public class FeeRuleService {
 
     private final FeeRuleMapper feeRuleMapper;
+    private final FeeRuleWaterTierMapper feeRuleWaterTierMapper;
     private final AccessGuard accessGuard;
 
-    public FeeRuleService(FeeRuleMapper feeRuleMapper, AccessGuard accessGuard) {
+    public FeeRuleService(FeeRuleMapper feeRuleMapper,
+                          FeeRuleWaterTierMapper feeRuleWaterTierMapper,
+                          AccessGuard accessGuard) {
         this.feeRuleMapper = feeRuleMapper;
+        this.feeRuleWaterTierMapper = feeRuleWaterTierMapper;
         this.accessGuard = accessGuard;
     }
 
@@ -32,11 +41,15 @@ public class FeeRuleService {
         feeRule.setRuleName(dto.getEffectiveFrom() + dto.getFeeType() + "规则");
         feeRule.setUnitPrice(dto.getUnitPrice());
         feeRule.setCycleType(dto.getCycleType());
+        feeRule.setPricingMode(resolvePricingMode(dto));
         feeRule.setEffectiveFrom(dto.getEffectiveFrom());
         feeRule.setEffectiveTo(dto.getEffectiveTo());
         feeRule.setStatus(1);
         feeRule.setRemark(dto.getRemark());
+        feeRule.setAbnormalAbsThreshold(dto.getAbnormalAbsThreshold());
+        feeRule.setAbnormalMultiplierThreshold(dto.getAbnormalMultiplierThreshold());
         feeRuleMapper.insert(feeRule);
+        insertWaterTiers(feeRule.getId(), dto.getWaterTiers());
         return list(loginUser, dto.getCommunityId()).stream()
                 .filter(item -> item.getId().equals(feeRule.getId()))
                 .findFirst()
@@ -48,19 +61,55 @@ public class FeeRuleService {
                     vo.setRuleName(feeRule.getRuleName());
                     vo.setUnitPrice(feeRule.getUnitPrice());
                     vo.setCycleType(feeRule.getCycleType());
+                    vo.setPricingMode(feeRule.getPricingMode());
                     vo.setEffectiveFrom(feeRule.getEffectiveFrom());
                     vo.setEffectiveTo(feeRule.getEffectiveTo());
                     vo.setRemark(feeRule.getRemark());
+                    vo.setAbnormalAbsThreshold(feeRule.getAbnormalAbsThreshold());
+                    vo.setAbnormalMultiplierThreshold(feeRule.getAbnormalMultiplierThreshold());
+                    vo.setWaterTiers(List.of());
                     return vo;
                 });
     }
 
     public List<FeeRuleVO> list(LoginUser loginUser, Long communityId) {
         accessGuard.requireRole(loginUser, "ADMIN");
-        return feeRuleMapper.listByCommunity(communityId);
+        List<FeeRuleVO> rules = feeRuleMapper.listByCommunity(communityId);
+        rules.forEach(rule -> rule.setWaterTiers(feeRuleWaterTierMapper.listVOByFeeRuleId(rule.getId())));
+        return rules;
     }
 
     public FeeRule requireActiveRule(Long communityId, String feeType, LocalDate targetDate) {
-        return feeRuleMapper.findActiveRule(communityId, feeType, targetDate);
+        FeeRule feeRule = feeRuleMapper.findActiveRule(communityId, feeType, targetDate);
+        if (feeRule != null) {
+            feeRule.setWaterTiers(feeRuleWaterTierMapper.listByFeeRuleId(feeRule.getId()));
+        }
+        return feeRule;
+    }
+
+    private String resolvePricingMode(FeeRuleCreateDTO dto) {
+        if (dto.getPricingMode() != null && !dto.getPricingMode().isBlank()) {
+            return dto.getPricingMode().trim().toUpperCase();
+        }
+        return dto.getWaterTiers() == null || dto.getWaterTiers().isEmpty() ? "FLAT" : "TIERED";
+    }
+
+    private void insertWaterTiers(Long feeRuleId, List<FeeRuleWaterTierDTO> waterTiers) {
+        if (waterTiers == null || waterTiers.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < waterTiers.size(); i++) {
+            FeeRuleWaterTierDTO tierDTO = waterTiers.get(i);
+            if (tierDTO.getStartUsage() == null || tierDTO.getUnitPrice() == null) {
+                throw new BusinessException("INVALID_ARGUMENT", "分段水价配置不完整", HttpStatus.BAD_REQUEST);
+            }
+            FeeRuleWaterTier tier = new FeeRuleWaterTier();
+            tier.setFeeRuleId(feeRuleId);
+            tier.setTierOrder(i + 1);
+            tier.setStartUsage(tierDTO.getStartUsage());
+            tier.setEndUsage(tierDTO.getEndUsage());
+            tier.setUnitPrice(tierDTO.getUnitPrice());
+            feeRuleWaterTierMapper.insert(tier);
+        }
     }
 }

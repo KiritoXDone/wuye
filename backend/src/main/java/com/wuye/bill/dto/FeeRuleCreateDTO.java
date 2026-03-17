@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class FeeRuleCreateDTO {
 
@@ -18,10 +19,14 @@ public class FeeRuleCreateDTO {
     private BigDecimal unitPrice;
     @NotBlank(message = "cycleType 不能为空")
     private String cycleType;
+    private String pricingMode;
     @NotNull(message = "effectiveFrom 不能为空")
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
     private String remark;
+    private BigDecimal abnormalAbsThreshold;
+    private BigDecimal abnormalMultiplierThreshold;
+    private List<FeeRuleWaterTierDTO> waterTiers;
 
     public Long getCommunityId() {
         return communityId;
@@ -55,6 +60,14 @@ public class FeeRuleCreateDTO {
         this.cycleType = cycleType;
     }
 
+    public String getPricingMode() {
+        return pricingMode;
+    }
+
+    public void setPricingMode(String pricingMode) {
+        this.pricingMode = pricingMode;
+    }
+
     public LocalDate getEffectiveFrom() {
         return effectiveFrom;
     }
@@ -77,5 +90,29 @@ public class FeeRuleCreateDTO {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public BigDecimal getAbnormalAbsThreshold() {
+        return abnormalAbsThreshold;
+    }
+
+    public void setAbnormalAbsThreshold(BigDecimal abnormalAbsThreshold) {
+        this.abnormalAbsThreshold = abnormalAbsThreshold;
+    }
+
+    public BigDecimal getAbnormalMultiplierThreshold() {
+        return abnormalMultiplierThreshold;
+    }
+
+    public void setAbnormalMultiplierThreshold(BigDecimal abnormalMultiplierThreshold) {
+        this.abnormalMultiplierThreshold = abnormalMultiplierThreshold;
+    }
+
+    public List<FeeRuleWaterTierDTO> getWaterTiers() {
+        return waterTiers;
+    }
+
+    public void setWaterTiers(List<FeeRuleWaterTierDTO> waterTiers) {
+        this.waterTiers = waterTiers;
     }
 }
