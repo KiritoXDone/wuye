@@ -5,11 +5,13 @@ export interface WechatPayParams {
   package: string
   signType: string
   paySign: string
+  tradeNo?: string
+  orderString?: string
 }
 
 export interface PaymentCreatePayload {
   billId: number
-  channel: 'WECHAT'
+  channel: 'WECHAT' | 'ALIPAY'
   couponInstanceId?: number
   idempotencyKey: string
 }

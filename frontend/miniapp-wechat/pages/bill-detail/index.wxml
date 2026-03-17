@@ -71,6 +71,10 @@
 
     <view class="panel card-stack">
       <view class="section-title">支付确认</view>
+      <view class="chip-row channel-row">
+        <view class="pill {{selectedChannel === 'WECHAT' ? 'pill-active' : ''}}" data-channel="WECHAT" bindtap="handleChannelSelect">微信支付</view>
+        <view class="pill {{selectedChannel === 'ALIPAY' ? 'pill-active' : ''}}" data-channel="ALIPAY" bindtap="handleChannelSelect">支付宝支付</view>
+      </view>
       <view class="info-list">
         <view class="info-row">
           <view class="info-key">当前房间</view>
@@ -91,6 +95,10 @@
         <view class="info-row">
           <view class="info-key">实付金额</view>
           <view class="info-value">¥ {{payAmountText}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">支付渠道</view>
+          <view class="info-value">{{selectedChannel === 'ALIPAY' ? '支付宝' : '微信'}}</view>
         </view>
       </view>
     </view>

@@ -13,8 +13,8 @@ export function canInvokeWechatPayment(payParams?: WechatPayParams): boolean {
 }
 
 export function invokeWechatPayment(payment: PaymentCreateResponse): Promise<void> {
-  if (!canInvokeWechatPayment(payment.payParams)) {
-    return Promise.resolve()
+    if (!canInvokeWechatPayment(payment.payParams)) {
+        return Promise.resolve()
   }
 
   return new Promise((resolve, reject) => {
@@ -28,4 +28,11 @@ export function invokeWechatPayment(payment: PaymentCreateResponse): Promise<voi
       fail: (error) => reject(error)
     })
   })
+}
+
+export function invokePaymentByChannel(payment: PaymentCreateResponse): Promise<void> {
+  if (payment.channel === 'ALIPAY') {
+    return Promise.resolve()
+  }
+  return invokeWechatPayment(payment)
 }

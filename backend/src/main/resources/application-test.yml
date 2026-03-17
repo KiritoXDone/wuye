@@ -21,3 +21,10 @@ app:
     issuer: wuye-backend-test
     secret: test-secret-test-secret-test-secret
     expire-hours: 12
+  payment:
+    wechat:
+      merchant-id: wx-test-mock-merchant
+      callback-secret: wechat-test-callback-secret
+    alipay:
+      merchant-id: alipay-test-mock-merchant
+      callback-secret: alipay-test-callback-secret

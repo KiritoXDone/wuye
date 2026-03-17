@@ -2,9 +2,10 @@ import { getBillDetail } from '../../services/bill'
 import { validateCoupon } from '../../services/coupon'
 import { createPayment } from '../../services/payment'
 import type { BillDetail, BillLine } from '../../types/bill'
+import type { PaymentCreatePayload } from '../../types/payment'
 import { hasAuthSession } from '../../utils/auth'
 import { formatBillStatus, formatDate, formatFeeType, formatMoney, formatPeriod } from '../../utils/format'
-import { buildPaymentIdempotencyKey, invokeWechatPayment } from '../../utils/payment'
+import { buildPaymentIdempotencyKey, invokePaymentByChannel } from '../../utils/payment'
 
 type BillLineView = BillLine & {
   unitPriceText: string
@@ -102,6 +103,7 @@ Page({
     latestPayOrderNo: '',
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
+    selectedChannel: 'WECHAT' as PaymentCreatePayload['channel'],
     couponHint: '',
     couponValidating: false,
     discountAmountText: formatMoney(0),
@@ -216,6 +218,11 @@ Page({
     }
   },
 
+  handleChannelSelect(event: WechatMiniprogram.TouchEvent) {
+    const channel = String(event.currentTarget.dataset.channel || 'WECHAT') as PaymentCreatePayload['channel']
+    this.setData({ selectedChannel: channel })
+  },
+
   async handlePay() {
     if (!this.data.billDetail || this.data.paying) {
       return
@@ -226,7 +233,7 @@ Page({
     try {
       const payment = await createPayment({
         billId: this.data.billDetail.billId,
-        channel: 'WECHAT',
+        channel: this.data.selectedChannel,
         couponInstanceId: this.data.selectedCouponInstanceId || undefined,
         idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId)
       })
@@ -234,7 +241,7 @@ Page({
       this.setData({ latestPayOrderNo: payment.payOrderNo })
 
       try {
-        await invokeWechatPayment(payment)
+        await invokePaymentByChannel(payment)
       } catch (paymentError) {
         wx.showToast({
           title: paymentError && typeof paymentError === 'object' && 'errMsg' in paymentError

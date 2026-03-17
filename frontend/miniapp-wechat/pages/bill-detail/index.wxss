@@ -24,3 +24,7 @@
 .action-summary-row {
   align-items: flex-end;
 }
+
+.channel-row {
+  margin-bottom: 16rpx;
+}

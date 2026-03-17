@@ -12,12 +12,14 @@ import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.entity.PayTransaction;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PayTransactionMapper;
+import com.wuye.payment.util.PaymentSignUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -28,31 +30,46 @@ public class PaymentCallbackService {
     private final BillMapper billMapper;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
+    private final String wechatMerchantId;
+    private final String wechatCallbackSecret;
+    private final String alipayMerchantId;
+    private final String alipayCallbackSecret;
 
     public PaymentCallbackService(PayOrderMapper payOrderMapper,
                                   PayTransactionMapper payTransactionMapper,
                                   BillMapper billMapper,
                                   ObjectMapper objectMapper,
-                                  CouponService couponService) {
+                                  CouponService couponService,
+                                  @Value("${app.payment.wechat.merchant-id}") String wechatMerchantId,
+                                  @Value("${app.payment.wechat.callback-secret}") String wechatCallbackSecret,
+                                  @Value("${app.payment.alipay.merchant-id}") String alipayMerchantId,
+                                  @Value("${app.payment.alipay.callback-secret}") String alipayCallbackSecret) {
         this.payOrderMapper = payOrderMapper;
         this.payTransactionMapper = payTransactionMapper;
         this.billMapper = billMapper;
         this.objectMapper = objectMapper;
         this.couponService = couponService;
+        this.wechatMerchantId = wechatMerchantId;
+        this.wechatCallbackSecret = wechatCallbackSecret;
+        this.alipayMerchantId = alipayMerchantId;
+        this.alipayCallbackSecret = alipayCallbackSecret;
     }
 
     @Transactional
     public Map<String, Object> handleWechatCallback(WechatCallbackDTO dto) {
-        return handleSuccessCallback(dto.getPayOrderNo(), dto.getOutTradeNo(), dto, "WECHAT");
+        return handleSuccessCallback(dto.getPayOrderNo(), dto.getOutTradeNo(), dto.getMerchantId(), dto.getTotalAmount(), dto.getSign(), dto, "WECHAT");
     }
 
     @Transactional
     public Map<String, Object> handleAlipayCallback(AlipayCallbackDTO dto) {
-        return handleSuccessCallback(dto.getPayOrderNo(), dto.getOutTradeNo(), dto, "ALIPAY");
+        return handleSuccessCallback(dto.getPayOrderNo(), dto.getOutTradeNo(), dto.getMerchantId(), dto.getTotalAmount(), dto.getSign(), dto, "ALIPAY");
     }
 
     private Map<String, Object> handleSuccessCallback(String payOrderNo,
                                                       String outTradeNo,
+                                                      String merchantId,
+                                                      BigDecimal totalAmount,
+                                                      String sign,
                                                       Object request,
                                                       String channel) {
         PayOrder payOrder = payOrderMapper.findByPayOrderNo(payOrderNo);
@@ -62,6 +79,7 @@ public class PaymentCallbackService {
         if (!channel.equalsIgnoreCase(payOrder.getChannel())) {
             throw new BusinessException("CONFLICT", "支付渠道与回调渠道不一致", HttpStatus.CONFLICT);
         }
+        validateCallbackSecurity(payOrder, outTradeNo, merchantId, totalAmount, sign, channel);
         if ("SUCCESS".equals(payOrder.getStatus())) {
             if (outTradeNo != null
                     && payOrder.getChannelTradeNo() != null
@@ -89,6 +107,32 @@ public class PaymentCallbackService {
         insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,
                 Map.of("paidAt", paidAt, "status", "SUCCESS", "rewardIssuedCount", rewardIssuedCount), "SUCCESS", null, null);
         return Map.of("accepted", true, "alreadyProcessed", false, "rewardIssuedCount", rewardIssuedCount);
+    }
+
+    private void validateCallbackSecurity(PayOrder payOrder,
+                                          String outTradeNo,
+                                          String merchantId,
+                                          BigDecimal totalAmount,
+                                          String sign,
+                                          String channel) {
+        String expectedMerchantId = "WECHAT".equals(channel) ? wechatMerchantId : alipayMerchantId;
+        String expectedSecret = "WECHAT".equals(channel) ? wechatCallbackSecret : alipayCallbackSecret;
+        if (merchantId == null || merchantId.isBlank()) {
+            throw new BusinessException("INVALID_ARGUMENT", "merchantId 不能为空", HttpStatus.BAD_REQUEST);
+        }
+        if (!expectedMerchantId.equals(merchantId)) {
+            throw new BusinessException("CONFLICT", "merchantId 校验失败", HttpStatus.CONFLICT);
+        }
+        if (totalAmount == null) {
+            throw new BusinessException("INVALID_ARGUMENT", "totalAmount 不能为空", HttpStatus.BAD_REQUEST);
+        }
+        if (payOrder.getPayAmount().compareTo(totalAmount) != 0) {
+            throw new BusinessException("CONFLICT", "totalAmount 校验失败", HttpStatus.CONFLICT);
+        }
+        String expectedSign = PaymentSignUtils.sign(payOrder.getPayOrderNo(), outTradeNo, merchantId, totalAmount, expectedSecret);
+        if (!expectedSign.equals(sign)) {
+            throw new BusinessException("CONFLICT", "sign 校验失败", HttpStatus.CONFLICT);
+        }
     }
 
     private void insertTransaction(String payOrderNo,

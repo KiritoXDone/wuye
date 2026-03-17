@@ -1,13 +1,20 @@
 package com.wuye;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.wuye.payment.util.PaymentSignUtils;
 import com.wuye.support.AbstractIntegrationTest;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -208,9 +215,14 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
         String callbackBody = """
                 {
                   "payOrderNo": "%s",
-                  "outTradeNo": "WX-202603160001"
+                  "outTradeNo": "WX-202603160001",
+                  "merchantId": "wx-test-mock-merchant",
+                  "totalAmount": %s,
+                  "sign": "%s"
                 }
-                """.formatted(payOrderNo);
+                """.formatted(payOrderNo,
+                selectedBillAmount.toPlainString(),
+                PaymentSignUtils.sign(payOrderNo, "WX-202603160001", "wx-test-mock-merchant", selectedBillAmount, "wechat-test-callback-secret"));
 
         mockMvc.perform(post("/api/v1/callbacks/wechatpay")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -371,9 +383,13 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "payOrderNo": "%s",
-                                  "outTradeNo": "WX-ORDER-1"
+                                  "outTradeNo": "WX-ORDER-1",
+                                  "merchantId": "wx-test-mock-merchant",
+                                  "totalAmount": 246.25,
+                                  "sign": "%s"
                                 }
-                                """.formatted(payOrderNo)))
+                                """.formatted(payOrderNo,
+                                PaymentSignUtils.sign(payOrderNo, "WX-ORDER-1", "wx-test-mock-merchant", new BigDecimal("246.25"), "wechat-test-callback-secret"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.alreadyProcessed").value(false));
 
@@ -382,9 +398,13 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "payOrderNo": "%s",
-                                  "outTradeNo": "WX-ORDER-2"
+                                  "outTradeNo": "WX-ORDER-2",
+                                  "merchantId": "wx-test-mock-merchant",
+                                  "totalAmount": 246.25,
+                                  "sign": "%s"
                                 }
-                                """.formatted(payOrderNo)))
+                                """.formatted(payOrderNo,
+                                PaymentSignUtils.sign(payOrderNo, "WX-ORDER-2", "wx-test-mock-merchant", new BigDecimal("246.25"), "wechat-test-callback-secret"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFLICT"));
     }
@@ -456,9 +476,13 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "payOrderNo": "%s",
-                                  "outTradeNo": "ALI-202603170001"
+                                  "outTradeNo": "ALI-202603170001",
+                                  "merchantId": "alipay-test-mock-merchant",
+                                  "totalAmount": 236.25,
+                                  "sign": "%s"
                                 }
-                                """.formatted(payOrderNo)))
+                                """.formatted(payOrderNo,
+                                PaymentSignUtils.sign(payOrderNo, "ALI-202603170001", "alipay-test-mock-merchant", new BigDecimal("236.25"), "alipay-test-callback-secret"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accepted").value(true))
                 .andExpect(jsonPath("$.data.rewardIssuedCount").value(1));
@@ -483,23 +507,29 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.groupId").value(5001))
                 .andExpect(jsonPath("$.data.totalCount").value(2));
 
-        mockMvc.perform(post("/api/v1/admin/imports/bills")
+        Path importFile = createImportXlsx();
+
+        MvcResult importResult = mockMvc.perform(post("/api/v1/admin/imports/bills")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "fileUrl": "https://example.com/imports/bills-2026-06.xlsx"
+                                  "fileUrl": "%s"
                                 }
-                                """))
+                                """.formatted(importFile.toUri())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.failCount").value(1));
+                .andExpect(jsonPath("$.data.failCount").value(1))
+                .andExpect(jsonPath("$.data.successCount").value(1))
+                .andReturn();
 
-        mockMvc.perform(get("/api/v1/admin/imports/1/errors")
+        long importBatchId = read(importResult).path("data").path("id").asLong();
+
+        mockMvc.perform(get("/api/v1/admin/imports/" + importBatchId + "/errors")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].errorCode").value("VALIDATION_FAILED"));
 
-        mockMvc.perform(post("/api/v1/admin/exports/bills")
+        MvcResult exportResult = mockMvc.perform(post("/api/v1/admin/exports/bills")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -511,7 +541,38 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.fileUrl").isNotEmpty())
+                .andReturn();
+
+        String exportFileUrl = read(exportResult).path("data").path("fileUrl").asText();
+        assertThat(Files.exists(Path.of(exportFileUrl))).isTrue();
+    }
+
+    private Path createImportXlsx() throws Exception {
+        Path file = Files.createTempFile("bill-import-", ".xlsx");
+        try (Workbook workbook = new XSSFWorkbook(); OutputStream out = Files.newOutputStream(file)) {
+            var sheet = workbook.createSheet("账单导入");
+            var headers = List.of("bill_no", "fee_type", "period_year", "period_month", "community_code", "building_no", "unit_no", "room_no", "group_code", "amount_due", "due_date", "remark");
+            var headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.size(); i++) {
+                headerRow.createCell(i).setCellValue(headers.get(i));
+            }
+
+            var successRow = sheet.createRow(1);
+            var successValues = List.of("B-IMPORT-001", "PROPERTY", "2026", "7", "COMM-001", "1", "2", "302", "G-COMM001-1-2", "188.88", "2026-07-31", "导入成功");
+            for (int i = 0; i < successValues.size(); i++) {
+                successRow.createCell(i).setCellValue(successValues.get(i));
+            }
+
+            var failRow = sheet.createRow(2);
+            var failValues = List.of("B-IMPORT-002", "PROPERTY", "2026", "7", "COMM-001", "1", "2", "302", "INVALID", "188.88", "2026-07-31", "导入失败");
+            for (int i = 0; i < failValues.size(); i++) {
+                failRow.createCell(i).setCellValue(failValues.get(i));
+            }
+            workbook.write(out);
+        }
+        return file;
     }
 
     private void createFeeRule(String feeType, String unitPrice) throws Exception {

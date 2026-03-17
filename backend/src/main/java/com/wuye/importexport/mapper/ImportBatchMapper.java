@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface ImportBatchMapper {
@@ -22,4 +23,15 @@ public interface ImportBatchMapper {
             WHERE id = #{id}
             """)
     ImportBatch findById(@Param("id") Long id);
+
+    @Update("""
+            UPDATE import_batch
+            SET status = #{status},
+                total_count = #{totalCount},
+                success_count = #{successCount},
+                fail_count = #{failCount},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateResult(ImportBatch importBatch);
 }
