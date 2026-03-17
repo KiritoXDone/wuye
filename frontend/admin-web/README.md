@@ -16,6 +16,7 @@
 - `POST /api/v1/admin/water-meters`
 - `POST /api/v1/admin/bills/generate/property`
 - `POST /api/v1/admin/bills/generate/water`
+- `GET /api/v1/admin/audit-logs`
 
 ## 页面范围
 
@@ -25,6 +26,7 @@
 - 费用规则列表 + 新增表单
 - 水表配置 + 抄表记录 / 新增抄表
 - 物业费 / 水费开单页
+- 审计日志列表 + 明细抽屉
 
 ## 本地运行
 

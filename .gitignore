@@ -11,7 +11,10 @@
 /backend/.settings/
 /frontend/admin-web/dist/
 /frontend/admin-web/node_modules/
+/frontend/admin-web/vite-dev.err
 /frontend/miniapp-wechat/node_modules/
+/backend/exports/
+/ops/mysql-local/*.ini
 /ops/mysql-local/data/
 /ops/mysql-local/tmp/
 /ops/mysql-local/*.err
