@@ -1,0 +1,63 @@
+<view class="page-shell safe-bottom">
+  <view class="page-hero">
+    <view class="page-eyebrow">Room First</view>
+    <view class="page-title">我的房间</view>
+    <view class="page-subtitle">账单始终围绕房间查看与支付。先选房间，再进入对应账单列表，是当前 Resident MVP 的主入口。</view>
+  </view>
+
+  <view class="panel meta-grid">
+    <view class="meta-item">
+      <view class="meta-label">已绑定房间</view>
+      <view class="meta-value">{{rooms.length}}</view>
+    </view>
+    <view class="meta-item">
+      <view class="meta-label">有效绑定</view>
+      <view class="meta-value">{{activeRoomCount}}</view>
+    </view>
+  </view>
+
+  <view class="panel button-row">
+    <button class="button-secondary" bindtap="openResidentBills">查看全部住户账单</button>
+    <button class="button-ghost" bindtap="handleLogout">切换登录账号</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="panel state-card">
+    <view class="state-title">正在加载房间</view>
+    <view class="state-desc">正在读取 <text>/api/v1/me/rooms</text>，请稍候。</view>
+  </view>
+
+  <view wx:elif="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">加载失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+    <button class="button-inline" bindtap="fetchRooms">重新加载</button>
+  </view>
+
+  <view wx:elif="{{!rooms.length}}" class="panel state-card">
+    <view class="state-title">还没有可查看的房间</view>
+    <view class="state-desc">当前账号没有 ACTIVE 房间绑定时，将无法进入按房间缴费链路。</view>
+  </view>
+
+  <view wx:else class="list-stack">
+    <view wx:for="{{rooms}}" wx:key="roomId" class="panel card-stack">
+      <view class="info-row">
+        <view class="room-card-title">{{item.roomLabel}}</view>
+        <view class="status-chip status-chip--{{item.bindingStatus}}">{{item.bindingStatusLabel}}</view>
+      </view>
+
+      <view class="meta-grid">
+        <view class="meta-item">
+          <view class="meta-label">房屋面积</view>
+          <view class="meta-value">{{item.areaText}} ㎡</view>
+        </view>
+        <view class="meta-item">
+          <view class="meta-label">绑定关系</view>
+          <view class="meta-value">{{item.relationTypeLabel}}</view>
+        </view>
+      </view>
+
+      <view class="text-muted">进入后将优先调用 <text>/api/v1/me/rooms/{{item.roomId}}/bills</text>，保证账单仍然以房间为主体展示。</view>
+
+      <button class="button-primary" data-room-id="{{item.roomId}}" data-room-label="{{item.roomLabel}}" bindtap="openRoomBills">查看本房间账单</button>
+    </view>
+  </view>
+</view>

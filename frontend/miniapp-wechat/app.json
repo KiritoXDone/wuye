@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/rooms/index",
+    "pages/bills/index",
+    "pages/bill-detail/index",
+    "pages/payment-result/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#eff5fb",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "物业缴费",
+    "backgroundColor": "#eff5fb",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

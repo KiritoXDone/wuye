@@ -1,0 +1,39 @@
+<view class="page-shell">
+  <view class="page-hero">
+    <view class="page-eyebrow">Resident MVP</view>
+    <view class="page-title">物业缴费小程序</view>
+    <view class="page-subtitle">当前后端为开发桩。请优先使用演示登录 code，先跑通住户的房间与账单缴费链路。</view>
+  </view>
+
+  <view class="panel card-stack">
+    <view>
+      <view class="section-title">微信登录</view>
+      <view class="section-subtitle">登录接口仅使用 <text>/api/v1/auth/login/wechat</text>，当前本地可用 code 见下方快捷项。</view>
+    </view>
+
+    <input class="input" value="{{code}}" placeholder="请输入 resident-zhangsan" bindinput="handleCodeInput" />
+
+    <view class="chip-row">
+      <view wx:for="{{quickCodes}}" wx:key="*this" class="pill {{code === item ? 'pill-active' : ''}}" data-code="{{item}}" bindtap="handleQuickFill">
+        {{item}}
+      </view>
+    </view>
+
+    <view class="button-row">
+      <button class="button-secondary" bindtap="fillWechatCode" loading="{{wxCodeLoading}}" disabled="{{submitting || wxCodeLoading}}">尝试获取真实微信 code</button>
+      <button class="button-primary" bindtap="handleLogin" loading="{{submitting}}" disabled="{{submitting || !code}}">登录并进入我的房间</button>
+    </view>
+
+    <view wx:if="{{errorMessage}}" class="state-card">
+      <view class="state-title text-danger">登录失败</view>
+      <view class="state-desc">{{errorMessage}}</view>
+    </view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="section-title">联调说明</view>
+    <view class="text-muted">1. 小程序默认请求 <text>{{baseUrl}}</text>。</view>
+    <view class="text-muted">2. 若在开发者工具调试，请关闭“请求合法域名”校验或改为你自己的本地地址。</view>
+    <view class="text-muted">3. 房间是账单主体，登录后会先进入“我的房间”，再按房间查看账单。</view>
+  </view>
+</view>

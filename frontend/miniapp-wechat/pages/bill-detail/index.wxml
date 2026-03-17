@@ -1,0 +1,73 @@
+<view class="page-shell safe-bottom">
+  <view wx:if="{{loading}}" class="panel state-card">
+    <view class="state-title">正在加载账单详情</view>
+    <view class="state-desc">正在调用 <text>/api/v1/bills/{{billId}}</text>。</view>
+  </view>
+
+  <view wx:elif="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">账单详情加载失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+    <button class="button-inline" bindtap="fetchBillDetail">重新加载</button>
+  </view>
+
+  <block wx:elif="{{billDetail}}">
+    <view class="panel card-stack">
+      <view class="info-row">
+        <view>
+          <view class="section-title">{{billDetail.feeTypeLabel}}</view>
+          <view class="section-subtitle">房间 {{billDetail.roomLabel}} · 账期 {{billDetail.periodText}}</view>
+        </view>
+        <view class="status-chip status-chip--{{billDetail.status}}">{{billDetail.statusLabel}}</view>
+      </view>
+
+      <view class="amount-primary">¥ {{billDetail.amountDueText}}</view>
+
+      <view class="meta-grid">
+        <view class="meta-item">
+          <view class="meta-label">账单编号</view>
+          <view class="meta-value">{{billDetail.billNo}}</view>
+        </view>
+        <view class="meta-item">
+          <view class="meta-label">到期日</view>
+          <view class="meta-value">{{billDetail.dueDateText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="panel card-stack">
+      <view class="section-title">账单明细</view>
+      <view wx:for="{{billDetail.billLines}}" wx:key="lineNo" class="card-stack">
+        <view class="info-row">
+          <view class="bill-card-title">{{item.itemName}}</view>
+          <view class="amount-secondary">¥ {{item.lineAmountText}}</view>
+        </view>
+        <view class="text-muted">单价 {{item.unitPriceText}} × 数量 {{item.quantityText}}</view>
+        <view wx:if="{{item.extSummary}}" class="text-muted">{{item.extSummary}}</view>
+        <view wx:if="{{item.showDivider}}" class="divider"></view>
+      </view>
+    </view>
+
+    <view class="panel card-stack">
+      <view class="section-title">可用券</view>
+      <view wx:if="{{billDetail.availableCoupons.length}}" class="tag-grid">
+        <view wx:for="{{billDetail.availableCoupons}}" wx:key="couponInstanceId" class="coupon-chip">
+          {{item.templateCode}} - ¥{{item.discountAmountText}} · 截止 {{item.expiresAtText}}
+        </view>
+      </view>
+      <view wx:else class="text-muted">当前最小 MVP 不做券选择页，这里仅展示接口返回的可用券摘要。</view>
+    </view>
+
+    <view class="fixed-action-bar button-row">
+      <view class="info-row">
+        <view>
+          <view class="info-key">当前应付</view>
+          <view class="amount-secondary">¥ {{billDetail.amountDueText}}</view>
+        </view>
+        <view wx:if="{{billDetail.status === 'PAID'}}" class="status-chip status-chip--PAID">已支付</view>
+      </view>
+
+      <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying}}">创建支付单并查看结果</button>
+      <button wx:else class="button-secondary" bindtap="openPaymentResultFromPaid">查看支付结果</button>
+    </view>
+  </block>
+</view>

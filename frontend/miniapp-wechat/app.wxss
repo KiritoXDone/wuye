@@ -1,0 +1,2 @@
+@import "./styles/tokens.wxss";
+@import "./styles/common.wxss";

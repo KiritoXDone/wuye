@@ -1,0 +1,62 @@
+<view class="page-shell safe-bottom">
+  <view class="page-hero">
+    <view class="page-eyebrow">Bill List</view>
+    <view class="page-title">{{pageTitle}}</view>
+    <view class="page-subtitle">{{pageSubtitle}}</view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="section-title">账单状态</view>
+    <view class="chip-row">
+      <view wx:for="{{statusOptions}}" wx:key="value" class="pill {{statusFilter === item.value ? 'pill-active' : ''}}" data-status="{{item.value}}" bindtap="handleStatusChange">
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="panel state-card">
+    <view class="state-title">正在加载账单</view>
+    <view class="state-desc">{{loadingHint}}</view>
+  </view>
+
+  <view wx:elif="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">账单加载失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+    <button class="button-inline" bindtap="fetchBills">重新加载</button>
+  </view>
+
+  <view wx:elif="{{!displayBills.length}}" class="panel state-card">
+    <view class="state-title">当前没有匹配账单</view>
+    <view class="state-desc">{{emptyHint}}</view>
+  </view>
+
+  <view wx:else class="list-stack">
+    <view wx:for="{{displayBills}}" wx:key="billId" class="panel card-stack">
+      <view class="info-row">
+        <view class="bill-card-title">{{item.feeTypeLabel}}</view>
+        <view class="status-chip status-chip--{{item.status}}">{{item.statusLabel}}</view>
+      </view>
+
+      <view class="meta-grid">
+        <view class="meta-item">
+          <view class="meta-label">房间</view>
+          <view class="meta-value">{{item.roomLabel}}</view>
+        </view>
+        <view class="meta-item">
+          <view class="meta-label">账期</view>
+          <view class="meta-value">{{item.period}}</view>
+        </view>
+        <view class="meta-item">
+          <view class="meta-label">应缴金额</view>
+          <view class="meta-value">¥ {{item.amountDueText}}</view>
+        </view>
+        <view class="meta-item">
+          <view class="meta-label">到期日</view>
+          <view class="meta-value">{{item.dueDateText}}</view>
+        </view>
+      </view>
+
+      <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">查看账单详情</button>
+    </view>
+  </view>
+</view>

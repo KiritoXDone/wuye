@@ -1,0 +1,54 @@
+<view class="page-shell safe-bottom">
+  <view class="page-hero">
+    <view class="page-eyebrow">Payment Polling</view>
+    <view class="page-title">支付结果</view>
+    <view class="page-subtitle">进入页面会立即查询一次支付状态；若仍为支付中，则继续轮询 {{pollLimit}} 次以内。</view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="info-row">
+      <view>
+        <view class="section-title">{{statusTitle}}</view>
+        <view class="section-subtitle">{{statusDescription}}</view>
+      </view>
+      <view class="status-chip status-chip--{{paymentStatus}}">{{paymentStatusLabel}}</view>
+    </view>
+
+    <view class="amount-primary">{{statusEmoji}}</view>
+
+    <view class="info-list">
+      <view class="info-row">
+        <view class="info-key">支付单号</view>
+        <view class="info-value">{{payOrderNo}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-key">账单编号</view>
+        <view class="info-value">{{billIdText}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-key">支付时间</view>
+        <view class="info-value">{{paidAtText}}</view>
+      </view>
+      <view class="info-row">
+        <view class="info-key">轮询进度</view>
+        <view class="info-value">{{pollAttempt}} / {{pollLimit}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">查询失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="section-title">当前环境说明</view>
+    <view class="text-muted">后端当前支付为本地开发桩，创建支付单后通常先进入 PAYING。若你没有手动触发后端回调，这里会保持“支付处理中”并在到达轮询上限后停止。</view>
+  </view>
+
+  <view class="fixed-action-bar button-row">
+    <button class="button-primary" bindtap="refreshStatus" loading="{{loading}}" disabled="{{loading}}">立即刷新状态</button>
+    <button class="button-secondary" bindtap="openBillDetail">返回账单详情</button>
+    <button class="button-ghost" bindtap="backToRooms">回到我的房间</button>
+  </view>
+</view>
