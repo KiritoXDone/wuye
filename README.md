@@ -1,6 +1,6 @@
 # 物业管理系统 MVP
 
-当前仓库按 `docs/` 文档落地一个 **backend-first** 的 MVP 闭环，优先交付可启动、可建库、可验证的后端能力，并预留前端目录骨架。
+当前仓库按 `docs/` 文档落地一个 **端到端 MVP**：后端提供完整 Resident/Admin 主链路，前端同时补齐 Web 管理端和微信小程序端的最小可运行工程，用于联调和本地验收。
 
 ## 已实现范围
 
@@ -14,6 +14,8 @@
 - Resident 账单列表 / 账单详情
 - 单渠道支付闭环（本地开发桩 + 幂等回调）
 - Admin 月报表
+- Web 管理端最小页面：登录、仪表盘、账单列表、费用规则、抄表录入、账单生成
+- 微信小程序最小 Resident 页面：登录、我的房间、房间账单、账单详情、支付结果
 
 > 说明：当前支付与微信登录均为本地开发桩实现，用于跑通 MVP 业务闭环；`/auth/logout` 为客户端丢弃 token 语义，不维护服务端黑名单失效机制。
 
@@ -21,8 +23,8 @@
 
 ```text
 backend/                 后端工程
-frontend/admin-web/      Web 管理端目录骨架
-frontend/miniapp-wechat/ 微信小程序目录骨架
+frontend/admin-web/      Web 管理端工程
+frontend/miniapp-wechat/ 微信小程序工程
 docs/                    原始需求与设计文档
 ops/                     运维与本地环境说明
 ```
@@ -64,4 +66,13 @@ Flyway 会在应用启动时自动建表和写入基础演示数据。
 
 ## 前端目录说明
 
-当前仅创建目录骨架与说明文件，本次 MVP 不额外扩展完整前端页面实现，后续可在既有后端接口之上继续接 Web 管理端与微信小程序。
+- `frontend/admin-web`：Vue 3 + TypeScript + Vite + Element Plus + Pinia + Vue Router，已接通登录、仪表盘、账单列表、费用规则、抄表录入与开单页面。
+- `frontend/miniapp-wechat`：原生微信小程序 + TypeScript，已接通 Resident 登录、我的房间、房间账单、账单详情与支付结果页面。
+
+## 本地手工验收
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "ops/manual-qa.ps1"
+```
+
+脚本会基于当前后端和本地 MySQL 环境自动创建规则、开单、发起支付并轮询支付结果，输出当前账期的支付与月报摘要。
