@@ -1,5 +1,6 @@
 package com.wuye.coupon.service;
 
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.mapper.BillMapper;
 import com.wuye.common.exception.BusinessException;
@@ -24,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CouponService {
@@ -35,19 +38,22 @@ public class CouponService {
     private final CouponRedemptionMapper couponRedemptionMapper;
     private final BillMapper billMapper;
     private final AccessGuard accessGuard;
+    private final AuditLogService auditLogService;
 
     public CouponService(CouponTemplateMapper couponTemplateMapper,
                          CouponIssueRuleMapper couponIssueRuleMapper,
                          CouponInstanceMapper couponInstanceMapper,
                          CouponRedemptionMapper couponRedemptionMapper,
                          BillMapper billMapper,
-                         AccessGuard accessGuard) {
+                         AccessGuard accessGuard,
+                         AuditLogService auditLogService) {
         this.couponTemplateMapper = couponTemplateMapper;
         this.couponIssueRuleMapper = couponIssueRuleMapper;
         this.couponInstanceMapper = couponInstanceMapper;
         this.couponRedemptionMapper = couponRedemptionMapper;
         this.billMapper = billMapper;
         this.accessGuard = accessGuard;
+        this.auditLogService = auditLogService;
     }
 
     public List<AvailableCouponVO> listMyCoupons(LoginUser loginUser) {
@@ -89,6 +95,7 @@ public class CouponService {
         entity.setStackable(0);
         entity.setStatus(1);
         couponTemplateMapper.insert(entity);
+        auditLogService.record(loginUser, "COUPON", entity.getTemplateCode(), "CREATE", buildTemplateAuditDetail(entity));
         return entity;
     }
 
@@ -221,5 +228,21 @@ public class CouponService {
             throw new BusinessException("NOT_FOUND", "券不存在", HttpStatus.NOT_FOUND);
         }
         return couponInstance;
+    }
+
+    private Map<String, Object> buildTemplateAuditDetail(CouponTemplate entity) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("templateId", entity.getId());
+        detail.put("templateCode", entity.getTemplateCode());
+        detail.put("type", entity.getType());
+        detail.put("feeType", entity.getFeeType());
+        detail.put("name", entity.getName());
+        detail.put("discountMode", entity.getDiscountMode());
+        detail.put("valueAmount", entity.getValueAmount());
+        detail.put("thresholdAmount", entity.getThresholdAmount());
+        detail.put("validFrom", entity.getValidFrom());
+        detail.put("validTo", entity.getValidTo());
+        detail.put("status", entity.getStatus());
+        return detail;
     }
 }

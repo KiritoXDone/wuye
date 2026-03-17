@@ -1,5 +1,6 @@
 package com.wuye.bill.service;
 
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.bill.dto.FeeRuleCreateDTO;
 import com.wuye.bill.dto.FeeRuleWaterTierDTO;
 import com.wuye.bill.entity.FeeRule;
@@ -15,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class FeeRuleService {
@@ -23,13 +26,16 @@ public class FeeRuleService {
     private final FeeRuleMapper feeRuleMapper;
     private final FeeRuleWaterTierMapper feeRuleWaterTierMapper;
     private final AccessGuard accessGuard;
+    private final AuditLogService auditLogService;
 
     public FeeRuleService(FeeRuleMapper feeRuleMapper,
                           FeeRuleWaterTierMapper feeRuleWaterTierMapper,
-                          AccessGuard accessGuard) {
+                          AccessGuard accessGuard,
+                          AuditLogService auditLogService) {
         this.feeRuleMapper = feeRuleMapper;
         this.feeRuleWaterTierMapper = feeRuleWaterTierMapper;
         this.accessGuard = accessGuard;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -50,6 +56,7 @@ public class FeeRuleService {
         feeRule.setAbnormalMultiplierThreshold(dto.getAbnormalMultiplierThreshold());
         feeRuleMapper.insert(feeRule);
         insertWaterTiers(feeRule.getId(), dto.getWaterTiers());
+        auditLogService.record(loginUser, "BILL", String.valueOf(feeRule.getId()), "CREATE", buildAuditDetail(feeRule, dto));
         return list(loginUser, dto.getCommunityId()).stream()
                 .filter(item -> item.getId().equals(feeRule.getId()))
                 .findFirst()
@@ -111,5 +118,23 @@ public class FeeRuleService {
             tier.setUnitPrice(tierDTO.getUnitPrice());
             feeRuleWaterTierMapper.insert(tier);
         }
+    }
+
+    private Map<String, Object> buildAuditDetail(FeeRule feeRule, FeeRuleCreateDTO dto) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("feeRuleId", feeRule.getId());
+        detail.put("communityId", feeRule.getCommunityId());
+        detail.put("feeType", feeRule.getFeeType());
+        detail.put("ruleName", feeRule.getRuleName());
+        detail.put("unitPrice", feeRule.getUnitPrice());
+        detail.put("cycleType", feeRule.getCycleType());
+        detail.put("pricingMode", feeRule.getPricingMode());
+        detail.put("effectiveFrom", feeRule.getEffectiveFrom());
+        detail.put("effectiveTo", feeRule.getEffectiveTo());
+        detail.put("remark", feeRule.getRemark());
+        detail.put("abnormalAbsThreshold", feeRule.getAbnormalAbsThreshold());
+        detail.put("abnormalMultiplierThreshold", feeRule.getAbnormalMultiplierThreshold());
+        detail.put("waterTiers", dto.getWaterTiers());
+        return detail;
     }
 }

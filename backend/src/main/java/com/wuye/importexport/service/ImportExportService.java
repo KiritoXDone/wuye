@@ -2,6 +2,7 @@ package com.wuye.importexport.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.agent.mapper.UserGroupMapper;
 import com.wuye.agent.entity.UserGroup;
 import com.wuye.bill.entity.Bill;
@@ -51,6 +52,7 @@ public class ImportExportService {
     private final ImportExportFileService importExportFileService;
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     public ImportExportService(ImportBatchMapper importBatchMapper,
                                ImportRowErrorMapper importRowErrorMapper,
@@ -62,7 +64,8 @@ public class ImportExportService {
                                UserGroupMapper userGroupMapper,
                                ImportExportFileService importExportFileService,
                                AccessGuard accessGuard,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               AuditLogService auditLogService) {
         this.importBatchMapper = importBatchMapper;
         this.importRowErrorMapper = importRowErrorMapper;
         this.exportJobMapper = exportJobMapper;
@@ -74,6 +77,7 @@ public class ImportExportService {
         this.importExportFileService = importExportFileService;
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -117,7 +121,9 @@ public class ImportExportService {
             importBatchMapper.updateResult(batch);
             saveRowError(batch.getId(), 0, "INVALID_ARGUMENT", ex.getMessage(), dto.getFileUrl());
         }
-        return importBatchMapper.findById(batch.getId());
+        ImportBatch savedBatch = importBatchMapper.findById(batch.getId());
+        auditLogService.record(loginUser, "IMPORT", savedBatch.getBatchNo(), "IMPORT", buildImportAuditDetail(savedBatch));
+        return savedBatch;
     }
 
     public ImportBatch getImportBatch(LoginUser loginUser, Long batchId) {
@@ -155,7 +161,9 @@ public class ImportExportService {
             exportJobMapper.updateResult(exportJob);
             throw new BusinessException("INTERNAL_ERROR", "导出文件生成失败", HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return exportJobMapper.findById(exportJob.getId());
+        ExportJob savedJob = exportJobMapper.findById(exportJob.getId());
+        auditLogService.record(loginUser, "EXPORT", String.valueOf(savedJob.getId()), "EXPORT", buildExportAuditDetail(savedJob, dto));
+        return savedJob;
     }
 
     public ExportJob getExportJob(LoginUser loginUser, Long jobId) {
@@ -292,5 +300,32 @@ public class ImportExportService {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("failed to serialize import/export json", ex);
         }
+    }
+
+    private Map<String, Object> buildImportAuditDetail(ImportBatch batch) {
+        Map<String, Object> detail = new java.util.LinkedHashMap<>();
+        detail.put("importBatchId", batch.getId());
+        detail.put("batchNo", batch.getBatchNo());
+        detail.put("importType", batch.getImportType());
+        detail.put("fileUrl", batch.getFileUrl());
+        detail.put("status", batch.getStatus());
+        detail.put("totalCount", batch.getTotalCount());
+        detail.put("successCount", batch.getSuccessCount());
+        detail.put("failCount", batch.getFailCount());
+        return detail;
+    }
+
+    private Map<String, Object> buildExportAuditDetail(ExportJob exportJob, BillExportCreateDTO dto) {
+        Map<String, Object> detail = new java.util.LinkedHashMap<>();
+        detail.put("exportJobId", exportJob.getId());
+        detail.put("exportType", exportJob.getExportType());
+        detail.put("status", exportJob.getStatus());
+        detail.put("periodYear", dto.getPeriodYear());
+        detail.put("periodMonth", dto.getPeriodMonth());
+        detail.put("feeType", dto.getFeeType());
+        detail.put("billStatus", dto.getStatus());
+        detail.put("fileUrl", exportJob.getFileUrl());
+        detail.put("expiredAt", exportJob.getExpiredAt());
+        return detail;
     }
 }

@@ -1,5 +1,6 @@
 package com.wuye.agent.service;
 
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.agent.dto.AgentGroupAssignDTO;
 import com.wuye.agent.entity.AgentGroup;
 import com.wuye.agent.entity.OrgUnit;
@@ -17,7 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AgentAuthorizationService {
@@ -27,17 +30,20 @@ public class AgentAuthorizationService {
     private final OrgUnitMapper orgUnitMapper;
     private final UserGroupMapper userGroupMapper;
     private final AccessGuard accessGuard;
+    private final AuditLogService auditLogService;
 
     public AgentAuthorizationService(AgentProfileMapper agentProfileMapper,
                                      AgentGroupMapper agentGroupMapper,
                                      OrgUnitMapper orgUnitMapper,
                                      UserGroupMapper userGroupMapper,
-                                     AccessGuard accessGuard) {
+                                     AccessGuard accessGuard,
+                                     AuditLogService auditLogService) {
         this.agentProfileMapper = agentProfileMapper;
         this.agentGroupMapper = agentGroupMapper;
         this.orgUnitMapper = orgUnitMapper;
         this.userGroupMapper = userGroupMapper;
         this.accessGuard = accessGuard;
+        this.auditLogService = auditLogService;
     }
 
     public List<Long> loadAuthorizedGroupIds(Long accountId) {
@@ -66,12 +72,15 @@ public class AgentAuthorizationService {
         agentGroup.setPermission(dto.getPermission());
         agentGroup.setStatus(dto.getStatus());
         Long existedId = agentGroupMapper.findId(agentProfile.getId(), userGroup.getId());
+        String action = existedId == null ? "CREATE" : "UPDATE";
         if (existedId == null) {
             agentGroupMapper.insert(agentGroup);
         } else {
             agentGroup.setId(existedId);
             agentGroupMapper.update(agentGroup);
         }
+        auditLogService.record(loginUser, "AUTH", String.valueOf(agentGroup.getId()), action,
+                buildAuditDetail(agentProfile, userGroup, agentGroup, dto.getAgentCode(), dto.getGroupCode()));
         return buildVO(userGroup, dto.getPermission());
     }
 
@@ -102,5 +111,22 @@ public class AgentAuthorizationService {
             }
         }
         return vo;
+    }
+
+    private Map<String, Object> buildAuditDetail(AgentProfile agentProfile,
+                                                 UserGroup userGroup,
+                                                 AgentGroup agentGroup,
+                                                 String agentCode,
+                                                 String groupCode) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("agentGroupId", agentGroup.getId());
+        detail.put("agentId", agentProfile.getId());
+        detail.put("agentCode", agentCode);
+        detail.put("groupId", userGroup.getId());
+        detail.put("groupCode", groupCode);
+        detail.put("permission", agentGroup.getPermission());
+        detail.put("status", agentGroup.getStatus());
+        detail.put("orgUnitId", userGroup.getOrgUnitId());
+        return detail;
     }
 }
