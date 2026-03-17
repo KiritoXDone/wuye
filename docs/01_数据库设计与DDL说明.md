@@ -168,6 +168,19 @@ UNIQUE KEY uk_coupon_redemption_coupon (coupon_instance_id)
 - `PROPERTY` 和 `WATER` 都走这张表
 - 通过 `effective_from / effective_to` 控制调价生效区间
 
+P2 增强口径：
+- 水费规则继续保留 `unit_price` 作为兼容基础单价
+- 新增 `pricing_mode` 区分 `FLAT / TIERED`
+- 新增 `abnormal_abs_threshold`、`abnormal_multiplier_threshold`，用于异常用量预警判定
+- 阶梯水价明细拆到 `fee_rule_water_tier`，不要把分段 JSON 直接塞进主表
+
+### fee_rule_water_tier
+水费阶梯价明细表，用于表达按用量区间分段计费：
+- `start_usage`：起始用量
+- `end_usage`：结束用量，可空表示“以上”
+- `unit_price`：该段单价
+- `tier_order`：分段顺序，保证前端和开单计算口径一致
+
 ### water_meter / water_meter_reading
 水费计算事实来源。
 
@@ -175,6 +188,15 @@ UNIQUE KEY uk_coupon_redemption_coupon (coupon_instance_id)
 - `prev_reading` 默认取上期 `curr_reading`
 - `curr_reading >= prev_reading`
 - 抄表要记录 `read_by_admin_id`、`read_at`、`photo_url`
+- P2 可把异常抄表状态从 `NORMAL` 扩展到 `ABNORMAL`，但不改变“同一房间同账期只能有一条抄表记录”的唯一口径
+
+### water_usage_alert
+异常用量预警事件表。
+
+最小设计建议：
+- 一条抄表记录可命中多个预警码，例如绝对阈值、环比倍数阈值
+- 用 `UNIQUE(reading_id, alert_code)` 保证同一预警类型不会重复落表
+- 预警事件只做提示与追踪，不应阻断正常开单主链路
 
 ### bill / bill_line
 - `bill`：存汇总金额与状态
@@ -199,6 +221,21 @@ UNIQUE KEY uk_coupon_redemption_coupon (coupon_instance_id)
 ### pay_transaction
 保存渠道请求 / 回调 / 查单 / 关单痕迹，便于排障和审计。
 
+### payment_voucher
+支付成功后的电子凭证表。
+
+建议：
+- 一张支付单只生成一张电子凭证，`pay_order_no` 唯一
+- 内容以已支付账单与支付单事实为准，生成后只读
+
+### invoice_application
+住户发票申请记录表。
+
+最小设计建议：
+- 只允许针对已支付账单申请
+- `pay_order_no` 唯一，避免同一支付单重复申请
+- 后台处理仅推进 `APPLIED / APPROVED / REJECTED` 三态，不引入税控系统复杂状态机
+
 ### coupon_template / coupon_issue_rule / coupon_instance / coupon_redemption
 建议券系统拆四层：
 - 模板
@@ -211,6 +248,22 @@ UNIQUE KEY uk_coupon_redemption_coupon (coupon_instance_id)
 ---
 
 ## 5.5 任务与审计层
+
+### org_unit
+轻量组织架构与租户节点表。
+
+设计原则：
+- 只表达“租户编码 + 组织树 + 小区映射”
+- `user_group`、`agent_profile` 通过 `org_unit_id` 关联组织
+- 不做 SaaS 级强隔离，不改变现有 `Agent -> user_group -> group_room` 的数据权限主语义
+
+### dunning_task / dunning_log
+自动催缴任务与发送日志。
+
+最小设计建议：
+- `dunning_task` 只面向逾期未支付账单生成
+- `dunning_log` 记录本次催缴的渠道、状态和文案
+- 同一账单在同一触发日期、同一触发类型下只保留一条任务，避免重复催缴
 
 ### import_batch / import_row_error
 支持账单导入和抄表导入，必须保留行级错误。
@@ -265,6 +318,10 @@ ON coupon_instance (owner_account_id, status, template_id, expires_at);
 - 抄表 `curr_reading < prev_reading` 时直接拒绝
 - 已支付账单禁止直接覆盖，应走作废 / 补差 / 冲正流程
 - 同一 `payOrderNo` 回调重复到达时，只能推进一次状态
+- 阶梯水价必须保证阶梯区间有序且不倒挂
+- 异常预警命中后允许继续开单，但必须保留预警事件与抄表状态
+- 催缴仅针对逾期且未支付账单生成，已支付账单禁止再进催缴任务
+- 发票申请仅允许基于成功支付单创建，且一张支付单只允许一条申请记录
 
 ---
 
@@ -284,6 +341,9 @@ ON coupon_instance (owner_account_id, status, template_id, expires_at);
 | Agent 授权 | `user_group`、`group_room`、`agent_profile`、`agent_group` |
 | 计费与账单 | `fee_rule`、`water_meter`、`water_meter_reading`、`bill`、`bill_line` |
 | 支付 | `pay_order`、`pay_transaction` |
+| P2 计费增强 | `fee_rule_water_tier`、`water_usage_alert` |
+| P2 组织与催缴 | `org_unit`、`dunning_task`、`dunning_log` |
+| P2 凭证与发票 | `payment_voucher`、`invoice_application` |
 | 券 | `coupon_template`、`coupon_issue_rule`、`coupon_instance`、`coupon_redemption` |
 | 导入导出 | `import_batch`、`import_row_error`、`export_job` |
 | 审计 | `audit_log` |

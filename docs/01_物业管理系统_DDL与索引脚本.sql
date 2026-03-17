@@ -202,6 +202,33 @@ CREATE TABLE IF NOT EXISTS `agent_group` (
   CONSTRAINT `chk_agent_group_permission` CHECK (`permission` IN ('VIEW', 'MANAGE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent授权用户组';
 
+CREATE TABLE IF NOT EXISTS `org_unit` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '组织ID',
+  `tenant_code` VARCHAR(64) NOT NULL COMMENT '租户编码',
+  `org_code` VARCHAR(64) NOT NULL COMMENT '组织编码',
+  `name` VARCHAR(128) NOT NULL COMMENT '组织名称',
+  `parent_id` BIGINT NULL COMMENT '上级组织ID',
+  `community_id` BIGINT NULL COMMENT '关联小区ID',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` BIGINT NULL,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` BIGINT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_org_unit_tenant_code` (`tenant_code`, `org_code`),
+  KEY `idx_org_unit_tenant_parent` (`tenant_code`, `parent_id`, `status`),
+  CONSTRAINT `fk_org_unit_parent` FOREIGN KEY (`parent_id`) REFERENCES `org_unit` (`id`),
+  CONSTRAINT `fk_org_unit_community` FOREIGN KEY (`community_id`) REFERENCES `community` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='轻量组织架构与租户节点';
+
+ALTER TABLE `user_group`
+  ADD COLUMN `org_unit_id` BIGINT NULL COMMENT '组织单元ID',
+  ADD CONSTRAINT `fk_user_group_org_unit` FOREIGN KEY (`org_unit_id`) REFERENCES `org_unit` (`id`);
+
+ALTER TABLE `agent_profile`
+  ADD COLUMN `org_unit_id` BIGINT NULL COMMENT '组织单元ID',
+  ADD CONSTRAINT `fk_agent_profile_org_unit` FOREIGN KEY (`org_unit_id`) REFERENCES `org_unit` (`id`);
+
 CREATE TABLE IF NOT EXISTS `fee_rule` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '规则ID',
   `community_id` BIGINT NOT NULL COMMENT '小区ID',
@@ -209,22 +236,44 @@ CREATE TABLE IF NOT EXISTS `fee_rule` (
   `rule_name` VARCHAR(128) NOT NULL COMMENT '规则名称',
   `unit_price` DECIMAL(10,4) NOT NULL COMMENT '单价',
   `cycle_type` VARCHAR(16) NOT NULL DEFAULT 'MONTH' COMMENT 'MONTH/QUARTER/YEAR',
+  `pricing_mode` VARCHAR(16) NOT NULL DEFAULT 'FLAT' COMMENT 'FLAT/TIERED',
   `effective_from` DATE NOT NULL COMMENT '生效开始',
   `effective_to` DATE NULL COMMENT '生效结束',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
   `remark` VARCHAR(255) NULL COMMENT '备注',
+  `abnormal_abs_threshold` DECIMAL(12,3) NULL COMMENT '异常绝对阈值',
+  `abnormal_multiplier_threshold` DECIMAL(10,2) NULL COMMENT '异常倍数阈值',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_by` BIGINT NULL,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `updated_by` BIGINT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_fee_rule_lookup` (`community_id`, `fee_type`, `status`, `effective_from`, `effective_to`),
+  KEY `idx_fee_rule_pricing_mode` (`community_id`, `fee_type`, `pricing_mode`, `status`),
   CONSTRAINT `fk_fee_rule_community` FOREIGN KEY (`community_id`) REFERENCES `community` (`id`),
   CONSTRAINT `chk_fee_rule_type` CHECK (`fee_type` IN ('PROPERTY', 'WATER')),
+  CONSTRAINT `chk_fee_rule_pricing_mode` CHECK (`pricing_mode` IN ('FLAT', 'TIERED')),
   CONSTRAINT `chk_fee_rule_cycle_type` CHECK (`cycle_type` IN ('MONTH', 'QUARTER', 'YEAR')),
   CONSTRAINT `chk_fee_rule_price` CHECK (`unit_price` >= 0),
   CONSTRAINT `chk_fee_rule_effective_range` CHECK (`effective_to` IS NULL OR `effective_to` >= `effective_from`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='费用规则表';
+
+CREATE TABLE IF NOT EXISTS `fee_rule_water_tier` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '阶梯ID',
+  `fee_rule_id` BIGINT NOT NULL COMMENT '费用规则ID',
+  `tier_order` INT NOT NULL COMMENT '阶梯顺序',
+  `start_usage` DECIMAL(12,3) NOT NULL COMMENT '起始用量',
+  `end_usage` DECIMAL(12,3) NULL COMMENT '结束用量，可空表示以上',
+  `unit_price` DECIMAL(10,4) NOT NULL COMMENT '本阶梯单价',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` BIGINT NULL,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` BIGINT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fee_rule_water_tier_order` (`fee_rule_id`, `tier_order`),
+  KEY `idx_fee_rule_water_tier_rule` (`fee_rule_id`, `tier_order`),
+  CONSTRAINT `fk_fee_rule_water_tier_rule` FOREIGN KEY (`fee_rule_id`) REFERENCES `fee_rule` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='水费阶梯价明细';
 
 CREATE TABLE IF NOT EXISTS `water_meter` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '水表ID',
@@ -255,7 +304,7 @@ CREATE TABLE IF NOT EXISTS `water_meter_reading` (
   `read_at` DATETIME NOT NULL COMMENT '抄表时间',
   `photo_url` VARCHAR(255) NULL COMMENT '抄表照片',
   `remark` VARCHAR(255) NULL COMMENT '备注',
-  `status` VARCHAR(16) NOT NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/VOID',
+  `status` VARCHAR(16) NOT NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/ABNORMAL/VOID',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_by` BIGINT NULL,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -270,8 +319,26 @@ CREATE TABLE IF NOT EXISTS `water_meter_reading` (
   CONSTRAINT `chk_water_reading_month` CHECK (`period_month` BETWEEN 1 AND 12),
   CONSTRAINT `chk_water_reading_curr_prev` CHECK (`curr_reading` >= `prev_reading`),
   CONSTRAINT `chk_water_reading_usage` CHECK (`usage_amount` >= 0),
-  CONSTRAINT `chk_water_reading_status` CHECK (`status` IN ('NORMAL', 'VOID'))
+  CONSTRAINT `chk_water_reading_status` CHECK (`status` IN ('NORMAL', 'ABNORMAL', 'VOID'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='水表抄表记录';
+
+CREATE TABLE IF NOT EXISTS `water_usage_alert` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '预警ID',
+  `reading_id` BIGINT NOT NULL COMMENT '抄表记录ID',
+  `room_id` BIGINT NOT NULL COMMENT '房间ID',
+  `alert_code` VARCHAR(32) NOT NULL COMMENT 'ABS_THRESHOLD/MULTIPLIER_THRESHOLD',
+  `alert_message` VARCHAR(255) NOT NULL COMMENT '预警描述',
+  `threshold_value` DECIMAL(12,3) NULL COMMENT '阈值',
+  `actual_value` DECIMAL(12,3) NOT NULL COMMENT '实际值',
+  `status` VARCHAR(16) NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/CLOSED',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_water_usage_alert_reading_code` (`reading_id`, `alert_code`),
+  KEY `idx_water_usage_alert_room_status` (`room_id`, `status`, `created_at`),
+  CONSTRAINT `fk_water_usage_alert_reading` FOREIGN KEY (`reading_id`) REFERENCES `water_meter_reading` (`id`),
+  CONSTRAINT `fk_water_usage_alert_room` FOREIGN KEY (`room_id`) REFERENCES `room` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='异常用量预警';
 
 CREATE TABLE IF NOT EXISTS `bill` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '账单ID',
@@ -471,6 +538,90 @@ CREATE TABLE IF NOT EXISTS `pay_transaction` (
   CONSTRAINT `fk_pay_txn_pay_order` FOREIGN KEY (`pay_order_no`) REFERENCES `pay_order` (`pay_order_no`),
   CONSTRAINT `chk_pay_txn_status` CHECK (`transaction_status` IN ('SUCCESS', 'FAIL'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付渠道交互流水';
+
+CREATE TABLE IF NOT EXISTS `payment_voucher` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '电子凭证ID',
+  `pay_order_no` VARCHAR(64) NOT NULL COMMENT '支付单号',
+  `bill_id` BIGINT NOT NULL COMMENT '账单ID',
+  `account_id` BIGINT NOT NULL COMMENT '账号ID',
+  `voucher_no` VARCHAR(64) NOT NULL COMMENT '凭证编号',
+  `amount` DECIMAL(12,2) NOT NULL COMMENT '凭证金额',
+  `status` VARCHAR(16) NOT NULL COMMENT 'ISSUED',
+  `issued_at` DATETIME NOT NULL COMMENT '签发时间',
+  `content_json` LONGTEXT NULL COMMENT '凭证内容JSON',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_payment_voucher_pay_order` (`pay_order_no`),
+  UNIQUE KEY `uk_payment_voucher_no` (`voucher_no`),
+  KEY `idx_payment_voucher_account_created` (`account_id`, `created_at`),
+  CONSTRAINT `fk_payment_voucher_pay_order` FOREIGN KEY (`pay_order_no`) REFERENCES `pay_order` (`pay_order_no`),
+  CONSTRAINT `fk_payment_voucher_bill` FOREIGN KEY (`bill_id`) REFERENCES `bill` (`id`),
+  CONSTRAINT `fk_payment_voucher_account` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='电子凭证';
+
+CREATE TABLE IF NOT EXISTS `invoice_application` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '发票申请ID',
+  `application_no` VARCHAR(64) NOT NULL COMMENT '申请单号',
+  `bill_id` BIGINT NOT NULL COMMENT '账单ID',
+  `pay_order_no` VARCHAR(64) NOT NULL COMMENT '支付单号',
+  `account_id` BIGINT NOT NULL COMMENT '申请账号ID',
+  `invoice_title` VARCHAR(128) NOT NULL COMMENT '发票抬头',
+  `tax_no` VARCHAR(64) NULL COMMENT '税号',
+  `status` VARCHAR(16) NOT NULL COMMENT 'APPLIED/APPROVED/REJECTED',
+  `remark` VARCHAR(255) NULL COMMENT '备注',
+  `applied_at` DATETIME NOT NULL COMMENT '申请时间',
+  `processed_at` DATETIME NULL COMMENT '处理时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_invoice_application_no` (`application_no`),
+  UNIQUE KEY `uk_invoice_application_pay_order` (`pay_order_no`),
+  KEY `idx_invoice_application_account_status` (`account_id`, `status`, `applied_at`),
+  CONSTRAINT `fk_invoice_application_bill` FOREIGN KEY (`bill_id`) REFERENCES `bill` (`id`),
+  CONSTRAINT `fk_invoice_application_pay_order` FOREIGN KEY (`pay_order_no`) REFERENCES `pay_order` (`pay_order_no`),
+  CONSTRAINT `fk_invoice_application_account` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='发票申请';
+
+CREATE TABLE IF NOT EXISTS `dunning_task` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '催缴任务ID',
+  `task_no` VARCHAR(64) NOT NULL COMMENT '催缴任务号',
+  `bill_id` BIGINT NOT NULL COMMENT '账单ID',
+  `group_id` BIGINT NULL COMMENT '用户组ID',
+  `org_unit_id` BIGINT NULL COMMENT '组织ID',
+  `tenant_code` VARCHAR(64) NULL COMMENT '租户编码',
+  `trigger_type` VARCHAR(16) NOT NULL COMMENT 'MANUAL/AUTO',
+  `trigger_date` DATE NOT NULL COMMENT '触发日期',
+  `status` VARCHAR(16) NOT NULL COMMENT 'SENT',
+  `remark` VARCHAR(255) NULL COMMENT '备注',
+  `executed_at` DATETIME NOT NULL COMMENT '执行时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dunning_task_bill_trigger` (`bill_id`, `trigger_type`, `trigger_date`),
+  UNIQUE KEY `uk_dunning_task_no` (`task_no`),
+  KEY `idx_dunning_task_group_status` (`group_id`, `status`, `trigger_date`),
+  KEY `idx_dunning_task_tenant_status` (`tenant_code`, `status`, `trigger_date`),
+  CONSTRAINT `fk_dunning_task_bill` FOREIGN KEY (`bill_id`) REFERENCES `bill` (`id`),
+  CONSTRAINT `fk_dunning_task_group` FOREIGN KEY (`group_id`) REFERENCES `user_group` (`id`),
+  CONSTRAINT `fk_dunning_task_org_unit` FOREIGN KEY (`org_unit_id`) REFERENCES `org_unit` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='催缴任务';
+
+CREATE TABLE IF NOT EXISTS `dunning_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '催缴日志ID',
+  `task_id` BIGINT NOT NULL COMMENT '催缴任务ID',
+  `bill_id` BIGINT NOT NULL COMMENT '账单ID',
+  `send_channel` VARCHAR(16) NOT NULL COMMENT 'SYSTEM',
+  `status` VARCHAR(16) NOT NULL COMMENT 'SENT',
+  `content` VARCHAR(500) NOT NULL COMMENT '发送内容',
+  `sent_at` DATETIME NOT NULL COMMENT '发送时间',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_dunning_log_bill_sent` (`bill_id`, `sent_at`),
+  CONSTRAINT `fk_dunning_log_task` FOREIGN KEY (`task_id`) REFERENCES `dunning_task` (`id`),
+  CONSTRAINT `fk_dunning_log_bill` FOREIGN KEY (`bill_id`) REFERENCES `bill` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='催缴日志';
 
 CREATE TABLE IF NOT EXISTS `coupon_redemption` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
