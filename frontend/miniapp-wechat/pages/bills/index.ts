@@ -26,11 +26,11 @@ Page({
     roomLabel: '',
     roomMode: false,
     pageTitle: '全部账单',
-    pageSubtitle: '这里展示当前账号在 Resident 范围内可查看的账单。',
+    pageSubtitle: '在这里查看当前账号下的全部账单与缴费状态。',
     loading: true,
     errorMessage: '',
-    loadingHint: '正在调用 /api/v1/me/bills',
-    emptyHint: '暂时没有查询到住户账单。',
+    loadingHint: '正在加载账单，请稍候。',
+    emptyHint: '暂时没有查询到可显示的账单。',
     statusFilter: 'ALL' as BillStatusFilter,
     statusOptions: [
       { value: 'ALL', label: '全部' },
@@ -51,10 +51,10 @@ Page({
       roomMode,
       pageTitle: roomMode ? `${roomLabel || '房间'}账单` : '全部账单',
       pageSubtitle: roomMode
-        ? '当前优先使用 /api/v1/me/rooms/{roomId}/bills，保持房间作为账单主体。'
-        : '当前使用 /api/v1/me/bills 查看本人全部账单。',
-      loadingHint: roomMode ? `正在调用 /api/v1/me/rooms/${roomId}/bills` : '正在调用 /api/v1/me/bills',
-      emptyHint: roomMode ? '该房间暂时没有匹配的账单。' : '当前账号暂时没有账单。'
+        ? '查看当前房间的账单、到期时间与支付状态。'
+        : '优先关注待缴账单，完成后可继续查看支付结果。',
+      loadingHint: roomMode ? '正在加载当前房间账单，请稍候。' : '正在加载全部账单，请稍候。',
+      emptyHint: roomMode ? '该房间暂时还没有可显示的账单。' : '当前账号暂时没有账单。'
     })
   },
 

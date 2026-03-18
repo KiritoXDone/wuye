@@ -1,13 +1,22 @@
 <view class="page-shell safe-bottom">
-  <view class="page-hero">
-    <view class="page-eyebrow">Bill List</view>
+  <view class="page-hero bills-hero">
+    <view class="page-eyebrow">{{roomMode ? '房间账单' : '居民账单'}}</view>
     <view class="page-title">{{pageTitle}}</view>
     <view class="page-subtitle">{{pageSubtitle}}</view>
   </view>
 
-  <view class="panel card-stack">
-    <view class="section-title">账单状态</view>
-    <view class="chip-row">
+  <view class="panel card-stack bills-filter-card">
+    <view class="section-heading">
+      <view>
+        <view class="section-title">账单筛选</view>
+        <view class="section-subtitle">优先关注待缴账单，完成后可继续查看结果与凭证。</view>
+      </view>
+      <view class="summary-pill">
+        <view class="summary-pill__label">当前显示</view>
+        <view class="summary-pill__value">{{displayBills.length}} 笔</view>
+      </view>
+    </view>
+    <view class="chip-row bills-filter-card__chips">
       <view wx:for="{{statusOptions}}" wx:key="value" class="pill {{statusFilter === item.value ? 'pill-active' : ''}}" data-status="{{item.value}}" bindtap="handleStatusChange">
         {{item.label}}
       </view>
@@ -31,32 +40,41 @@
   </view>
 
   <view wx:else class="list-stack">
-    <view wx:for="{{displayBills}}" wx:key="billId" class="panel card-stack">
-      <view class="info-row">
-        <view class="bill-card-title">{{item.feeTypeLabel}}</view>
+    <view wx:for="{{displayBills}}" wx:key="billId" class="panel card-stack bill-list-card">
+      <view class="bill-list-card__top">
+        <view>
+          <view class="card-kicker">{{item.roomLabel}}</view>
+          <view class="bill-card-title">{{item.feeTypeLabel}}</view>
+        </view>
         <view class="status-chip status-chip--{{item.status}}">{{item.statusLabel}}</view>
       </view>
 
-      <view class="meta-grid">
-        <view class="meta-item">
-          <view class="meta-label">房间</view>
-          <view class="meta-value">{{item.roomLabel}}</view>
-        </view>
-        <view class="meta-item">
-          <view class="meta-label">账期</view>
-          <view class="meta-value">{{item.period}}</view>
-        </view>
-        <view class="meta-item">
+      <view class="bill-list-card__amount-row">
+        <view>
           <view class="meta-label">应缴金额</view>
-          <view class="meta-value">¥ {{item.amountDueText}}</view>
+          <view class="amount-primary bill-list-card__amount">¥ {{item.amountDueText}}</view>
         </view>
-        <view class="meta-item">
-          <view class="meta-label">到期日</view>
-          <view class="meta-value">{{item.dueDateText}}</view>
+        <view class="bill-period-chip">{{item.period}}</view>
+      </view>
+
+      <view class="metric-grid bill-list-card__metrics">
+        <view class="metric-card">
+          <view class="metric-label">房间</view>
+          <view class="metric-value bill-list-card__metric-value">{{item.roomLabel}}</view>
+          <view class="metric-note">本次账单所属房间</view>
+        </view>
+        <view class="metric-card">
+          <view class="metric-label">到期日</view>
+          <view class="metric-value bill-list-card__metric-value">{{item.dueDateText}}</view>
+          <view class="metric-note">请尽量在到期前完成缴费</view>
         </view>
       </view>
 
-      <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">查看账单详情</button>
+      <view class="surface-note bill-list-card__note">
+        {{item.status === 'PAID' ? '本账单已完成缴费，可继续查看支付结果或电子凭证。' : '点击进入后可选择优惠券并确认支付方式。'}}
+      </view>
+
+      <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">{{item.status === 'PAID' ? '查看账单详情' : '去支付'}}</button>
     </view>
   </view>
 </view>

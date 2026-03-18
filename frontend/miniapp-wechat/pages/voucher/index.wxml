@@ -2,12 +2,12 @@
   <view class="page-hero">
     <view class="page-eyebrow">电子凭证</view>
     <view class="page-title">电子凭证</view>
-    <view class="page-subtitle">支付成功后可在这里查看本次账单的电子凭证信息，用于留存与核对。</view>
+    <view class="page-subtitle">支付成功后可在这里查看本次账单的电子凭证，用于留存与核对。</view>
   </view>
 
   <view wx:if="{{loading}}" class="panel state-card">
     <view class="state-title">正在加载电子凭证</view>
-    <view class="state-desc">正在调用 <text>/api/v1/payments/{{payOrderNo}}/voucher</text>。</view>
+    <view class="state-desc">正在为你同步本次支付对应的电子凭证。</view>
   </view>
 
   <view wx:elif="{{errorMessage}}" class="panel state-card">
@@ -58,8 +58,8 @@
           <view class="info-value">{{voucher.content.issuedAt}}</view>
         </view>
         <view class="info-row">
-          <view class="info-key">接口说明</view>
-          <view class="info-value">当前后端凭证内容仅返回账单号、费种、金额与签发时间。</view>
+          <view class="info-key">使用说明</view>
+          <view class="info-value">可作为本次缴费的留存凭证，便于后续核对账单与支付记录。</view>
         </view>
       </view>
     </view>

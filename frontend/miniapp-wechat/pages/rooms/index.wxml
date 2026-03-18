@@ -1,29 +1,41 @@
 <view class="page-shell safe-bottom">
-  <view class="page-hero">
-    <view class="page-eyebrow">Room First</view>
+  <view class="page-hero home-hero">
+    <view class="page-eyebrow">居民首页</view>
     <view class="page-title">我的房间</view>
-    <view class="page-subtitle">账单始终围绕房间查看与支付。先选房间，再进入对应账单列表，是当前 Resident MVP 的主入口。</view>
+    <view class="page-subtitle">从房间进入账单和缴费，是最方便也最清晰的查看方式。</view>
+
+    <view class="home-hero__stats">
+      <view class="home-stat-card">
+        <view class="home-stat-card__label">已绑定房间</view>
+        <view class="home-stat-card__value">{{rooms.length}}</view>
+        <view class="home-stat-card__note">当前账号可查看的全部房间</view>
+      </view>
+      <view class="home-stat-card home-stat-card--accent">
+        <view class="home-stat-card__label">可直接缴费</view>
+        <view class="home-stat-card__value">{{activeRoomCount}}</view>
+        <view class="home-stat-card__note">当前可直接进入缴费的房间</view>
+      </view>
+    </view>
   </view>
 
-  <view class="panel meta-grid">
-    <view class="meta-item">
-      <view class="meta-label">已绑定房间</view>
-      <view class="meta-value">{{rooms.length}}</view>
-    </view>
-    <view class="meta-item">
-      <view class="meta-label">有效绑定</view>
-      <view class="meta-value">{{activeRoomCount}}</view>
-    </view>
-  </view>
-
-  <view class="panel button-row">
-    <button class="button-secondary" bindtap="openResidentBills">查看全部住户账单</button>
+  <view class="panel card-stack action-panel">
+    <view class="section-heading">
+      <view>
+        <view class="section-title">常用入口</view>
+        <view class="section-subtitle">快速查看全部账单，或切换到其他账号继续使用。</view>
+      </view>
+        <view class="summary-pill">
+          <view class="summary-pill__label">今日概览</view>
+          <view class="summary-pill__value">{{activeRoomCount}} 个可缴费</view>
+        </view>
+      </view>
+    <button class="button-secondary" bindtap="openResidentBills">查看全部账单</button>
     <button class="button-ghost" bindtap="handleLogout">切换登录账号</button>
   </view>
 
   <view wx:if="{{loading}}" class="panel state-card">
     <view class="state-title">正在加载房间</view>
-    <view class="state-desc">正在读取 <text>/api/v1/me/rooms</text>，请稍候。</view>
+    <view class="state-desc">正在为你更新房间信息，请稍候。</view>
   </view>
 
   <view wx:elif="{{errorMessage}}" class="panel state-card">
@@ -34,28 +46,38 @@
 
   <view wx:elif="{{!rooms.length}}" class="panel state-card">
     <view class="state-title">还没有可查看的房间</view>
-    <view class="state-desc">当前账号没有 ACTIVE 房间绑定时，将无法进入按房间缴费链路。</view>
+    <view class="state-desc">当前账号暂未绑定可查看房间，稍后可更换账号后重新进入。</view>
   </view>
 
   <view wx:else class="list-stack">
-    <view wx:for="{{rooms}}" wx:key="roomId" class="panel card-stack">
-      <view class="info-row">
-        <view class="room-card-title">{{item.roomLabel}}</view>
+    <view class="panel home-note-card">
+      <view class="section-title">按房间查看更不容易混淆</view>
+      <view class="section-subtitle">每个房间的费用、账期和支付结果都会单独展示，查找更直观。</view>
+    </view>
+
+    <view wx:for="{{rooms}}" wx:key="roomId" class="panel card-stack room-home-card">
+      <view class="room-home-card__top">
+        <view class="card-kicker">房间 {{index + 1}}</view>
         <view class="status-chip status-chip--{{item.bindingStatus}}">{{item.bindingStatusLabel}}</view>
       </view>
 
-      <view class="meta-grid">
-        <view class="meta-item">
-          <view class="meta-label">房屋面积</view>
-          <view class="meta-value">{{item.areaText}} ㎡</view>
+      <view class="room-home-card__title">{{item.roomLabel}}</view>
+      <view class="room-home-card__desc">查看本房间账单、支付状态和后续凭证。</view>
+
+      <view class="metric-grid room-home-card__metrics">
+        <view class="metric-card">
+          <view class="metric-label">房屋面积</view>
+          <view class="metric-value">{{item.areaText}}</view>
+          <view class="metric-note">平方米</view>
         </view>
-        <view class="meta-item">
-          <view class="meta-label">绑定关系</view>
-          <view class="meta-value">{{item.relationTypeLabel}}</view>
+        <view class="metric-card">
+          <view class="metric-label">绑定关系</view>
+          <view class="metric-value room-home-card__metric-value">{{item.relationTypeLabel}}</view>
+          <view class="metric-note">当前查看身份</view>
         </view>
       </view>
 
-      <view class="text-muted">进入后将优先调用 <text>/api/v1/me/rooms/{{item.roomId}}/bills</text>，保证账单仍然以房间为主体展示。</view>
+      <view class="surface-note">进入后会优先展示这个房间下的账单和支付进度。</view>
 
       <button class="button-primary" data-room-id="{{item.roomId}}" data-room-label="{{item.roomLabel}}" bindtap="openRoomBills">查看本房间账单</button>
     </view>

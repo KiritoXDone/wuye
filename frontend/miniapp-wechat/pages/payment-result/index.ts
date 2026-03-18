@@ -10,8 +10,8 @@ function resolveStatusMeta(status: string, rewardIssuedCount?: number) {
     return {
       statusTitle: '支付成功',
       statusDescription: typeof rewardIssuedCount === 'number'
-        ? `账单与支付单状态已经完成闭环，本次奖励券发放结果：${rewardIssuedCount} 张。`
-        : '账单与支付单状态已经完成闭环，可以返回房间或账单详情继续查看。',
+        ? `本次缴费已完成，并同步发放 ${rewardIssuedCount} 张奖励券。`
+        : '本次缴费已完成，可以继续查看账单详情或电子凭证。',
       statusEmoji: '✓'
     }
   }
@@ -19,14 +19,14 @@ function resolveStatusMeta(status: string, rewardIssuedCount?: number) {
   if (status === 'FAILED' || status === 'CLOSED') {
     return {
       statusTitle: '支付失败',
-      statusDescription: '支付单未成功完成，你可以返回账单详情重新发起支付。',
+      statusDescription: '本次支付未成功完成，你可以返回账单详情重新发起支付。',
       statusEmoji: '!'
     }
   }
 
   return {
     statusTitle: '支付处理中',
-    statusDescription: '系统正在等待支付结果确认，页面会继续轮询当前支付单状态。',
+    statusDescription: '结果仍在确认中，页面会自动刷新最新支付状态。',
     statusEmoji: '…'
   }
 }
@@ -40,7 +40,7 @@ Page({
     paymentStatus: 'PAYING',
     paymentStatusLabel: formatBillStatus('PAYING'),
     statusTitle: '支付处理中',
-    statusDescription: '系统正在等待支付结果确认。',
+    statusDescription: '结果仍在确认中，请稍候。',
     statusEmoji: '…',
     billIdText: '--',
     paidAtText: '--',
@@ -110,8 +110,8 @@ Page({
         voucherIssued: !!response.voucherIssued,
         rewardIssuedText: hasRewardIssuedCount
           ? (response.rewardIssuedCount || 0) > 0
-            ? `本次支付已发放 ${response.rewardIssuedCount || 0} 张奖励券，可在后续账单支付时继续使用。`
-            : '本次支付未触发奖励券发放规则。'
+            ? `本次支付已发放 ${response.rewardIssuedCount || 0} 张奖励券，可在后续缴费时使用。`
+            : '本次支付未发放奖励券。'
           : ''
       })
 

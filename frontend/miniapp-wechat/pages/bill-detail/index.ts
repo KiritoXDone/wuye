@@ -85,7 +85,7 @@ function buildDefaultAmountState(detail: BillDetailView | null) {
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
     couponHint: detail?.availableCoupons.length
-      ? '点击可用券后会实时校验并更新实付金额。'
+      ? '选择优惠券后会自动刷新实付金额。'
       : '当前账单暂无可用券。',
     couponValidating: false,
     discountAmountText: formatMoney(0),
@@ -182,7 +182,7 @@ Page({
 
     this.setData({
       couponValidating: true,
-      couponHint: `正在校验 ${coupon.name}...`
+      couponHint: `正在校验 ${coupon.name}…`
     })
 
     try {
