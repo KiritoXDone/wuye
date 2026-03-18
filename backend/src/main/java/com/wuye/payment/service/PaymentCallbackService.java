@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.mapper.BillMapper;
 import com.wuye.common.exception.BusinessException;
+import com.wuye.common.infra.mq.PaymentEventPublisher;
+import com.wuye.common.infra.redis.RedisCallbackLock;
 import com.wuye.coupon.service.CouponService;
+import com.wuye.payment.event.PaymentSuccessEvent;
 import com.wuye.payment.dto.AlipayCallbackDTO;
 import com.wuye.payment.dto.WechatCallbackDTO;
 import com.wuye.payment.entity.PayOrder;
@@ -15,6 +18,8 @@ import com.wuye.payment.mapper.PayTransactionMapper;
 import com.wuye.payment.util.PaymentSignUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +30,16 @@ import java.util.Map;
 @Service
 public class PaymentCallbackService {
 
+    private static final Logger log = LoggerFactory.getLogger(PaymentCallbackService.class);
+
     private final PayOrderMapper payOrderMapper;
     private final PayTransactionMapper payTransactionMapper;
     private final BillMapper billMapper;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
     private final PaymentVoucherService paymentVoucherService;
+    private final RedisCallbackLock redisCallbackLock;
+    private final PaymentEventPublisher paymentEventPublisher;
     private final String wechatMerchantId;
     private final String wechatCallbackSecret;
     private final String alipayMerchantId;
@@ -42,6 +51,8 @@ public class PaymentCallbackService {
                                   ObjectMapper objectMapper,
                                   CouponService couponService,
                                   PaymentVoucherService paymentVoucherService,
+                                  RedisCallbackLock redisCallbackLock,
+                                  PaymentEventPublisher paymentEventPublisher,
                                   @Value("${app.payment.wechat.merchant-id}") String wechatMerchantId,
                                   @Value("${app.payment.wechat.callback-secret}") String wechatCallbackSecret,
                                   @Value("${app.payment.alipay.merchant-id}") String alipayMerchantId,
@@ -52,6 +63,8 @@ public class PaymentCallbackService {
         this.objectMapper = objectMapper;
         this.couponService = couponService;
         this.paymentVoucherService = paymentVoucherService;
+        this.redisCallbackLock = redisCallbackLock;
+        this.paymentEventPublisher = paymentEventPublisher;
         this.wechatMerchantId = wechatMerchantId;
         this.wechatCallbackSecret = wechatCallbackSecret;
         this.alipayMerchantId = alipayMerchantId;
@@ -75,6 +88,28 @@ public class PaymentCallbackService {
                                                       String sign,
                                                       Object request,
                                                       String channel) {
+        String callbackLockKey = channel.toLowerCase() + ":callback:" + payOrderNo;
+        if (!redisCallbackLock.acquire(callbackLockKey)) {
+            throw new BusinessException("CONFLICT", "回调正在处理中，请稍后重试", HttpStatus.CONFLICT);
+        }
+        try {
+            return handleSuccessCallbackInternal(payOrderNo, outTradeNo, merchantId, totalAmount, sign, request, channel);
+        } finally {
+            try {
+                redisCallbackLock.release(callbackLockKey);
+            } catch (RuntimeException ex) {
+                log.warn("callback lock release degraded for {}", callbackLockKey, ex);
+            }
+        }
+    }
+
+    private Map<String, Object> handleSuccessCallbackInternal(String payOrderNo,
+                                                              String outTradeNo,
+                                                              String merchantId,
+                                                              BigDecimal totalAmount,
+                                                              String sign,
+                                                              Object request,
+                                                              String channel) {
         PayOrder payOrder = payOrderMapper.findByPayOrderNo(payOrderNo);
         if (payOrder == null) {
             return Map.of("accepted", false, "message", "payOrderNo not found");
@@ -108,6 +143,14 @@ public class PaymentCallbackService {
         paymentVoucherService.ensureVoucher(payOrder, bill, paidAt);
         couponService.markCouponUsed(payOrder.getCouponInstanceId(), payOrder.getPayOrderNo(), payOrder.getAccountId());
         int rewardIssuedCount = bill == null ? 0 : couponService.issueRewardCoupons(bill, payOrder.getAccountId(), payOrder.getPayOrderNo());
+        PaymentSuccessEvent event = new PaymentSuccessEvent();
+        event.setPayOrderNo(payOrder.getPayOrderNo());
+        event.setBillId(payOrder.getBillId());
+        event.setAccountId(payOrder.getAccountId());
+        event.setChannel(payOrder.getChannel());
+        event.setPayAmount(payOrder.getPayAmount());
+        event.setPaidAt(paidAt);
+        paymentEventPublisher.publishPaymentSuccess(event);
         insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,
                 Map.of("paidAt", paidAt, "status", "SUCCESS", "rewardIssuedCount", rewardIssuedCount), "SUCCESS", null, null);
         return Map.of("accepted", true, "alreadyProcessed", false, "rewardIssuedCount", rewardIssuedCount);
