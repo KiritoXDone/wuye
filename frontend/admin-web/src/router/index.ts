@@ -101,6 +101,12 @@ const router = createRouter({
           component: () => import('@/views/invoices/InvoiceApplicationsView.vue'),
           meta: { title: '发票申请' },
         },
+        {
+          path: 'ai-runtime-config',
+          name: 'ai-runtime-config',
+          component: () => import('@/views/ai/AiRuntimeConfigView.vue'),
+          meta: { title: 'Agent 运行配置' },
+        },
       ],
     },
   ],

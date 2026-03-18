@@ -24,6 +24,7 @@ const menus = [
   { path: '/dunning', label: '催缴任务', icon: DataBoard },
   { path: '/audit-logs', label: '审计日志', icon: Files },
   { path: '/invoice-applications', label: '发票申请', icon: Files },
+  { path: '/ai-runtime-config', label: 'Agent 运行配置', icon: SetUp },
 ]
 
 const activeMenu = computed(() => route.path)
