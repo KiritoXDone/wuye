@@ -3,12 +3,46 @@ spring:
     name: wuye-backend
   profiles:
     active: dev
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: ${REDIS_TIMEOUT:5s}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
 app:
+  infra:
+    redis:
+      enabled: ${APP_INFRA_REDIS_ENABLED:false}
+      key-prefix: ${APP_INFRA_REDIS_KEY_PREFIX:wuye:}
+      callback-lock-seconds: ${APP_INFRA_REDIS_CALLBACK_LOCK_SECONDS:300}
+    rabbit:
+      enabled: ${APP_INFRA_RABBIT_ENABLED:false}
+      payment-exchange: ${APP_INFRA_RABBIT_PAYMENT_EXCHANGE:wuye.payment.events}
+      payment-success-routing-key: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_ROUTING_KEY:payment.success}
+      payment-success-queue: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_QUEUE:wuye.payment.success}
+      payment-success-dlq: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_DLQ:wuye.payment.success.dlq}
+  ai:
+    runtime:
+      enabled: ${APP_AI_RUNTIME_ENABLED:false}
+      api-base-url: ${APP_AI_RUNTIME_API_BASE_URL:https://api.openai.com/v1}
+      provider: ${APP_AI_RUNTIME_PROVIDER:openai}
+      model: ${APP_AI_RUNTIME_MODEL:gpt-4o-mini}
+      api-key: ${APP_AI_RUNTIME_API_KEY:}
+      timeout-ms: ${APP_AI_RUNTIME_TIMEOUT_MS:30000}
+      max-tokens: ${APP_AI_RUNTIME_MAX_TOKENS:4096}
+      temperature: ${APP_AI_RUNTIME_TEMPERATURE:0.2}
   jwt:
     issuer: wuye-backend
     secret: change-this-secret-change-this-secret

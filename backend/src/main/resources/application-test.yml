@@ -7,6 +7,16 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 1s
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
 
 server:
   port: 0
@@ -17,6 +27,27 @@ logging:
     com.wuye: INFO
 
 app:
+  infra:
+    redis:
+      enabled: false
+      key-prefix: 'wuye:test:'
+      callback-lock-seconds: 30
+    rabbit:
+      enabled: false
+      payment-exchange: wuye.test.payment.events
+      payment-success-routing-key: payment.success
+      payment-success-queue: wuye.test.payment.success
+      payment-success-dlq: wuye.test.payment.success.dlq
+  ai:
+    runtime:
+      enabled: false
+      api-base-url: https://api.openai.com/v1
+      provider: openai
+      model: gpt-4o-mini
+      api-key: ''
+      timeout-ms: 30000
+      max-tokens: 4096
+      temperature: 0.2
   jwt:
     issuer: wuye-backend-test
     secret: test-secret-test-secret-test-secret
