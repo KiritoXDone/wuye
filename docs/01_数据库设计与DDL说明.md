@@ -168,6 +168,12 @@ UNIQUE KEY uk_coupon_redemption_coupon (coupon_instance_id)
 - `PROPERTY` 和 `WATER` 都走这张表
 - 通过 `effective_from / effective_to` 控制调价生效区间
 
+补充口径：
+- `PROPERTY` 物业费支持 `cycle_type=MONTH`（月）与 `cycle_type=YEAR`（年）。
+- `WATER` 水费当前仅支持 `cycle_type=MONTH`（月）。
+- 当物业费规则为 `YEAR` 时，`unit_price` 语义为“元/㎡/年”；当为 `MONTH` 时，`unit_price` 语义为“元/㎡/月”。
+- YEAR 费率不会生成独立的年度账单，系统仍按 `bill.period_year + bill.period_month` 维护月账单，只是在开单时把年单价自动折算到当月账单金额。
+
 P2 增强口径：
 - 水费规则继续保留 `unit_price` 作为兼容基础单价
 - 新增 `pricing_mode` 区分 `FLAT / TIERED`
@@ -205,6 +211,10 @@ P2 增强口径：
 建议：
 - 物业费 `ext_json` 记录面积、单价、公式、面积来源
 - 水费 `ext_json` 记录期初、期末、用量、水表 ID
+
+补充口径：
+- 物业费使用 YEAR 费率时，`bill` 仍然是一张月账单。
+- 对应 `bill_line.ext_json` 应保留 `cycleType`、`annualUnitPrice`、`monthlyUnitPrice` 和折算公式，便于财务解释和审计追踪。
 
 ---
 

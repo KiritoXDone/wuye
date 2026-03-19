@@ -73,6 +73,7 @@ async function submitWater() {
     <div class="two-column-grid">
       <PageSection title="物业费开单" description="POST /admin/bills/generate/property">
         <el-form ref="propertyRef" :model="propertyForm" :rules="rules" label-position="top">
+          <div class="layout-tag" style="margin-bottom: 16px;">物业费会按对应费率的“月 / 年”周期自动计算；若使用年费率，系统会按月折算生成账单。</div>
           <div class="form-card-grid">
             <el-form-item label="小区 ID" prop="communityId">
               <el-input-number v-model="propertyForm.communityId" :min="1" controls-position="right" style="width: 100%" />

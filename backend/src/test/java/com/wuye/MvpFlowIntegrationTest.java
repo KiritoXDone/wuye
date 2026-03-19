@@ -366,6 +366,88 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void propertyYearCycleRuleShouldBeStoredAndAppliedAsMonthlyAllocatedBills() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/fee-rules")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "feeType": "PROPERTY",
+                                  "unitPrice": 30.0000,
+                                  "cycleType": "YEAR",
+                                  "effectiveFrom": "2026-01-01",
+                                  "effectiveTo": "2026-12-31",
+                                  "remark": "物业费年费率测试规则"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.feeType").value("PROPERTY"))
+                .andExpect(jsonPath("$.data.cycleType").value("YEAR"));
+
+        mockMvc.perform(get("/api/v1/admin/fee-rules")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("communityId", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].cycleType").value("YEAR"));
+
+        mockMvc.perform(post("/api/v1/admin/bills/generate/property")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "year": 2026,
+                                  "month": 1,
+                                  "overwriteStrategy": "SKIP"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.generatedCount").value(2));
+
+        MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
+                        .param("pageNo", "1")
+                        .param("pageSize", "20")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode billsJson = read(billsResult);
+        long propertyBillId = findBillIdByFeeTypeAndRoomAndPeriod(billsJson, "PROPERTY", 1001L, "2026-01");
+
+        mockMvc.perform(get("/api/v1/bills/" + propertyBillId)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amountDue").value(246.25))
+                .andExpect(jsonPath("$.data.billLines[0].unitPrice").value(2.5))
+                .andExpect(jsonPath("$.data.billLines[0].lineAmount").value(246.25))
+                .andExpect(jsonPath("$.data.billLines[0].itemName").value("2026-01 物业费（年）"))
+                .andExpect(jsonPath("$.data.billLines[0].ext.cycleType").value("YEAR"))
+                .andExpect(jsonPath("$.data.billLines[0].ext.cycleLabel").value("年"))
+                .andExpect(jsonPath("$.data.billLines[0].ext.annualUnitPrice").value(30.0))
+                .andExpect(jsonPath("$.data.billLines[0].ext.monthlyUnitPrice").value(2.5));
+    }
+
+    @Test
+    void waterFeeRuleShouldRejectYearCycle() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/fee-rules")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "feeType": "WATER",
+                                  "unitPrice": 3.2000,
+                                  "cycleType": "YEAR",
+                                  "effectiveFrom": "2026-01-01",
+                                  "effectiveTo": "2026-12-31",
+                                  "remark": "水费年费率测试规则"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+    }
+
+    @Test
     void paymentIdempotencyKeyMustMatchSameRequestSemantics() throws Exception {
         createFeeRule("PROPERTY", "2.5000");
         String period = "2026-04";

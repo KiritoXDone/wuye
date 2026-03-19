@@ -15,13 +15,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class FeeRuleService {
+
+    private static final Set<String> PROPERTY_CYCLE_TYPES = Set.of("MONTH", "YEAR");
+    private static final Set<String> WATER_CYCLE_TYPES = Set.of("MONTH");
 
     private final FeeRuleMapper feeRuleMapper;
     private final FeeRuleWaterTierMapper feeRuleWaterTierMapper;
@@ -41,12 +46,14 @@ public class FeeRuleService {
     @Transactional
     public FeeRuleVO create(LoginUser loginUser, FeeRuleCreateDTO dto) {
         accessGuard.requireRole(loginUser, "ADMIN");
+        String feeType = normalizeFeeType(dto.getFeeType());
+        String cycleType = normalizeCycleType(dto.getCycleType());
         FeeRule feeRule = new FeeRule();
         feeRule.setCommunityId(dto.getCommunityId());
-        feeRule.setFeeType(dto.getFeeType());
-        feeRule.setRuleName(dto.getEffectiveFrom() + dto.getFeeType() + "规则");
+        feeRule.setFeeType(feeType);
+        feeRule.setRuleName(dto.getEffectiveFrom() + feeType + "规则");
         feeRule.setUnitPrice(dto.getUnitPrice());
-        feeRule.setCycleType(dto.getCycleType());
+        feeRule.setCycleType(cycleType);
         feeRule.setPricingMode(resolvePricingMode(dto));
         feeRule.setEffectiveFrom(dto.getEffectiveFrom());
         feeRule.setEffectiveTo(dto.getEffectiveTo());
@@ -54,6 +61,7 @@ public class FeeRuleService {
         feeRule.setRemark(dto.getRemark());
         feeRule.setAbnormalAbsThreshold(dto.getAbnormalAbsThreshold());
         feeRule.setAbnormalMultiplierThreshold(dto.getAbnormalMultiplierThreshold());
+        validateRuleSemantics(feeRule, dto);
         feeRuleMapper.insert(feeRule);
         insertWaterTiers(feeRule.getId(), dto.getWaterTiers());
         auditLogService.record(loginUser, "BILL", String.valueOf(feeRule.getId()), "CREATE", buildAuditDetail(feeRule, dto));
@@ -99,6 +107,41 @@ public class FeeRuleService {
             return dto.getPricingMode().trim().toUpperCase();
         }
         return dto.getWaterTiers() == null || dto.getWaterTiers().isEmpty() ? "FLAT" : "TIERED";
+    }
+
+    private void validateRuleSemantics(FeeRule feeRule, FeeRuleCreateDTO dto) {
+        if ("PROPERTY".equals(feeRule.getFeeType())) {
+            if (!PROPERTY_CYCLE_TYPES.contains(feeRule.getCycleType())) {
+                throw new BusinessException("INVALID_ARGUMENT", "物业费周期仅支持月或年", HttpStatus.BAD_REQUEST);
+            }
+            if (!"FLAT".equals(feeRule.getPricingMode())) {
+                throw new BusinessException("INVALID_ARGUMENT", "物业费仅支持固定单价", HttpStatus.BAD_REQUEST);
+            }
+            if (dto.getWaterTiers() != null && !dto.getWaterTiers().isEmpty()) {
+                throw new BusinessException("INVALID_ARGUMENT", "物业费不支持阶梯配置", HttpStatus.BAD_REQUEST);
+            }
+            if (dto.getAbnormalAbsThreshold() != null || dto.getAbnormalMultiplierThreshold() != null) {
+                throw new BusinessException("INVALID_ARGUMENT", "物业费不支持异常阈值", HttpStatus.BAD_REQUEST);
+            }
+            return;
+        }
+
+        if ("WATER".equals(feeRule.getFeeType())) {
+            if (!WATER_CYCLE_TYPES.contains(feeRule.getCycleType())) {
+                throw new BusinessException("INVALID_ARGUMENT", "水费周期仅支持月", HttpStatus.BAD_REQUEST);
+            }
+            return;
+        }
+
+        throw new BusinessException("INVALID_ARGUMENT", "暂不支持的费用类型", HttpStatus.BAD_REQUEST);
+    }
+
+    private String normalizeFeeType(String feeType) {
+        return feeType == null ? null : feeType.trim().toUpperCase();
+    }
+
+    private String normalizeCycleType(String cycleType) {
+        return cycleType == null ? null : cycleType.trim().toUpperCase();
     }
 
     private void insertWaterTiers(Long feeRuleId, List<FeeRuleWaterTierDTO> waterTiers) {

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
@@ -61,6 +62,7 @@ public class PropertyBillGenerateService {
         if (feeRule == null) {
             throw new BusinessException("NOT_FOUND", "未找到生效中的物业费规则", HttpStatus.NOT_FOUND);
         }
+        BillingSemantics billingSemantics = resolveBillingSemantics(feeRule, dto.getYear(), dto.getMonth());
         List<Room> rooms = roomMapper.listActiveByCommunity(dto.getCommunityId());
         int generated = 0;
         for (Room room : rooms) {
@@ -71,7 +73,7 @@ public class PropertyBillGenerateService {
                 }
                 throw new BusinessException("CONFLICT", "存在重复账单: roomId=" + room.getId(), HttpStatus.CONFLICT);
             }
-            BigDecimal amountDue = MoneyUtils.scaleMoney(room.getAreaM2().multiply(feeRule.getUnitPrice()));
+            BigDecimal amountDue = MoneyUtils.scaleMoney(room.getAreaM2().multiply(billingSemantics.monthlyUnitPrice()));
             Bill bill = new Bill();
             bill.setBillNo(NoGenerator.billNo());
             bill.setRoomId(room.getId());
@@ -82,23 +84,27 @@ public class PropertyBillGenerateService {
             bill.setAmountDue(amountDue);
             bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
             bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
-            bill.setDueDate(targetDate.with(TemporalAdjusters.lastDayOfMonth()));
+            bill.setDueDate(billingSemantics.dueDate());
             bill.setStatus("ISSUED");
             bill.setSourceType("GENERATED");
-            bill.setRemark("物业费自动开单");
+            bill.setRemark(billingSemantics.remark());
             billMapper.insert(bill);
 
             BillLine billLine = new BillLine();
             billLine.setBillId(bill.getId());
             billLine.setLineNo(1);
             billLine.setLineType("PROPERTY");
-            billLine.setItemName(dto.getYear() + "-" + String.format("%02d", dto.getMonth()) + " 物业费");
-            billLine.setUnitPrice(feeRule.getUnitPrice());
+            billLine.setItemName(dto.getYear() + "-" + String.format("%02d", dto.getMonth()) + " 物业费（" + billingSemantics.cycleLabel() + "）");
+            billLine.setUnitPrice(billingSemantics.monthlyUnitPrice());
             billLine.setQuantity(MoneyUtils.scaleQuantity(room.getAreaM2()));
             billLine.setLineAmount(amountDue);
             billLine.setExtJson(writeJson(new LinkedHashMap<>() {{
                 put("areaM2", room.getAreaM2());
-                put("formula", "area * unitPrice");
+                put("cycleType", billingSemantics.cycleType());
+                put("cycleLabel", billingSemantics.cycleLabel());
+                put("annualUnitPrice", billingSemantics.annualUnitPrice());
+                put("monthlyUnitPrice", billingSemantics.monthlyUnitPrice());
+                put("formula", billingSemantics.formula());
             }}));
             billLineMapper.insert(billLine);
             generated++;
@@ -112,5 +118,48 @@ public class PropertyBillGenerateService {
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("failed to serialize json", ex);
         }
+    }
+
+    private BillingSemantics resolveBillingSemantics(FeeRule feeRule, Integer year, Integer month) {
+        String cycleType = feeRule.getCycleType() == null ? "MONTH" : feeRule.getCycleType().trim().toUpperCase();
+        BigDecimal annualUnitPrice;
+        BigDecimal monthlyUnitPrice;
+        String formula;
+        String cycleLabel;
+        String remark;
+
+        if ("YEAR".equals(cycleType)) {
+            annualUnitPrice = feeRule.getUnitPrice();
+            monthlyUnitPrice = annualUnitPrice.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
+            formula = "area * annualUnitPrice / 12";
+            cycleLabel = "年";
+            remark = "物业费自动开单（按年费率折月）";
+        } else {
+            annualUnitPrice = feeRule.getUnitPrice().multiply(BigDecimal.valueOf(12));
+            monthlyUnitPrice = feeRule.getUnitPrice();
+            formula = "area * monthlyUnitPrice";
+            cycleLabel = "月";
+            remark = "物业费自动开单（按月费率）";
+            cycleType = "MONTH";
+        }
+
+        return new BillingSemantics(
+                cycleType,
+                cycleLabel,
+                annualUnitPrice,
+                monthlyUnitPrice,
+                LocalDate.of(year, month, 1).with(TemporalAdjusters.lastDayOfMonth()),
+                formula,
+                remark
+        );
+    }
+
+    private record BillingSemantics(String cycleType,
+                                    String cycleLabel,
+                                    BigDecimal annualUnitPrice,
+                                    BigDecimal monthlyUnitPrice,
+                                    LocalDate dueDate,
+                                    String formula,
+                                    String remark) {
     }
 }

@@ -15,7 +15,7 @@ const menuGroups = [
     items: [
       { path: '/dashboard', label: '仪表盘', description: '查看本月经营摘要、实收与欠费关键指标。', icon: Odometer },
       { path: '/bills', label: '账单管理', description: '按账期和状态检索账单，并查看详细收费条目。', icon: Document },
-      { path: '/billing-generate', label: '账单生成', description: '按月生成物业费与水费账单，维持收费闭环。', icon: DataBoard },
+      { path: '/billing-generate', label: '账单生成', description: '按规则生成物业费与水费账单，维持收费闭环。', icon: DataBoard },
     ],
   },
   {

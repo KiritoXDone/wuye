@@ -58,6 +58,7 @@ const rules: FormRules<typeof form> = {
 function resetFormAfterSubmit() {
   form.unitPrice = form.feeType === 'WATER' ? 3.2 : 2.5
   form.pricingMode = form.feeType === 'WATER' ? 'TIERED' : 'FLAT'
+  form.cycleType = 'MONTH'
   form.effectiveTo = ''
   form.remark = ''
   form.abnormalAbsThreshold = undefined
@@ -178,12 +179,16 @@ watch(
   (value) => {
     if (value === 'WATER') {
       form.pricingMode = 'TIERED'
+      form.cycleType = 'MONTH'
       if (!form.waterTiers.length) {
         form.waterTiers = [createTier(0, 5, Number(form.unitPrice) || 0)]
       }
       return
     }
     form.pricingMode = 'FLAT'
+    if (!['MONTH', 'YEAR'].includes(form.cycleType)) {
+      form.cycleType = 'MONTH'
+    }
   },
   { immediate: true },
 )
@@ -354,7 +359,7 @@ onMounted(loadData)
               <div class="workspace-block__header">
                 <div>
                   <h3 class="workspace-block__title">基础配置</h3>
-                  <p class="workspace-block__description">先确定小区、费种、周期与生效范围，再继续录入价格和扩展参数。</p>
+                   <p class="workspace-block__description">先确定小区、费种、周期与生效范围，再继续录入价格和扩展参数。</p>
                 </div>
                 <div class="layout-tag">基础字段</div>
               </div>
@@ -369,12 +374,13 @@ onMounted(loadData)
                 </el-form-item>
                 <el-form-item label="单价" prop="unitPrice">
                   <el-input-number v-model="form.unitPrice" :min="0" :precision="2" :step="0.1" controls-position="right" style="width: 100%" />
-                  <div class="form-helper-text">{{ form.feeType === 'WATER' ? '水费规则需保留基础单价，启用阶梯价后再按分段单价执行。' : '物业费按固定单价维护，供后续开单直接引用。' }}</div>
+                  <div class="form-helper-text">{{ form.feeType === 'WATER' ? '水费规则需保留基础单价，启用阶梯价后再按分段单价执行。' : (form.cycleType === 'YEAR' ? '物业费年单价按“元/㎡/年”录入，开单时系统会自动折算为月账单金额。' : '物业费月单价按“元/㎡/月”录入，供后续开单直接引用。') }}</div>
                 </el-form-item>
                 <el-form-item label="周期类型" prop="cycleType">
-                  <el-select v-model="form.cycleType" style="width: 100%">
+                  <el-select v-model="form.cycleType" :disabled="form.feeType === 'WATER'" style="width: 100%">
                     <el-option v-for="option in cycleTypeOptions" :key="option.value" :label="option.label" :value="option.value" />
                   </el-select>
+                  <div class="form-helper-text">{{ form.feeType === 'WATER' ? '水费暂仅支持按月规则。' : '物业费支持月单价和年单价两种录入方式。' }}</div>
                 </el-form-item>
                 <el-form-item label="计价方式" prop="pricingMode">
                   <el-select v-model="form.pricingMode" :disabled="form.feeType !== 'WATER'" style="width: 100%">

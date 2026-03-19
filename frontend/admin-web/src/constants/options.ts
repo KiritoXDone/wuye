@@ -15,7 +15,8 @@ export const billStatusOptions = [
 ]
 
 export const cycleTypeOptions = [
-  { label: '按月', value: 'MONTH' },
+  { label: '月', value: 'MONTH' },
+  { label: '年', value: 'YEAR' },
 ]
 
 export const pricingModeOptions = [
