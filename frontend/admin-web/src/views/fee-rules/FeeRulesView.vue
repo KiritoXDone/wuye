@@ -22,7 +22,7 @@ const propertyRuleCount = computed(() => list.value.filter((item) => item.feeTyp
 const waterRuleCount = computed(() => list.value.filter((item) => item.feeType === 'WATER').length)
 const tieredRuleCount = computed(() => list.value.filter((item) => item.pricingMode === 'TIERED').length)
 const thresholdRuleCount = computed(() => list.value.filter((item) => item.feeType === 'WATER' && (item.abnormalAbsThreshold !== undefined || item.abnormalMultiplierThreshold !== undefined)).length)
-const activePeriodHint = computed(() => (list.value[0]?.effectiveFrom ? `最近生效开始于 ${formatDate(list.value[0]?.effectiveFrom)}` : '可按小区 ID 查询当前规则'))
+const activePeriodHint = computed(() => (list.value[0]?.effectiveFrom ? `最近生效开始于 ${formatDate(list.value[0]?.effectiveFrom)}` : '输入小区后可查看当前生效规则'))
 
 function createTier(startUsage = 0, endUsage?: number, unitPrice = 0): FeeRuleWaterTier {
   return {
@@ -201,18 +201,18 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="page-shell">
+    <div class="page-shell">
     <div class="page-header">
-      <div class="page-header__eyebrow">计费配置中心</div>
+      <div class="page-header__eyebrow">计费配置</div>
       <div class="page-header__headline">
         <div>
           <h1 class="page-title">费用规则</h1>
-          <p class="page-description">围绕小区费率、水价分段和异常阈值维护正式配置台账，让运营配置、财务复核与开单链路共享同一套规则入口。</p>
+          <p class="page-description">围绕小区费率、水价分段和异常阈值维护配置台账，让运营配置、财务复核与开单链路共享同一套规则入口。</p>
         </div>
         <div class="page-header__actions">
           <div class="layout-tag">当前小区 ID {{ communityId }}</div>
           <div class="layout-tag">水费支持阶梯价</div>
-          <div class="layout-tag">提交字段保持现有 DTO</div>
+          <div class="layout-tag">支持异常阈值维护</div>
         </div>
       </div>
       <div class="page-stat-grid">
@@ -240,7 +240,7 @@ onMounted(loadData)
     </div>
 
     <div class="two-column-grid">
-      <PageSection title="规则台账" description="保留现有 communityId 查询方式，在同页完成规则检索、结果复核和分段水价查看。">
+      <PageSection title="规则台账" description="支持按小区统一检索规则，并在同页完成结果复核和分段水价查看。">
         <div class="page-grid">
           <div class="workspace-block">
             <div class="workspace-block__header">
@@ -326,7 +326,7 @@ onMounted(loadData)
         </div>
       </PageSection>
 
-      <PageSection title="新增规则" description="沿用现有 FeeRuleCreateDTO 字段与提交逻辑，只优化正式配置台的录入层级和提示方式。">
+    <PageSection title="新增规则" description="沿用现有提交逻辑，仅优化配置录入层级和提示方式，便于正式运维作业。">
         <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
           <div class="page-grid">
             <div class="workspace-block">
@@ -369,7 +369,7 @@ onMounted(loadData)
                 </el-form-item>
                 <el-form-item label="单价" prop="unitPrice">
                   <el-input-number v-model="form.unitPrice" :min="0" :precision="2" :step="0.1" controls-position="right" style="width: 100%" />
-                  <div class="form-helper-text">{{ form.feeType === 'WATER' ? '水费规则需保留基础单价，启用阶梯价后再按分段单价计费。' : '物业费按固定单价维护，供后续账单生成直接引用。' }}</div>
+                  <div class="form-helper-text">{{ form.feeType === 'WATER' ? '水费规则需保留基础单价，启用阶梯价后再按分段单价执行。' : '物业费按固定单价维护，供后续开单直接引用。' }}</div>
                 </el-form-item>
                 <el-form-item label="周期类型" prop="cycleType">
                   <el-select v-model="form.cycleType" style="width: 100%">
@@ -440,7 +440,7 @@ onMounted(loadData)
               <div class="workspace-block__header">
                 <div>
                   <h3 class="workspace-block__title">补充说明</h3>
-                  <p class="workspace-block__description">用于记录运营、财务或后续规则调整需要同步的信息，方便正式环境追踪。</p>
+                  <p class="workspace-block__description">用于记录运营、财务或后续规则调整需要同步的信息，方便规则追踪和交接。</p>
                 </div>
               </div>
               <el-form-item label="备注" style="margin-bottom: 0">
@@ -451,7 +451,7 @@ onMounted(loadData)
             <div class="workspace-action-bar">
               <el-space wrap>
                 <span class="layout-tag">保存后自动刷新列表</span>
-                <span class="layout-tag">提交字段与后端保持一致</span>
+                <span class="layout-tag">新增后同步复核台账</span>
               </el-space>
               <el-button type="primary" :loading="submitLoading" @click="handleCreate">保存规则</el-button>
             </div>

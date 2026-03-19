@@ -109,18 +109,18 @@ onMounted(loadData)
 </script>
 
 <template>
-  <div class="page-shell">
+    <div class="page-shell">
     <div class="page-header">
-      <div class="page-header__eyebrow">对账工作台</div>
+      <div class="page-header__eyebrow">账单台账</div>
       <div class="page-header__headline">
         <div>
           <h1 class="page-title">账单管理</h1>
-          <p class="page-description">围绕账期、费种、状态组织正式账单台账，支持列表筛查、分页复核和右侧详情抽屉的连续对账流程。</p>
+          <p class="page-description">围绕账期、费种、状态组织账单台账，支持列表筛查、分页复核和详情抽屉的连续对账流程。</p>
         </div>
         <div class="page-header__actions">
           <div class="layout-tag">{{ activeFilterCount ? `已启用 ${activeFilterCount} 项筛选` : '当前为全量检索' }}</div>
-          <div class="layout-tag">右侧详情抽屉复核</div>
-          <div class="layout-tag">收费 / 财务共用台账</div>
+          <div class="layout-tag">详情抽屉连续复核</div>
+          <div class="layout-tag">收费与财务共用</div>
         </div>
       </div>
       <div class="page-stat-grid">
@@ -132,7 +132,7 @@ onMounted(loadData)
       </div>
     </div>
 
-    <PageSection title="查询条件" description="保留原有账期、费种、状态筛选能力，并按正式台账使用场景收敛为统一检索区。">
+    <PageSection title="查询条件" description="支持按账期、费种和状态统一检索，便于日常快速定位目标账单。">
       <div class="page-grid">
         <div class="filter-grid">
           <el-form-item label="账期年份">
@@ -170,14 +170,14 @@ onMounted(loadData)
       </div>
     </PageSection>
 
-    <PageSection title="账单台账" description="列表聚焦编号、房间、账期、金额和状态，详情继续在右侧抽屉统一复核，不改变原有查看路径。">
+    <PageSection title="账单台账" description="列表聚焦编号、房间、账期、金额和状态，详情继续在抽屉统一复核，不改变原有查看路径。">
       <AsyncState :loading="loading" :error="error" :empty="!list.length" empty-description="当前条件下暂无账单">
         <div class="recon-grid">
           <div class="workspace-block">
             <div class="workspace-block__header">
               <div>
                 <h3 class="workspace-block__title">台账范围</h3>
-                <p class="workspace-block__description">当前结果基于已选条件返回，分页切换后仍可保持原有查询上下文。</p>
+                 <p class="workspace-block__description">当前结果基于已选条件返回，分页切换后仍可保持查询上下文。</p>
               </div>
             </div>
             <el-space wrap>
@@ -190,7 +190,7 @@ onMounted(loadData)
             <div class="workspace-block__header">
               <div>
                 <h3 class="workspace-block__title">复核重点</h3>
-                <p class="workspace-block__description">金额列保持右对齐，详情抽屉继续保留账单行项目与可用券信息，适合收费与财务同屏核对。</p>
+                 <p class="workspace-block__description">金额列保持右对齐，详情抽屉集中展示账单行项目与可用券信息，适合收费与财务同屏核对。</p>
               </div>
             </div>
             <el-space wrap>
@@ -250,14 +250,14 @@ onMounted(loadData)
       </AsyncState>
     </PageSection>
 
-    <el-drawer v-model="drawerVisible" title="账单详情复核" size="760px" class="detail-drawer">
+    <el-drawer v-model="drawerVisible" title="账单详情" size="760px" class="detail-drawer">
       <AsyncState :loading="detailLoading" :error="''" :empty="!detail" empty-description="暂无详情">
         <template v-if="detail">
           <div class="drawer-hero">
             <div>
               <div class="layout-tag">{{ detail.billNo }}</div>
               <h2 class="drawer-hero__title">{{ detail.roomLabel }}</h2>
-              <p class="drawer-hero__subtitle">账期 {{ detail.periodYear }}-{{ String(detail.periodMonth).padStart(2, '0') }} · 到期日 {{ formatDate(detail.dueDate) }} · 保留原有详情字段用于逐笔复核</p>
+              <p class="drawer-hero__subtitle">账期 {{ detail.periodYear }}-{{ String(detail.periodMonth).padStart(2, '0') }} · 到期日 {{ formatDate(detail.dueDate) }} · 适合收费、财务逐笔复核</p>
             </div>
             <div class="page-header__actions">
               <StatusTag :value="detail.feeType" />
@@ -323,7 +323,7 @@ onMounted(loadData)
             <div class="drawer-section__header">
               <div>
                 <h3 class="drawer-section__title">账单行项目</h3>
-                <p class="workspace-block__description">保留原有字段与顺序，便于核对数量、单价和行项目金额是否一致。</p>
+                 <p class="workspace-block__description">逐项核对数量、单价和金额，确保账单构成清晰可追溯。</p>
               </div>
             </div>
             <el-table :data="detail.billLines" stripe>
