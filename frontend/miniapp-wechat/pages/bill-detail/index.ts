@@ -102,6 +102,7 @@ Page({
     billDetail: null as BillDetailView | null,
     latestPayOrderNo: '',
     entryPayOrderNo: '',
+    annualPayment: false,
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
     selectedChannel: 'WECHAT' as PaymentCreatePayload['channel'],
@@ -159,8 +160,25 @@ Page({
     this.setData(buildDefaultAmountState(this.data.billDetail))
   },
 
+  handleAnnualPaymentChange(event: WechatMiniprogram.SwitchChange) {
+    if (!this.data.billDetail || this.data.billDetail.feeType !== 'PROPERTY' || this.data.billDetail.status === 'PAID') {
+      return
+    }
+    const annualPayment = Boolean(event.detail.value)
+    this.setData({
+      annualPayment,
+      selectedCouponInstanceId: 0,
+      selectedCouponName: '',
+      discountAmountText: formatMoney(0),
+      payAmountText: annualPayment ? '按年汇总后生成' : formatMoney(this.data.billDetail.amountDue),
+      couponHint: annualPayment
+        ? '按年缴纳将覆盖当前房间本年度 12 个月物业费，暂不支持优惠券。'
+        : (this.data.billDetail.availableCoupons.length ? '选择优惠券后会自动刷新实付金额。' : '当前账单暂无可用券。')
+    })
+  },
+
   async handleCouponSelect(event: WechatMiniprogram.TouchEvent) {
-    if (!this.data.billDetail || this.data.couponValidating || this.data.billDetail.status === 'PAID') {
+    if (!this.data.billDetail || this.data.couponValidating || this.data.billDetail.status === 'PAID' || this.data.annualPayment) {
       return
     }
 
@@ -238,8 +256,9 @@ Page({
       const payment = await createPayment({
         billId: this.data.billDetail.billId,
         channel: this.data.selectedChannel,
-        couponInstanceId: this.data.selectedCouponInstanceId || undefined,
-        idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId)
+        couponInstanceId: this.data.annualPayment ? undefined : (this.data.selectedCouponInstanceId || undefined),
+        annualPayment: this.data.annualPayment,
+        idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId, this.data.annualPayment)
       })
 
       this.setData({ latestPayOrderNo: payment.payOrderNo })

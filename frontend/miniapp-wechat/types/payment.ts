@@ -14,6 +14,7 @@ export interface PaymentCreatePayload {
   channel: 'WECHAT' | 'ALIPAY'
   couponInstanceId?: number
   idempotencyKey: string
+  annualPayment?: boolean
 }
 
 export interface PaymentCreateResponse {
@@ -22,6 +23,8 @@ export interface PaymentCreateResponse {
   discountAmount: number
   payAmount: number
   channel: string
+  annualPayment?: boolean
+  coveredBillCount?: number
   payParams: WechatPayParams
 }
 
@@ -30,6 +33,8 @@ export interface PaymentStatusResponse {
   billId: number
   status: string
   paidAt?: string
+  annualPayment?: boolean
+  coveredBillCount?: number
   rewardIssuedCount?: number
   voucherIssued?: boolean
 }

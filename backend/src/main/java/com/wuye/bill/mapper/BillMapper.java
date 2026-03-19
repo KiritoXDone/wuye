@@ -184,6 +184,41 @@ public interface BillMapper {
     int updateDiscountAmount(@Param("billId") Long billId, @Param("discountAmount") BigDecimal discountAmount);
 
     @Select("""
+            SELECT id, bill_no, room_id, group_id, fee_type, period_year, period_month, amount_due, discount_amount_total,
+                   amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
+            FROM bill
+            WHERE room_id = #{roomId}
+              AND fee_type = #{feeType}
+              AND period_year = #{periodYear}
+            ORDER BY period_month ASC, id ASC
+            """)
+    List<Bill> listByRoomFeeTypeAndYear(@Param("roomId") Long roomId,
+                                        @Param("feeType") String feeType,
+                                        @Param("periodYear") Integer periodYear);
+
+    @Update("""
+            <script>
+            UPDATE bill
+            SET amount_paid = amount_due,
+                status = 'PAID',
+                paid_at = #{paidAt},
+                updated_at = CURRENT_TIMESTAMP,
+                remark = CASE
+                    WHEN remark IS NULL OR remark = '' THEN #{remark}
+                    ELSE CONCAT(remark, '；', #{remark})
+                END
+            WHERE status &lt;&gt; 'PAID'
+              AND id IN
+              <foreach collection="billIds" item="billId" open="(" separator="," close=")">
+                #{billId}
+              </foreach>
+            </script>
+            """)
+    int markPaidByIds(@Param("billIds") List<Long> billIds,
+                      @Param("paidAt") LocalDateTime paidAt,
+                      @Param("remark") String remark);
+
+    @Select("""
             SELECT b.id, b.bill_no, b.room_id, b.group_id, b.fee_type, b.period_year, b.period_month, b.amount_due,
                    b.discount_amount_total, b.amount_paid, b.due_date, b.status, b.paid_at, b.cancelled_at,
                    b.source_type, b.remark

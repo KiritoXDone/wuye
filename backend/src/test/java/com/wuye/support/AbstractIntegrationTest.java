@@ -50,6 +50,7 @@ public abstract class AbstractIntegrationTest {
         jdbcTemplate.update("DELETE FROM water_usage_alert");
         jdbcTemplate.update("DELETE FROM coupon_redemption");
         jdbcTemplate.update("DELETE FROM pay_transaction");
+        jdbcTemplate.update("DELETE FROM pay_order_bill_cover");
         jdbcTemplate.update("DELETE FROM pay_order");
         jdbcTemplate.update("UPDATE coupon_instance SET status = 'NEW', source_ref_no = NULL, owner_account_id = CASE WHEN id = 92001 THEN 10001 ELSE owner_account_id END WHERE id >= 92001");
         jdbcTemplate.update("DELETE FROM coupon_instance WHERE id > 92001");

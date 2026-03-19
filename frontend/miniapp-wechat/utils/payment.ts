@@ -1,8 +1,8 @@
 import type { PaymentCreateResponse, WechatPayParams } from '../types/payment'
 
-export function buildPaymentIdempotencyKey(billId: number): string {
+export function buildPaymentIdempotencyKey(billId: number, annualPayment = false): string {
   const randomPart = Math.random().toString(36).slice(2, 8)
-  return `pay-${billId}-${Date.now()}-${randomPart}`
+  return `${annualPayment ? 'annual' : 'pay'}-${billId}-${Date.now()}-${randomPart}`
 }
 
 export function canInvokeWechatPayment(payParams?: WechatPayParams): boolean {

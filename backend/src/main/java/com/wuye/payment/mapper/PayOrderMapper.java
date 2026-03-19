@@ -16,16 +16,19 @@ public interface PayOrderMapper {
 
     @Insert("""
             INSERT INTO pay_order(pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                                  coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason)
+                                  coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason,
+                                  is_annual_payment, covered_bill_count)
             VALUES(#{payOrderNo}, #{billId}, #{accountId}, #{channel}, #{originAmount}, #{discountAmount}, #{payAmount},
-                   #{couponInstanceId}, #{idempotencyKey}, #{status}, #{channelTradeNo}, #{paidAt}, #{expiredAt}, #{closeReason})
+                   #{couponInstanceId}, #{idempotencyKey}, #{status}, #{channelTradeNo}, #{paidAt}, #{expiredAt}, #{closeReason},
+                   #{annualPayment}, #{coveredBillCount})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(PayOrder payOrder);
 
     @Select("""
             SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason,
+                   is_annual_payment AS annual_payment, covered_bill_count
             FROM pay_order
             WHERE idempotency_key = #{idempotencyKey}
             """)
@@ -33,7 +36,8 @@ public interface PayOrderMapper {
 
     @Select("""
             SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
-                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason,
+                   is_annual_payment AS annual_payment, covered_bill_count
             FROM pay_order
             WHERE pay_order_no = #{payOrderNo}
             """)
@@ -53,7 +57,9 @@ public interface PayOrderMapper {
                       @Param("paidAt") LocalDateTime paidAt);
 
     @Select("""
-            SELECT pay_order_no, bill_id, status, paid_at
+            SELECT pay_order_no, bill_id, status, paid_at,
+                   is_annual_payment AS annual_payment,
+                   covered_bill_count
             FROM pay_order
             WHERE pay_order_no = #{payOrderNo}
             """)

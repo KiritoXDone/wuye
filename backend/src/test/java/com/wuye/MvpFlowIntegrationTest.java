@@ -262,6 +262,110 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void annualPropertyPaymentMarksWholeYearBillsPaid() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/fee-rules")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "feeType": "PROPERTY",
+                                  "unitPrice": 2.5000,
+                                  "cycleType": "MONTH",
+                                  "effectiveFrom": "2026-01-01",
+                                  "effectiveTo": "2026-12-31",
+                                  "remark": "年度缴费测试规则"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.feeType").value("PROPERTY"));
+
+        for (int month = 1; month <= 12; month++) {
+            mockMvc.perform(post("/api/v1/admin/bills/generate/property")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "communityId": 100,
+                                      "year": 2026,
+                                      "month": %s,
+                                      "overwriteStrategy": "SKIP"
+                                    }
+                                    """.formatted(month)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.generatedCount").value(2));
+        }
+
+        MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
+                        .param("pageNo", "1")
+                        .param("pageSize", "50")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode billsJson = read(billsResult);
+        long januaryBillId = findBillIdByFeeTypeAndRoomAndPeriod(billsJson, "PROPERTY", 1001L, "2026-01");
+        BigDecimal annualAmount = sumPropertyBillAmountsForRoomAndYear(billsJson, 1001L, 2026);
+
+        MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "channel": "WECHAT",
+                                  "annualPayment": true,
+                                  "idempotencyKey": "idem-annual-property-2026"
+                                }
+                                """.formatted(januaryBillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.annualPayment").value(true))
+                .andExpect(jsonPath("$.data.coveredBillCount").value(12))
+                .andExpect(jsonPath("$.data.payAmount").value(annualAmount.doubleValue()))
+                .andReturn();
+        String payOrderNo = read(paymentResult).path("data").path("payOrderNo").asText();
+
+        mockMvc.perform(post("/api/v1/callbacks/wechatpay")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "payOrderNo": "%s",
+                                  "outTradeNo": "WX-ANNUAL-2026-0001",
+                                  "merchantId": "wx-test-mock-merchant",
+                                  "totalAmount": %s,
+                                  "sign": "%s"
+                                }
+                                """.formatted(payOrderNo,
+                                annualAmount.toPlainString(),
+                                PaymentSignUtils.sign(payOrderNo, "WX-ANNUAL-2026-0001", "wx-test-mock-merchant", annualAmount, "wechat-test-callback-secret"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accepted").value(true))
+                .andExpect(jsonPath("$.data.alreadyProcessed").value(false));
+
+        mockMvc.perform(get("/api/v1/payments/" + payOrderNo)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.annualPayment").value(true))
+                .andExpect(jsonPath("$.data.coveredBillCount").value(12));
+
+        MvcResult roomBillsResult = mockMvc.perform(get("/api/v1/me/rooms/1001/bills")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode roomBillsJson = read(roomBillsResult);
+        for (JsonNode item : roomBillsJson.path("data").path("list")) {
+            if ("PROPERTY".equals(item.path("feeType").asText()) && item.path("period").asText().startsWith("2026-")) {
+                assertThat(item.path("status").asText()).isEqualTo("PAID");
+            }
+        }
+
+        mockMvc.perform(get("/api/v1/bills/" + januaryBillId)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PAID"));
+    }
+
+    @Test
     void paymentIdempotencyKeyMustMatchSameRequestSemantics() throws Exception {
         createFeeRule("PROPERTY", "2.5000");
         String period = "2026-04";
@@ -680,6 +784,18 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
         return -1L;
     }
 
+    private long findBillIdByFeeTypeAndRoomAndPeriod(JsonNode billsJson, String feeType, Long roomId, String period) {
+        for (JsonNode item : billsJson.path("data").path("list")) {
+            if (feeType.equals(item.path("feeType").asText())
+                    && roomId.longValue() == item.path("roomId").asLong()
+                    && period.equals(item.path("period").asText())) {
+                return item.path("billId").asLong();
+            }
+        }
+        assertThat(roomId + ":" + period + ":" + feeType).as("未找到指定房间指定账期账单").isBlank();
+        return -1L;
+    }
+
     private BigDecimal findBillAmountById(JsonNode billsJson, long billId) {
         for (JsonNode item : billsJson.path("data").path("list")) {
             if (billId == item.path("billId").asLong()) {
@@ -694,6 +810,18 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
         BigDecimal total = BigDecimal.ZERO;
         for (JsonNode item : billsJson.path("data").path("list")) {
             total = total.add(item.path("amountDue").decimalValue());
+        }
+        return total;
+    }
+
+    private BigDecimal sumPropertyBillAmountsForRoomAndYear(JsonNode billsJson, long roomId, int year) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (JsonNode item : billsJson.path("data").path("list")) {
+            if ("PROPERTY".equals(item.path("feeType").asText())
+                    && roomId == item.path("roomId").asLong()
+                    && item.path("period").asText().startsWith(year + "-")) {
+                total = total.add(item.path("amountDue").decimalValue());
+            }
         }
         return total;
     }

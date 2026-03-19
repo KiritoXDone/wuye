@@ -12,6 +12,7 @@ public class PaymentCreateDTO {
     private Long couponInstanceId;
     @NotBlank(message = "idempotencyKey 不能为空")
     private String idempotencyKey;
+    private Boolean annualPayment;
 
     public Long getBillId() {
         return billId;
@@ -43,5 +44,13 @@ public class PaymentCreateDTO {
 
     public void setIdempotencyKey(String idempotencyKey) {
         this.idempotencyKey = idempotencyKey;
+    }
+
+    public Boolean getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(Boolean annualPayment) {
+        this.annualPayment = annualPayment;
     }
 }

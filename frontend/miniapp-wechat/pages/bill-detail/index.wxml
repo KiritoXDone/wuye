@@ -38,6 +38,15 @@
         </view>
       </view>
 
+      <view wx:if="{{billDetail.feeType === 'PROPERTY' && billDetail.status !== 'PAID'}}" class="annual-payment-row">
+        <view>
+          <view class="section-title annual-payment-title">按年缴纳物业费</view>
+          <view class="section-subtitle">开启后将按当前房间当前自然年 12 个月物业账单汇总创建支付单。</view>
+        </view>
+        <switch color="var(--color-primary)" checked="{{annualPayment}}" bindchange="handleAnnualPaymentChange" />
+      </view>
+      <view wx:if="{{annualPayment}}" class="surface-note">按年缴纳暂不支持优惠券，且要求当前房间本年度 12 个月物业账单已全部生成且均为待缴。</view>
+
       <view class="pay-summary-grid">
         <view class="pay-summary-item">
           <view class="metric-label">应收金额</view>
@@ -62,6 +71,7 @@
         </view>
       </view>
       <view wx:if="{{billDetail.status === 'PAID'}}" class="surface-note">本账单已完成支付，无需再选择优惠券。</view>
+      <view wx:elif="{{annualPayment}}" class="surface-note">按年缴纳模式下不支持选择优惠券。</view>
       <view wx:elif="{{billDetail.availableCoupons.length}}" class="list-stack coupon-list">
         <view class="coupon-chip coupon-option {{selectedCouponInstanceId === 0 ? 'coupon-option--active' : ''}}" bindtap="clearCouponSelection">
           <view class="coupon-option__header">
@@ -168,7 +178,7 @@
         </view>
       </view>
 
-      <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">创建支付单并查看结果</button>
+        <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">{{annualPayment ? '创建年度支付单并查看结果' : '创建支付单并查看结果'}}</button>
       <button wx:else class="button-secondary" bindtap="openPaymentResultFromPaid">查看支付结果</button>
       <button wx:if="{{billDetail.status === 'PAID' && (latestPayOrderNo || entryPayOrderNo)}}" class="button-ghost" bindtap="openVoucher">查看电子凭证</button>
     </view>

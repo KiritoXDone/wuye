@@ -11,6 +11,8 @@ public class PaymentSuccessEvent {
     private String channel;
     private BigDecimal payAmount;
     private LocalDateTime paidAt;
+    private Boolean annualPayment;
+    private Integer coveredBillCount;
 
     public String getPayOrderNo() {
         return payOrderNo;
@@ -58,5 +60,21 @@ public class PaymentSuccessEvent {
 
     public void setPaidAt(LocalDateTime paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public Boolean getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(Boolean annualPayment) {
+        this.annualPayment = annualPayment;
+    }
+
+    public Integer getCoveredBillCount() {
+        return coveredBillCount;
+    }
+
+    public void setCoveredBillCount(Integer coveredBillCount) {
+        this.coveredBillCount = coveredBillCount;
     }
 }

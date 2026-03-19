@@ -20,6 +20,8 @@ public class PayOrder {
     private LocalDateTime paidAt;
     private LocalDateTime expiredAt;
     private String closeReason;
+    private Boolean annualPayment;
+    private Integer coveredBillCount;
 
     public Long getId() {
         return id;
@@ -139,5 +141,21 @@ public class PayOrder {
 
     public void setCloseReason(String closeReason) {
         this.closeReason = closeReason;
+    }
+
+    public Boolean getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(Boolean annualPayment) {
+        this.annualPayment = annualPayment;
+    }
+
+    public Integer getCoveredBillCount() {
+        return coveredBillCount;
+    }
+
+    public void setCoveredBillCount(Integer coveredBillCount) {
+        this.coveredBillCount = coveredBillCount;
     }
 }

@@ -10,6 +10,8 @@ public class PaymentCreateVO {
     private BigDecimal discountAmount;
     private BigDecimal payAmount;
     private String channel;
+    private Boolean annualPayment;
+    private Integer coveredBillCount;
     private Map<String, Object> payParams;
 
     public String getPayOrderNo() {
@@ -50,6 +52,22 @@ public class PaymentCreateVO {
 
     public void setChannel(String channel) {
         this.channel = channel;
+    }
+
+    public Boolean getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(Boolean annualPayment) {
+        this.annualPayment = annualPayment;
+    }
+
+    public Integer getCoveredBillCount() {
+        return coveredBillCount;
+    }
+
+    public void setCoveredBillCount(Integer coveredBillCount) {
+        this.coveredBillCount = coveredBillCount;
     }
 
     public Map<String, Object> getPayParams() {

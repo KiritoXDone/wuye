@@ -8,6 +8,8 @@ public class PaymentStatusVO {
     private Long billId;
     private String status;
     private LocalDateTime paidAt;
+    private Boolean annualPayment;
+    private Integer coveredBillCount;
     private Integer rewardIssuedCount;
     private Boolean voucherIssued;
 
@@ -41,6 +43,22 @@ public class PaymentStatusVO {
 
     public void setPaidAt(LocalDateTime paidAt) {
         this.paidAt = paidAt;
+    }
+
+    public Boolean getAnnualPayment() {
+        return annualPayment;
+    }
+
+    public void setAnnualPayment(Boolean annualPayment) {
+        this.annualPayment = annualPayment;
+    }
+
+    public Integer getCoveredBillCount() {
+        return coveredBillCount;
+    }
+
+    public void setCoveredBillCount(Integer coveredBillCount) {
+        this.coveredBillCount = coveredBillCount;
     }
 
     public Integer getRewardIssuedCount() {

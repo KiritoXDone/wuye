@@ -8,7 +8,9 @@ import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
 import com.wuye.payment.entity.PayOrder;
+import com.wuye.payment.entity.PayOrderBillCover;
 import com.wuye.payment.entity.PaymentVoucher;
+import com.wuye.payment.mapper.PayOrderBillCoverMapper;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PaymentVoucherMapper;
 import com.wuye.payment.vo.PaymentVoucherVO;
@@ -27,6 +29,7 @@ public class PaymentVoucherService {
 
     private final PaymentVoucherMapper paymentVoucherMapper;
     private final PayOrderMapper payOrderMapper;
+    private final PayOrderBillCoverMapper payOrderBillCoverMapper;
     private final BillMapper billMapper;
     private final RoomBindingService roomBindingService;
     private final AccessGuard accessGuard;
@@ -34,12 +37,14 @@ public class PaymentVoucherService {
 
     public PaymentVoucherService(PaymentVoucherMapper paymentVoucherMapper,
                                  PayOrderMapper payOrderMapper,
+                                 PayOrderBillCoverMapper payOrderBillCoverMapper,
                                  BillMapper billMapper,
                                  RoomBindingService roomBindingService,
                                  AccessGuard accessGuard,
                                  ObjectMapper objectMapper) {
         this.paymentVoucherMapper = paymentVoucherMapper;
         this.payOrderMapper = payOrderMapper;
+        this.payOrderBillCoverMapper = payOrderBillCoverMapper;
         this.billMapper = billMapper;
         this.roomBindingService = roomBindingService;
         this.accessGuard = accessGuard;
@@ -101,6 +106,13 @@ public class PaymentVoucherService {
         content.put("feeType", bill == null ? null : bill.getFeeType());
         content.put("amount", payOrder.getPayAmount());
         content.put("issuedAt", issuedAt);
+        content.put("annualPayment", Boolean.TRUE.equals(payOrder.getAnnualPayment()));
+        content.put("coveredBillCount", payOrder.getCoveredBillCount());
+        if (Boolean.TRUE.equals(payOrder.getAnnualPayment())) {
+            content.put("coveredPeriods", payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo()).stream()
+                    .map(cover -> cover.getPeriodYear() + "-" + String.format("%02d", cover.getPeriodMonth()))
+                    .toList());
+        }
         return content;
     }
 

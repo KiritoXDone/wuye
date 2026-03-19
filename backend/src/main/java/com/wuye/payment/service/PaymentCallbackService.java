@@ -12,7 +12,9 @@ import com.wuye.payment.event.PaymentSuccessEvent;
 import com.wuye.payment.dto.AlipayCallbackDTO;
 import com.wuye.payment.dto.WechatCallbackDTO;
 import com.wuye.payment.entity.PayOrder;
+import com.wuye.payment.entity.PayOrderBillCover;
 import com.wuye.payment.entity.PayTransaction;
+import com.wuye.payment.mapper.PayOrderBillCoverMapper;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PayTransactionMapper;
 import com.wuye.payment.util.PaymentSignUtils;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -33,6 +36,7 @@ public class PaymentCallbackService {
     private static final Logger log = LoggerFactory.getLogger(PaymentCallbackService.class);
 
     private final PayOrderMapper payOrderMapper;
+    private final PayOrderBillCoverMapper payOrderBillCoverMapper;
     private final PayTransactionMapper payTransactionMapper;
     private final BillMapper billMapper;
     private final ObjectMapper objectMapper;
@@ -46,6 +50,7 @@ public class PaymentCallbackService {
     private final String alipayCallbackSecret;
 
     public PaymentCallbackService(PayOrderMapper payOrderMapper,
+                                  PayOrderBillCoverMapper payOrderBillCoverMapper,
                                   PayTransactionMapper payTransactionMapper,
                                   BillMapper billMapper,
                                   ObjectMapper objectMapper,
@@ -58,6 +63,7 @@ public class PaymentCallbackService {
                                   @Value("${app.payment.alipay.merchant-id}") String alipayMerchantId,
                                   @Value("${app.payment.alipay.callback-secret}") String alipayCallbackSecret) {
         this.payOrderMapper = payOrderMapper;
+        this.payOrderBillCoverMapper = payOrderBillCoverMapper;
         this.payTransactionMapper = payTransactionMapper;
         this.billMapper = billMapper;
         this.objectMapper = objectMapper;
@@ -135,8 +141,15 @@ public class PaymentCallbackService {
         }
         LocalDateTime paidAt = LocalDateTime.now();
         payOrderMapper.updateSuccess(payOrder.getPayOrderNo(), "SUCCESS", outTradeNo, paidAt);
+        List<PayOrderBillCover> covers = payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo());
         Bill bill = billMapper.findById(payOrder.getBillId());
-        if (bill != null && !"PAID".equals(bill.getStatus())) {
+        if (!covers.isEmpty()) {
+            List<Long> coveredBillIds = covers.stream().map(PayOrderBillCover::getBillId).toList();
+            billMapper.markPaidByIds(coveredBillIds, paidAt, "年度物业费缴纳覆盖，支付单号=" + payOrder.getPayOrderNo());
+            if (bill != null) {
+                bill.setAmountPaid(bill.getAmountDue());
+            }
+        } else if (bill != null && !"PAID".equals(bill.getStatus())) {
             billMapper.markPaid(bill.getId(), payOrder.getPayAmount(), paidAt);
             bill.setAmountPaid(payOrder.getPayAmount());
         }
@@ -150,6 +163,8 @@ public class PaymentCallbackService {
         event.setChannel(payOrder.getChannel());
         event.setPayAmount(payOrder.getPayAmount());
         event.setPaidAt(paidAt);
+        event.setAnnualPayment(Boolean.TRUE.equals(payOrder.getAnnualPayment()));
+        event.setCoveredBillCount(payOrder.getCoveredBillCount());
         paymentEventPublisher.publishPaymentSuccess(event);
         insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,
                 Map.of("paidAt", paidAt, "status", "SUCCESS", "rewardIssuedCount", rewardIssuedCount), "SUCCESS", null, null);

@@ -32,6 +32,8 @@ class PaymentSuccessEventConsumerTest {
         event.setChannel("WECHAT");
         event.setPayAmount(new BigDecimal("88.50"));
         event.setPaidAt(LocalDateTime.of(2026, 3, 17, 22, 0, 0));
+        event.setAnnualPayment(true);
+        event.setCoveredBillCount(12);
 
         paymentSuccessEventConsumer.onPaymentSuccess(objectMapper.writeValueAsString(event));
 
@@ -46,6 +48,8 @@ class PaymentSuccessEventConsumerTest {
         assertThat(recorded.getDetailJson()).contains("\"accountId\":20002");
         assertThat(recorded.getDetailJson()).contains("\"channel\":\"WECHAT\"");
         assertThat(recorded.getDetailJson()).contains("\"payAmount\":88.50");
+        assertThat(recorded.getDetailJson()).contains("\"annualPayment\":true");
+        assertThat(recorded.getDetailJson()).contains("\"coveredBillCount\":12");
     }
 
     private static class InMemoryAuditLogMapper implements AuditLogMapper {

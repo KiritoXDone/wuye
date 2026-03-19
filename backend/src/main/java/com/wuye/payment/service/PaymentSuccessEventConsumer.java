@@ -37,7 +37,9 @@ public class PaymentSuccessEventConsumer {
                         "accountId", event.getAccountId(),
                         "channel", event.getChannel(),
                         "payAmount", event.getPayAmount(),
-                        "paidAt", event.getPaidAt()
+                        "paidAt", event.getPaidAt(),
+                        "annualPayment", event.getAnnualPayment(),
+                        "coveredBillCount", event.getCoveredBillCount()
                 )
         );
     }
