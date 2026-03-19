@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Bell, DataBoard, Document, Files, Notebook, OfficeBuilding, Odometer, Operation, SetUp } from '@element-plus/icons-vue'
+import { Bell, DataBoard, Document, Files, Notebook, OfficeBuilding, Odometer, SetUp } from '@element-plus/icons-vue'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -57,49 +57,17 @@ const allMenus = menuGroups.flatMap((group) =>
 const activeMenu = computed(() => route.path)
 const currentMenu = computed(() => allMenus.find((menu) => route.path.startsWith(menu.path)))
 const pageTitle = computed(() => (route.meta.title as string) || currentMenu.value?.label || '物业管理后台')
-const pageDescription = computed(() => currentMenu.value?.description || '保持现有后台能力不变，聚焦高频业务操作与状态追踪。')
 const currentGroupLabel = computed(() => currentMenu.value?.groupLabel || '后台工作台')
 const totalMenuCount = allMenus.length
-const menuGroupCount = menuGroups.length
 const userName = computed(() => authStore.profile?.realName || '管理员')
-const mobileMenuVisible = ref(false)
-const roleText = computed(() => authStore.profile?.roles?.join(' / ') || '系统管理员')
-const accountTypeText = computed(() => {
-  const map: Record<string, string> = {
-    ADMIN: '平台管理员',
-    AGENT: '代理工作台',
-    FINANCE: '财务角色',
-  }
-  const accountType = authStore.profile?.accountType || authStore.loginInfo?.accountType || 'ADMIN'
-  return map[accountType] || accountType
-})
 const groupScopeText = computed(() => {
   const groupCount = authStore.profile?.groupIds?.length ?? 0
   return groupCount > 0 ? `已授权 ${groupCount} 个用户组` : '全局管理范围'
 })
-const sidebarFocusText = computed(() => currentMenu.value?.description || '围绕收费、计费配置、运营协同与治理能力维持后台日常闭环。')
-const workspaceSummary = computed(() => [
-  {
-    label: '当前模块',
-    value: currentGroupLabel.value,
-  },
-  {
-    label: '功能总数',
-    value: `${totalMenuCount} 项能力`,
-  },
-  {
-    label: '数据范围',
-    value: groupScopeText.value,
-  },
-])
 
 async function handleLogout() {
   await authStore.logout()
   await router.push('/login')
-}
-
-function handleMenuNavigate() {
-  mobileMenuVisible.value = false
 }
 </script>
 
@@ -108,25 +76,10 @@ function handleMenuNavigate() {
     <el-aside class="app-sidebar">
       <div class="app-sidebar__inner">
         <div class="app-logo">
-          <span class="app-logo__badge">正式运营版</span>
-          <span class="app-logo__title">物业管理后台</span>
-          <span class="app-logo__subtitle">收费、配置、运营、审计统一入口</span>
+          <span class="app-logo__badge">运营中心</span>
+          <span class="app-logo__title">物业运营管理平台</span>
+          <span class="app-logo__subtitle">账单收费、计费配置、运营协同与治理审计统一入口</span>
         </div>
-
-        <section class="app-sidebar__summary">
-          <p class="app-sidebar__summary-title">当前值班关注</p>
-          <p class="app-sidebar__summary-text">{{ sidebarFocusText }}</p>
-          <div class="app-sidebar__summary-metrics">
-            <div class="app-sidebar__summary-metric">
-              <span class="app-sidebar__summary-metric-label">功能分组</span>
-              <strong class="app-sidebar__summary-metric-value">{{ menuGroupCount }}</strong>
-            </div>
-            <div class="app-sidebar__summary-metric">
-              <span class="app-sidebar__summary-metric-label">当前定位</span>
-              <strong class="app-sidebar__summary-metric-value">{{ accountTypeText }}</strong>
-            </div>
-          </div>
-        </section>
 
         <div class="app-nav-groups">
           <section v-for="group in menuGroups" :key="group.label" class="app-nav-group">
@@ -147,10 +100,6 @@ function handleMenuNavigate() {
           </section>
         </div>
 
-        <section class="app-sidebar__footer">
-          <p class="app-sidebar__footer-label">当前工作区</p>
-          <p class="app-sidebar__footer-text">{{ currentGroupLabel }} · {{ pageTitle }}</p>
-        </section>
       </div>
     </el-aside>
 
@@ -159,28 +108,14 @@ function handleMenuNavigate() {
         <div class="app-header__surface">
           <div class="app-header__meta">
             <div class="app-header__topbar">
-              <el-button class="app-mobile-menu-btn" circle plain @click="mobileMenuVisible = true">
-                <el-icon><Operation /></el-icon>
-              </el-button>
-              <div class="layout-tag">{{ currentGroupLabel }}</div>
-              <div class="layout-tag">正式版工作区</div>
+              <span class="app-header__section-label">{{ currentGroupLabel }}</span>
             </div>
             <h1 class="app-header__meta-title">{{ pageTitle }}</h1>
-            <p class="app-header__meta-description">{{ pageDescription }}</p>
-            <div class="app-header__summary-strip">
-              <div v-for="item in workspaceSummary" :key="item.label" class="app-header__summary-item">
-                <span class="app-header__summary-label">{{ item.label }}</span>
-                <strong class="app-header__summary-value">{{ item.value }}</strong>
-              </div>
-            </div>
           </div>
 
           <div class="app-header__actions">
             <div class="app-user-card">
-              <span class="app-user-card__label">当前值班账号</span>
               <span class="app-user-card__name">{{ userName }}</span>
-              <span class="app-user-card__meta">{{ accountTypeText }} · {{ roleText }}</span>
-              <span class="app-user-card__meta">{{ groupScopeText }}</span>
             </div>
             <el-button type="primary" plain @click="handleLogout">安全退出</el-button>
           </div>
@@ -193,19 +128,5 @@ function handleMenuNavigate() {
         </div>
       </el-main>
     </el-container>
-
-    <el-drawer v-model="mobileMenuVisible" title="业务导航" direction="ltr" size="280px" class="app-mobile-drawer">
-      <div class="app-mobile-drawer__body">
-        <section v-for="group in menuGroups" :key="`mobile-${group.label}`" class="app-nav-group">
-          <div class="app-nav-group__label app-nav-group__label--light">{{ group.label }}</div>
-          <el-menu :default-active="activeMenu" class="app-mobile-menu" router @select="handleMenuNavigate">
-            <el-menu-item v-for="menu in group.items" :key="menu.path" :index="menu.path">
-              <el-icon><component :is="menu.icon" /></el-icon>
-              <span>{{ menu.label }}</span>
-            </el-menu-item>
-          </el-menu>
-        </section>
-      </div>
-    </el-drawer>
   </el-container>
 </template>
