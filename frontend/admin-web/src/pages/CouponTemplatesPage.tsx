@@ -136,7 +136,7 @@ export default function CouponTemplatesPage() {
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">抵扣模式</span>
-              <select className="input" value={form.discountMode} onChange={(event) => setForm((current) => ({ ...current, discountMode: event.target.value }))}>
+              <select className="input min-w-[140px]" value={form.discountMode} onChange={(event) => setForm((current) => ({ ...current, discountMode: event.target.value }))}>
                 {discountModeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>

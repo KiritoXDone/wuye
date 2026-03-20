@@ -88,11 +88,11 @@ const labelMap: Record<string, string> = {
 
 export default function StatusBadge({ value }: StatusBadgeProps) {
   if (!value) {
-    return <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">--</span>
+    return <span className="inline-flex shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">--</span>
   }
 
   return (
-    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${statusMap[value] || 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+    <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${statusMap[value] || 'border-slate-200 bg-slate-50 text-slate-600'}`}>
       {labelMap[value] || value}
     </span>
   )

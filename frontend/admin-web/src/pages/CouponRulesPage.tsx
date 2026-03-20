@@ -114,7 +114,7 @@ export default function CouponRulesPage() {
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">费种</span>
-              <select className="input" value={form.feeType} onChange={(event) => setForm((current) => ({ ...current, feeType: event.target.value }))}>
+              <select className="input min-w-[140px]" value={form.feeType} onChange={(event) => setForm((current) => ({ ...current, feeType: event.target.value }))}>
                 {feeTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
