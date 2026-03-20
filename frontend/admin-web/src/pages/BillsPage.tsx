@@ -5,14 +5,14 @@ import { getAdminBills, getBillDetail } from '@/api/bills'
 import AsyncState from '@/components/ui/AsyncState'
 import PageSection from '@/components/ui/PageSection'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { formatDate, formatMoney, formatPeriod, formatServicePeriod } from '@/utils/format'
+import { formatDate, formatMoney, formatPeriod, formatQuantity, formatServicePeriod } from '@/utils/format'
 import type { BillDetail, BillListItem, BillListQuery } from '@/types/bill'
 
 const initialQuery: BillListQuery = {
   pageNo: 1,
   pageSize: 10,
   periodYear: new Date().getFullYear(),
-  periodMonth: new Date().getMonth() + 1,
+  periodMonth: undefined,
   feeType: '',
   status: '',
 }
@@ -191,10 +191,20 @@ export default function BillsPage() {
                           <div>
                             <div className="font-medium text-slate-900">{line.itemName}</div>
                             <div className="mt-1 text-xs text-slate-500">条目类型：{line.lineType}</div>
+                            {typeof line.ext?.prevReading === 'number' && typeof line.ext?.currReading === 'number' ? (
+                              <div className="mt-1 text-xs text-slate-500">
+                                上次读数 {formatQuantity(line.ext.prevReading)}，本次读数 {formatQuantity(line.ext.currReading)}，用量 {formatQuantity(line.ext.usage as number | string)}
+                              </div>
+                            ) : null}
+                            {line.ext?.pricingMode === 'TIERED' ? <div className="mt-1 text-xs text-slate-500">按阶梯水价计算</div> : null}
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-slate-900">{formatMoney(line.lineAmount)}</div>
-                            <div className="mt-1 text-xs text-slate-500">单价 {formatMoney(line.unitPrice)} × 数量 {line.quantity}</div>
+                            <div className="mt-1 text-xs text-slate-500">
+                              {line.ext?.pricingMode === 'TIERED'
+                                ? '按阶梯水价结算'
+                                : `单价 ${formatMoney(line.unitPrice)} × 用量 ${formatQuantity(line.quantity)}`}
+                            </div>
                           </div>
                         </div>
                       </div>

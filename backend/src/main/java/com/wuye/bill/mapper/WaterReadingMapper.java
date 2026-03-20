@@ -88,4 +88,11 @@ public interface WaterReadingMapper {
             WHERE id = #{id}
             """)
     int updateStatus(@Param("id") Long id, @Param("status") String status);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM water_meter_reading
+            WHERE room_id = #{roomId}
+            """)
+    long countByRoomId(@Param("roomId") Long roomId);
 }

@@ -46,3 +46,8 @@ export interface BillDetail {
 }
 
 export type BillStatusFilter = 'ALL' | 'ISSUED' | 'PAID'
+
+export interface ResidentBillQuery {
+  status: BillStatusFilter
+  roomId?: number
+}

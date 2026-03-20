@@ -16,8 +16,6 @@ public class FeeRuleVO {
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
     private String remark;
-    private BigDecimal abnormalAbsThreshold;
-    private BigDecimal abnormalMultiplierThreshold;
     private List<FeeRuleWaterTierVO> waterTiers;
 
     public Long getId() {
@@ -98,22 +96,6 @@ public class FeeRuleVO {
 
     public void setRemark(String remark) {
         this.remark = remark;
-    }
-
-    public BigDecimal getAbnormalAbsThreshold() {
-        return abnormalAbsThreshold;
-    }
-
-    public void setAbnormalAbsThreshold(BigDecimal abnormalAbsThreshold) {
-        this.abnormalAbsThreshold = abnormalAbsThreshold;
-    }
-
-    public BigDecimal getAbnormalMultiplierThreshold() {
-        return abnormalMultiplierThreshold;
-    }
-
-    public void setAbnormalMultiplierThreshold(BigDecimal abnormalMultiplierThreshold) {
-        this.abnormalMultiplierThreshold = abnormalMultiplierThreshold;
     }
 
     public List<FeeRuleWaterTierVO> getWaterTiers() {

@@ -16,16 +16,16 @@ public interface FeeRuleMapper {
 
     @Insert("""
             INSERT INTO fee_rule(community_id, fee_type, rule_name, unit_price, cycle_type, pricing_mode,
-                                 effective_from, effective_to, status, remark, abnormal_abs_threshold, abnormal_multiplier_threshold)
+                                 effective_from, effective_to, status, remark)
             VALUES(#{communityId}, #{feeType}, #{ruleName}, #{unitPrice}, #{cycleType}, #{pricingMode},
-                   #{effectiveFrom}, #{effectiveTo}, #{status}, #{remark}, #{abnormalAbsThreshold}, #{abnormalMultiplierThreshold})
+                   #{effectiveFrom}, #{effectiveTo}, #{status}, #{remark})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(FeeRule feeRule);
 
     @Select("""
             SELECT id, community_id, fee_type, rule_name, unit_price, cycle_type, pricing_mode,
-                   effective_from, effective_to, remark, abnormal_abs_threshold, abnormal_multiplier_threshold
+                   effective_from, effective_to, remark
             FROM fee_rule
             WHERE community_id = #{communityId}
             ORDER BY id DESC
@@ -34,7 +34,7 @@ public interface FeeRuleMapper {
 
     @Select("""
             SELECT id, community_id, fee_type, rule_name, unit_price, cycle_type, pricing_mode,
-                   effective_from, effective_to, status, remark, abnormal_abs_threshold, abnormal_multiplier_threshold
+                   effective_from, effective_to, status, remark
             FROM fee_rule
             WHERE community_id = #{communityId}
               AND fee_type = #{feeType}

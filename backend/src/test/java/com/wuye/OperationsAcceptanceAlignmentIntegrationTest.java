@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTest {
 
     @Test
-    void dunningInvoiceAndAlertFlowsMatchCurrentAcceptanceContract() throws Exception {
+    void dunningInvoiceFlowsMatchCurrentAcceptanceContract() throws Exception {
         mockMvc.perform(post("/api/v1/admin/fee-rules")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -33,8 +33,6 @@ class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTe
                                   "pricingMode": "TIERED",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
-                                  "abnormalAbsThreshold": 20.000,
-                                  "abnormalMultiplierThreshold": 1.50,
                                   "remark": "验收口径测试",
                                   "waterTiers": [
                                     {"startUsage": 0.000, "endUsage": 5.000, "unitPrice": 2.0000},
@@ -86,15 +84,7 @@ class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTe
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ABNORMAL"));
-
-        mockMvc.perform(get("/api/v1/admin/water-alerts")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .param("periodYear", "2026")
-                        .param("periodMonth", "4"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].alertCode").value("ABS_THRESHOLD"))
-                .andExpect(jsonPath("$.data[0].status").value("OPEN"));
+                .andExpect(jsonPath("$.data.status").value("NORMAL"));
 
         mockMvc.perform(post("/api/v1/admin/fee-rules")
                         .header("Authorization", "Bearer " + adminToken)

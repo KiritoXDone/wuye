@@ -86,11 +86,13 @@ public interface BillMapper {
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+              AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
             LIMIT #{limit} OFFSET #{offset}
             """)
     List<BillListItemVO> listByAccountId(@Param("accountId") Long accountId,
                                          @Param("status") String status,
+                                         @Param("roomId") Long roomId,
                                          @Param("offset") int offset,
                                          @Param("limit") int limit);
 
@@ -101,8 +103,11 @@ public interface BillMapper {
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+              AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             """)
-    long countByAccountId(@Param("accountId") Long accountId, @Param("status") String status);
+    long countByAccountId(@Param("accountId") Long accountId,
+                          @Param("status") String status,
+                          @Param("roomId") Long roomId);
 
     @Select("""
             SELECT b.id AS bill_id,
@@ -275,4 +280,11 @@ public interface BillMapper {
             ORDER BY b.due_date ASC, b.id ASC
             """)
     List<Bill> listOverdueBills(@Param("triggerDate") LocalDate triggerDate);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM bill
+            WHERE room_id = #{roomId}
+            """)
+    long countByRoomId(@Param("roomId") Long roomId);
 }

@@ -1,5 +1,7 @@
-import { getResidentBills, getRoomBills } from '../../services/bill'
+import { getResidentBills } from '../../services/bill'
+import { getMyRooms } from '../../services/room'
 import type { BillListItem, BillStatusFilter } from '../../types/bill'
+import type { RoomItem } from '../../types/room'
 import { hasAuthSession } from '../../utils/auth'
 import { formatBillStatus, formatDate, formatFeeType, formatMoney } from '../../utils/format'
 
@@ -22,40 +24,18 @@ function normalizeBills(bills: BillListItem[]): BillViewItem[] {
 
 Page({
   data: {
-    roomId: 0,
-    roomLabel: '',
-    roomMode: false,
-    pageTitle: '全部账单',
-    pageSubtitle: '在这里查看当前账号下的全部账单与缴费状态。',
     loading: true,
     errorMessage: '',
-    loadingHint: '正在加载账单，请稍候。',
-    emptyHint: '暂时没有查询到可显示的账单。',
     statusFilter: 'ALL' as BillStatusFilter,
     statusOptions: [
       { value: 'ALL', label: '全部' },
       { value: 'ISSUED', label: '待缴' },
       { value: 'PAID', label: '已缴' }
     ],
-    allBills: [] as BillViewItem[],
+    roomOptions: [{ roomId: 0, roomLabel: '全部房间' }] as Array<{ roomId: number; roomLabel: string }>,
+    selectedRoomIndex: 0,
+    selectedRoomId: 0,
     displayBills: [] as BillViewItem[]
-  },
-
-  onLoad(query: Record<string, string>) {
-    const roomId = Number(query.roomId || 0)
-    const roomLabel = query.roomLabel ? decodeURIComponent(query.roomLabel) : ''
-    const roomMode = Boolean(roomId)
-    this.setData({
-      roomId,
-      roomLabel,
-      roomMode,
-      pageTitle: roomMode ? `${roomLabel || '房间'}账单` : '全部账单',
-      pageSubtitle: roomMode
-        ? '查看当前房间的账单、到期时间与支付状态。'
-        : '优先关注待缴账单，完成后可继续查看支付结果。',
-      loadingHint: roomMode ? '正在加载当前房间账单，请稍候。' : '正在加载全部账单，请稍候。',
-      emptyHint: roomMode ? '该房间暂时还没有可显示的账单。' : '当前账号暂时没有账单。'
-    })
   },
 
   onShow() {
@@ -63,26 +43,42 @@ Page({
       wx.reLaunch({ url: '/pages/login/index' })
       return
     }
-    this.fetchBills()
+    const app = getApp<{ globalData: { selectedBillRoomId?: number } }>()
+    const nextRoomId = Number(app.globalData.selectedBillRoomId || 0)
+    app.globalData.selectedBillRoomId = 0
+    this.fetchBillFilters(nextRoomId)
   },
 
   onPullDownRefresh() {
     this.fetchBills().finally(() => wx.stopPullDownRefresh())
   },
 
+  async fetchBillFilters(preselectedRoomId = 0) {
+    this.setData({ loading: true, errorMessage: '' })
+    try {
+      const rooms = await getMyRooms()
+      const activeRooms = rooms.filter((item: RoomItem) => item.bindingStatus === 'ACTIVE')
+      const roomOptions = [{ roomId: 0, roomLabel: '全部房间' }, ...activeRooms.map((room) => ({ roomId: room.roomId, roomLabel: room.roomLabel }))]
+      const selectedRoomIndex = Math.max(roomOptions.findIndex((item) => item.roomId === preselectedRoomId), 0)
+      this.setData({
+        roomOptions,
+        selectedRoomIndex,
+        selectedRoomId: roomOptions[selectedRoomIndex]?.roomId || 0,
+      })
+      await this.fetchBills()
+    } catch (error) {
+      this.setData({ loading: false, errorMessage: error instanceof Error ? error.message : '账单筛选加载失败' })
+    }
+  },
+
   async fetchBills() {
     this.setData({ loading: true, errorMessage: '' })
     try {
-      if (this.data.roomMode) {
-        const response = await getRoomBills(this.data.roomId)
-        const normalized = normalizeBills(response.list)
-        this.setData({ allBills: normalized })
-        this.applyLocalFilter(this.data.statusFilter, normalized)
-      } else {
-        const response = await getResidentBills(this.data.statusFilter)
-        const normalized = normalizeBills(response.list)
-        this.setData({ allBills: normalized, displayBills: normalized })
-      }
+      const response = await getResidentBills({
+        status: this.data.statusFilter,
+        roomId: this.data.selectedRoomId || undefined,
+      })
+      this.setData({ displayBills: normalizeBills(response.list) })
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '账单加载失败' })
     } finally {
@@ -95,21 +91,15 @@ Page({
     if (nextStatus === this.data.statusFilter) {
       return
     }
-
     this.setData({ statusFilter: nextStatus })
-
-    if (this.data.roomMode) {
-      this.applyLocalFilter(nextStatus, this.data.allBills)
-      return
-    }
-
     this.fetchBills()
   },
 
-  applyLocalFilter(status: BillStatusFilter, sourceBills?: BillViewItem[]) {
-    const origin = sourceBills || this.data.allBills
-    const displayBills = status === 'ALL' ? origin : origin.filter((bill) => bill.status === status)
-    this.setData({ displayBills })
+  handleRoomChange(event: WechatMiniprogram.CustomEvent) {
+    const selectedRoomIndex = Number(event.detail.value || 0)
+    const selectedRoomId = this.data.roomOptions[selectedRoomIndex]?.roomId || 0
+    this.setData({ selectedRoomIndex, selectedRoomId })
+    this.fetchBills()
   },
 
   openBillDetail(event: WechatMiniprogram.BaseEvent) {

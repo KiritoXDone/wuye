@@ -4,7 +4,7 @@ import { createPayment } from '../../services/payment'
 import type { BillDetail, BillLine } from '../../types/bill'
 import type { PaymentCreatePayload } from '../../types/payment'
 import { hasAuthSession } from '../../utils/auth'
-import { formatBillStatus, formatDate, formatFeeType, formatMoney, formatPeriod } from '../../utils/format'
+import { formatBillStatus, formatDate, formatFeeType, formatMoney, formatPeriod, formatQuantity } from '../../utils/format'
 import { buildPaymentIdempotencyKey, invokePaymentByChannel } from '../../utils/payment'
 
 type BillLineView = BillLine & {
@@ -12,6 +12,7 @@ type BillLineView = BillLine & {
   quantityText: string
   lineAmountText: string
   extSummary: string
+  isTiered: boolean
   showDivider: boolean
 }
 
@@ -41,13 +42,16 @@ function buildExtSummary(ext?: Record<string, unknown>): string {
 
   const parts: string[] = []
   if (typeof ext.areaM2 === 'number') {
-    parts.push(`面积 ${formatMoney(ext.areaM2)}㎡`)
+    parts.push(`面积 ${formatQuantity(ext.areaM2)} ㎡`)
+  }
+  if (typeof ext.prevReading === 'number' && typeof ext.currReading === 'number') {
+    parts.push(`上次 ${formatQuantity(ext.prevReading)}，本次 ${formatQuantity(ext.currReading)}`)
   }
   if (typeof ext.usage === 'number') {
-    parts.push(`用量 ${formatMoney(ext.usage)}`)
+    parts.push(`用量 ${formatQuantity(ext.usage)}`)
   }
-  if (typeof ext.formula === 'string') {
-    parts.push(`公式 ${ext.formula}`)
+  if (typeof ext.pricingMode === 'string' && ext.pricingMode === 'TIERED') {
+    parts.push('按阶梯水价计算')
   }
   return parts.join(' · ')
 }
@@ -63,15 +67,16 @@ function normalizeBillDetail(detail: BillDetail): BillDetailView {
     billLines: detail.billLines.map((line, index) => ({
       ...line,
       unitPriceText: formatMoney(line.unitPrice),
-      quantityText: formatMoney(line.quantity),
+      quantityText: formatQuantity(line.quantity),
       lineAmountText: formatMoney(line.lineAmount),
       extSummary: buildExtSummary(line.ext),
+      isTiered: line.ext?.pricingMode === 'TIERED',
       showDivider: index !== detail.billLines.length - 1
     })),
     availableCoupons: detail.availableCoupons.map((coupon) => ({
       couponInstanceId: coupon.couponInstanceId,
       templateCode: coupon.templateCode,
-      name: coupon.name || coupon.templateCode,
+      name: coupon.name || '优惠券',
       discountAmount: Number(coupon.discountAmount),
       discountAmountText: formatMoney(coupon.discountAmount),
       expiresAtText: formatDate(coupon.expiresAt)
@@ -102,7 +107,6 @@ Page({
     billDetail: null as BillDetailView | null,
     latestPayOrderNo: '',
     entryPayOrderNo: '',
-    annualPayment: false,
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
     selectedChannel: 'WECHAT' as PaymentCreatePayload['channel'],
@@ -160,25 +164,8 @@ Page({
     this.setData(buildDefaultAmountState(this.data.billDetail))
   },
 
-  handleAnnualPaymentChange(event: WechatMiniprogram.SwitchChange) {
-    if (!this.data.billDetail || this.data.billDetail.feeType !== 'PROPERTY' || this.data.billDetail.status === 'PAID') {
-      return
-    }
-    const annualPayment = Boolean(event.detail.value)
-    this.setData({
-      annualPayment,
-      selectedCouponInstanceId: 0,
-      selectedCouponName: '',
-      discountAmountText: formatMoney(0),
-      payAmountText: annualPayment ? '按年汇总后生成' : formatMoney(this.data.billDetail.amountDue),
-      couponHint: annualPayment
-        ? '按年缴纳不支持优惠券。'
-        : (this.data.billDetail.availableCoupons.length ? '选择优惠券后会刷新金额。' : '暂无可用券。')
-    })
-  },
-
   async handleCouponSelect(event: WechatMiniprogram.TouchEvent) {
-    if (!this.data.billDetail || this.data.couponValidating || this.data.billDetail.status === 'PAID' || this.data.annualPayment) {
+    if (!this.data.billDetail || this.data.couponValidating || this.data.billDetail.status === 'PAID') {
       return
     }
 
@@ -256,9 +243,8 @@ Page({
       const payment = await createPayment({
         billId: this.data.billDetail.billId,
         channel: this.data.selectedChannel,
-        couponInstanceId: this.data.annualPayment ? undefined : (this.data.selectedCouponInstanceId || undefined),
-        annualPayment: this.data.annualPayment,
-        idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId, this.data.annualPayment)
+        couponInstanceId: this.data.selectedCouponInstanceId || undefined,
+        idempotencyKey: buildPaymentIdempotencyKey(this.data.billDetail.billId, false)
       })
 
       this.setData({ latestPayOrderNo: payment.payOrderNo })

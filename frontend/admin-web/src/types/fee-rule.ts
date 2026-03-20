@@ -1,6 +1,7 @@
 export interface FeeRule {
   id: number
   communityId: number
+  communityName?: string
   feeType: string
   ruleName?: string
   unitPrice: number | string
@@ -9,8 +10,6 @@ export interface FeeRule {
   effectiveFrom: string
   effectiveTo?: string
   remark?: string
-  abnormalAbsThreshold?: number | string
-  abnormalMultiplierThreshold?: number | string
   waterTiers?: FeeRuleWaterTier[]
 }
 
@@ -30,7 +29,5 @@ export interface FeeRuleCreatePayload {
   effectiveFrom: string
   effectiveTo?: string
   remark?: string
-  abnormalAbsThreshold?: number
-  abnormalMultiplierThreshold?: number
   waterTiers?: FeeRuleWaterTier[]
 }

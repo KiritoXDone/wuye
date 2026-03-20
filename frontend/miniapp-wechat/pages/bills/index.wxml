@@ -1,7 +1,7 @@
 <view class="page-shell safe-bottom">
   <view class="page-hero bills-hero">
-    <view class="page-eyebrow">{{roomMode ? '房间账单' : '居民账单'}}</view>
-    <view class="page-title">{{pageTitle}}</view>
+    <view class="page-eyebrow">账单</view>
+    <view class="page-title">全部账单</view>
   </view>
 
   <view class="panel card-stack bills-filter-card">
@@ -12,6 +12,12 @@
         <view class="summary-pill__value">{{displayBills.length}} 笔</view>
       </view>
     </view>
+    <picker mode="selector" range="{{roomOptions}}" range-key="roomLabel" value="{{selectedRoomIndex}}" bindchange="handleRoomChange">
+      <view class="picker-field">
+        <view class="picker-field__label">房间筛选</view>
+        <view class="picker-field__value">{{roomOptions[selectedRoomIndex].roomLabel}}</view>
+      </view>
+    </picker>
     <view class="chip-row bills-filter-card__chips">
       <view wx:for="{{statusOptions}}" wx:key="value" class="pill {{statusFilter === item.value ? 'pill-active' : ''}}" data-status="{{item.value}}" bindtap="handleStatusChange">
         {{item.label}}
@@ -37,7 +43,7 @@
     <view wx:for="{{displayBills}}" wx:key="billId" class="panel card-stack bill-list-card">
       <view class="bill-list-card__top">
         <view>
-          <view class="card-kicker">{{item.roomLabel}}</view>
+          <view class="card-kicker">{{item.roomLabel}} · {{item.period}}</view>
           <view class="bill-card-title">{{item.feeTypeLabel}}</view>
         </view>
         <view class="status-chip status-chip--{{item.status}}">{{item.statusLabel}}</view>

@@ -58,8 +58,8 @@ public class BillQueryService {
         int pageNo = query.getPageNo() == null || query.getPageNo() < 1 ? 1 : query.getPageNo();
         int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
         int offset = (pageNo - 1) * pageSize;
-        List<BillListItemVO> list = billMapper.listByAccountId(loginUser.accountId(), query.getStatus(), offset, pageSize);
-        long total = billMapper.countByAccountId(loginUser.accountId(), query.getStatus());
+        List<BillListItemVO> list = billMapper.listByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId(), offset, pageSize);
+        long total = billMapper.countByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId());
         return new PageResponse<>(list, pageNo, pageSize, total);
     }
 

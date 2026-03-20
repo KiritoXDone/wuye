@@ -22,7 +22,7 @@ export function formatFeeType(value?: string): string {
     PROPERTY: '物业费',
     WATER: '水费'
   }
-  return map[value || ''] || value || '--'
+  return map[value || ''] || '其他费用'
 }
 
 export function formatBillStatus(value?: string): string {
@@ -37,23 +37,24 @@ export function formatBillStatus(value?: string): string {
     CLOSED: '已关闭',
     ACTIVE: '已绑定',
     PENDING: '待确认',
-    INACTIVE: '已失效'
+    INACTIVE: '已失效',
+    CANCELLED: '已取消',
+    VOID: '已作废'
   }
-  return map[value || ''] || value || '--'
+  return map[value || ''] || '状态未知'
 }
 
-export function formatRelationType(value?: string): string {
-  const map: Record<string, string> = {
-    OWNER: '业主',
-    TENANT: '租户',
-    FAMILY: '家属'
-  }
-  return map[value || ''] || value || '--'
+export function formatQuantity(value?: number | string | null): string {
+  const quantity = Number(value ?? 0)
+  return Number.isFinite(quantity) ? quantity.toFixed(3) : '0.000'
 }
 
 export function formatPeriod(year?: number, month?: number): string {
-  if (!year || !month) {
+  if (!year) {
     return '--'
+  }
+  if (!month) {
+    return `${year} 年度`
   }
   return `${year}-${String(month).padStart(2, '0')}`
 }

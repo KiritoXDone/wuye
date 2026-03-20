@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, RefreshCcw, Waves } from 'lucide-react'
 
+import { getCommunities } from '@/api/communities'
 import { createFeeRule, getFeeRules } from '@/api/fee-rules'
 import AsyncState from '@/components/ui/AsyncState'
 import PageSection from '@/components/ui/PageSection'
 import StatusBadge from '@/components/ui/StatusBadge'
+import type { AdminCommunity } from '@/types/community'
 import type { FeeRule, FeeRuleCreatePayload, FeeRuleWaterTier } from '@/types/fee-rule'
 import { formatDate, formatMoney, formatQuantity } from '@/utils/format'
 
@@ -13,14 +15,15 @@ function createTier(startUsage = 0, endUsage?: number, unitPrice = 0): FeeRuleWa
 }
 
 export default function FeeRulesPage() {
-  const [communityId, setCommunityId] = useState(100)
+  const [communities, setCommunities] = useState<AdminCommunity[]>([])
+  const [communityId, setCommunityId] = useState<number>(0)
   const [list, setList] = useState<FeeRule[]>([])
   const [loading, setLoading] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [form, setForm] = useState<FeeRuleCreatePayload>({
-    communityId: 100,
+    communityId: 0,
     feeType: 'PROPERTY',
     unitPrice: 2.5,
     cycleType: 'YEAR',
@@ -28,16 +31,19 @@ export default function FeeRulesPage() {
     effectiveFrom: '',
     effectiveTo: undefined,
     remark: '',
-    abnormalAbsThreshold: undefined,
-    abnormalMultiplierThreshold: undefined,
     waterTiers: [createTier(0, 5, 2)],
   })
 
+  const selectedCommunity = useMemo(() => communities.find((item) => item.id === communityId), [communities, communityId])
   const propertyRuleCount = useMemo(() => list.filter((item) => item.feeType === 'PROPERTY').length, [list])
   const waterRuleCount = useMemo(() => list.filter((item) => item.feeType === 'WATER').length, [list])
   const tieredRuleCount = useMemo(() => list.filter((item) => item.pricingMode === 'TIERED').length, [list])
 
   async function loadData(nextCommunityId = communityId) {
+    if (!nextCommunityId) {
+      setList([])
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -49,8 +55,29 @@ export default function FeeRulesPage() {
     }
   }
 
+  async function loadCommunitiesAndRules() {
+    setLoading(true)
+    setError('')
+    try {
+      const communityList = await getCommunities()
+      setCommunities(communityList)
+      const firstCommunityId = communityList[0]?.id || 0
+      setCommunityId(firstCommunityId)
+      setForm((current) => ({ ...current, communityId: firstCommunityId }))
+      if (firstCommunityId) {
+        setList(await getFeeRules(firstCommunityId))
+      } else {
+        setList([])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '费用规则加载失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    void loadData(communityId)
+    void loadCommunitiesAndRules()
   }, [])
 
   function updateTier(index: number, patch: Partial<FeeRuleWaterTier>) {
@@ -82,8 +109,6 @@ export default function FeeRulesPage() {
       cycleType: isWater ? 'MONTH' : 'YEAR',
       pricingMode: isWater ? form.pricingMode : 'FLAT',
       effectiveTo: form.effectiveTo || undefined,
-      abnormalAbsThreshold: isWater ? form.abnormalAbsThreshold : undefined,
-      abnormalMultiplierThreshold: isWater ? form.abnormalMultiplierThreshold : undefined,
       waterTiers: isWater && form.pricingMode === 'TIERED'
         ? (form.waterTiers || []).map((tier) => ({
             startUsage: Number(tier.startUsage),
@@ -95,6 +120,10 @@ export default function FeeRulesPage() {
   }
 
   async function handleCreate() {
+    if (!communityId) {
+      setError('请先选择小区。')
+      return
+    }
     if (!form.effectiveFrom) {
       setError('请选择生效日期。')
       return
@@ -151,8 +180,21 @@ export default function FeeRulesPage() {
           description="按小区查看当前规则。"
           action={
             <div className="flex flex-wrap gap-2">
-              <input className="input w-28" type="number" min={1} value={communityId} onChange={(event) => setCommunityId(Number(event.target.value))} />
-              <button type="button" className="btn-primary" onClick={() => void loadData(communityId)} disabled={loading}>查询小区规则</button>
+              <select
+                className="input min-w-[220px]"
+                value={communityId || ''}
+                onChange={(event) => {
+                  const nextCommunityId = Number(event.target.value) || 0
+                  setCommunityId(nextCommunityId)
+                  setForm((current) => ({ ...current, communityId: nextCommunityId }))
+                }}
+              >
+                <option value="">请选择小区</option>
+                {communities.map((community) => (
+                  <option key={community.id} value={community.id}>{community.name}</option>
+                ))}
+              </select>
+              <button type="button" className="btn-primary" onClick={() => void loadData(communityId)} disabled={loading || !communityId}>查询小区规则</button>
             </div>
           }
         >
@@ -161,6 +203,7 @@ export default function FeeRulesPage() {
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="px-4 py-3 font-medium">小区</th>
                     <th className="px-4 py-3 font-medium">费种</th>
                     <th className="px-4 py-3 font-medium">周期</th>
                     <th className="px-4 py-3 font-medium">计价方式</th>
@@ -172,6 +215,7 @@ export default function FeeRulesPage() {
                 <tbody>
                   {list.map((item) => (
                     <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-white/50">
+                      <td className="px-4 py-4 text-slate-600">{selectedCommunity?.name || item.communityName || `小区 ${item.communityId}`}</td>
                       <td className="px-4 py-4"><StatusBadge value={item.feeType} /></td>
                       <td className="px-4 py-4"><StatusBadge value={item.cycleType} /></td>
                       <td className="px-4 py-4 text-slate-600">{item.pricingMode || '--'}</td>
@@ -179,7 +223,7 @@ export default function FeeRulesPage() {
                       <td className="px-4 py-4 text-slate-600">{formatDate(item.effectiveFrom)} ~ {formatDate(item.effectiveTo || null, '长期有效')}</td>
                       <td className="px-4 py-4 text-slate-600">
                         {item.feeType === 'WATER'
-                          ? `绝对阈值 ${formatQuantity(item.abnormalAbsThreshold)} / 倍数阈值 ${formatQuantity(item.abnormalMultiplierThreshold)}`
+                          ? (item.pricingMode === 'TIERED' ? '按阶梯水价执行' : '按固定单价执行')
                           : '年度物业费默认按面积 × 年单价'}
                       </td>
                     </tr>
@@ -190,12 +234,12 @@ export default function FeeRulesPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="新增规则" description="创建新规则。">
+        <PageSection title="新增规则" description={selectedCommunity ? `为 ${selectedCommunity.name} 创建新规则。` : '创建新规则。'}>
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">小区 ID</span>
-                <input className="input" type="number" min={1} value={communityId} onChange={(event) => { const next = Number(event.target.value); setCommunityId(next); setForm((current) => ({ ...current, communityId: next })) }} />
+                <span className="mb-2 block text-sm font-medium text-slate-700">所属小区</span>
+                <input className="input" value={selectedCommunity?.name || '请先选择小区'} readOnly />
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">费用类型</span>
@@ -219,19 +263,7 @@ export default function FeeRulesPage() {
             </div>
 
             {form.feeType === 'WATER' ? (
-              <>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-slate-700">绝对阈值</span>
-                    <input className="input" type="number" step="0.001" value={form.abnormalAbsThreshold ?? ''} onChange={(event) => setForm((current) => ({ ...current, abnormalAbsThreshold: event.target.value ? Number(event.target.value) : undefined }))} />
-                  </label>
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-medium text-slate-700">倍数阈值</span>
-                    <input className="input" type="number" step="0.001" value={form.abnormalMultiplierThreshold ?? ''} onChange={(event) => setForm((current) => ({ ...current, abnormalMultiplierThreshold: event.target.value ? Number(event.target.value) : undefined }))} />
-                  </label>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <Waves className="h-4 w-4 text-cyan-600" />
@@ -252,8 +284,7 @@ export default function FeeRulesPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              </>
+              </div>
             ) : null}
 
             <button type="button" className="btn-primary w-full" onClick={() => void handleCreate()} disabled={submitLoading}>

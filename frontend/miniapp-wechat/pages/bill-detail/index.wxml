@@ -26,42 +26,11 @@
       <view class="detail-hero__amount-note">应收 ¥ {{billDetail.amountDueText}}<text wx:if="{{selectedCouponInstanceId}}"> · 已优惠 ¥ {{discountAmountText}}</text></view>
     </view>
 
-    <view class="panel card-stack pay-summary-card">
-      <view class="section-heading">
-        <view class="section-title">支付摘要</view>
-        <view wx:if="{{selectedCouponName}}" class="summary-pill">
-          <view class="summary-pill__label">已选优惠</view>
-          <view class="summary-pill__value">{{selectedCouponName}}</view>
-        </view>
-      </view>
-
-      <view wx:if="{{billDetail.feeType === 'PROPERTY' && billDetail.status !== 'PAID'}}" class="annual-payment-row">
-        <view class="section-title annual-payment-title">按年缴纳物业费</view>
-        <switch color="var(--color-primary)" checked="{{annualPayment}}" bindchange="handleAnnualPaymentChange" />
-      </view>
-
-      <view class="pay-summary-grid">
-        <view class="pay-summary-item">
-          <view class="metric-label">应收金额</view>
-          <view class="amount-secondary pay-summary-item__value">¥ {{billDetail.amountDueText}}</view>
-        </view>
-        <view class="pay-summary-item">
-          <view class="metric-label">优惠金额</view>
-          <view class="amount-secondary pay-summary-item__value">¥ {{discountAmountText}}</view>
-        </view>
-        <view class="pay-summary-item pay-summary-item--emphasis">
-          <view class="metric-label">实付金额</view>
-          <view class="amount-secondary pay-summary-item__value pay-summary-item__value--emphasis">¥ {{payAmountText}}</view>
-        </view>
-      </view>
-    </view>
-
     <view class="panel card-stack">
       <view class="section-heading">
         <view class="section-title">优惠券</view>
       </view>
       <view wx:if="{{billDetail.status === 'PAID'}}" class="surface-note">本账单已完成支付，无需再选择优惠券。</view>
-      <view wx:elif="{{annualPayment}}" class="surface-note">按年缴纳模式下不支持选择优惠券。</view>
       <view wx:elif="{{billDetail.availableCoupons.length}}" class="list-stack coupon-list">
         <view class="coupon-chip coupon-option {{selectedCouponInstanceId === 0 ? 'coupon-option--active' : ''}}" bindtap="clearCouponSelection">
           <view class="coupon-option__header">
@@ -79,7 +48,6 @@
           <view class="coupon-option__header">
             <view>
               <view class="coupon-option__name">{{item.name}}</view>
-              <view class="coupon-option__meta">{{item.templateCode}}</view>
             </view>
             <view class="coupon-option__amount">¥ {{item.discountAmountText}}</view>
           </view>
@@ -99,14 +67,6 @@
       </view>
       <view class="info-list">
         <view class="info-row">
-          <view class="info-key">当前房间</view>
-          <view class="info-value">{{billDetail.roomLabel}}</view>
-        </view>
-        <view class="info-row">
-          <view class="info-key">当前账期</view>
-          <view class="info-value">{{billDetail.periodText}}</view>
-        </view>
-        <view class="info-row">
           <view class="info-key">支付渠道</view>
           <view class="info-value">{{selectedChannel === 'ALIPAY' ? '支付宝' : '微信支付'}}</view>
         </view>
@@ -122,7 +82,8 @@
           <view class="bill-card-title">{{item.itemName}}</view>
           <view class="amount-secondary">¥ {{item.lineAmountText}}</view>
         </view>
-        <view class="line-item__meta">单价 {{item.unitPriceText}} × 数量 {{item.quantityText}}</view>
+        <view wx:if="{{item.isTiered}}" class="line-item__meta">按阶梯水价计算</view>
+        <view wx:else class="line-item__meta">单价 {{item.unitPriceText}} × 用量 {{item.quantityText}}</view>
         <view wx:if="{{item.extSummary}}" class="line-item__meta">{{item.extSummary}}</view>
         <view wx:if="{{item.showDivider}}" class="divider"></view>
       </view>
@@ -155,7 +116,7 @@
         </view>
       </view>
 
-        <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">{{annualPayment ? '按年支付' : '立即支付'}}</button>
+        <button wx:if="{{billDetail.status !== 'PAID'}}" class="button-primary" bindtap="handlePay" loading="{{paying}}" disabled="{{paying || couponValidating}}">立即支付</button>
       <button wx:else class="button-secondary" bindtap="openPaymentResultFromPaid">查看支付结果</button>
       <button wx:if="{{billDetail.status === 'PAID' && (latestPayOrderNo || entryPayOrderNo)}}" class="button-ghost" bindtap="openVoucher">查看电子凭证</button>
     </view>

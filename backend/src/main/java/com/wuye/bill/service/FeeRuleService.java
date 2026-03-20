@@ -59,8 +59,6 @@ public class FeeRuleService {
         feeRule.setEffectiveTo(dto.getEffectiveTo());
         feeRule.setStatus(1);
         feeRule.setRemark(dto.getRemark());
-        feeRule.setAbnormalAbsThreshold(dto.getAbnormalAbsThreshold());
-        feeRule.setAbnormalMultiplierThreshold(dto.getAbnormalMultiplierThreshold());
         validateRuleSemantics(feeRule, dto);
         feeRuleMapper.insert(feeRule);
         insertWaterTiers(feeRule.getId(), dto.getWaterTiers());
@@ -80,8 +78,6 @@ public class FeeRuleService {
                     vo.setEffectiveFrom(feeRule.getEffectiveFrom());
                     vo.setEffectiveTo(feeRule.getEffectiveTo());
                     vo.setRemark(feeRule.getRemark());
-                    vo.setAbnormalAbsThreshold(feeRule.getAbnormalAbsThreshold());
-                    vo.setAbnormalMultiplierThreshold(feeRule.getAbnormalMultiplierThreshold());
                     vo.setWaterTiers(List.of());
                     return vo;
                 });
@@ -119,9 +115,6 @@ public class FeeRuleService {
             }
             if (dto.getWaterTiers() != null && !dto.getWaterTiers().isEmpty()) {
                 throw new BusinessException("INVALID_ARGUMENT", "物业费不支持阶梯配置", HttpStatus.BAD_REQUEST);
-            }
-            if (dto.getAbnormalAbsThreshold() != null || dto.getAbnormalMultiplierThreshold() != null) {
-                throw new BusinessException("INVALID_ARGUMENT", "物业费不支持异常阈值", HttpStatus.BAD_REQUEST);
             }
             return;
         }
@@ -175,8 +168,6 @@ public class FeeRuleService {
         detail.put("effectiveFrom", feeRule.getEffectiveFrom());
         detail.put("effectiveTo", feeRule.getEffectiveTo());
         detail.put("remark", feeRule.getRemark());
-        detail.put("abnormalAbsThreshold", feeRule.getAbnormalAbsThreshold());
-        detail.put("abnormalMultiplierThreshold", feeRule.getAbnormalMultiplierThreshold());
         detail.put("waterTiers", dto.getWaterTiers());
         return detail;
     }

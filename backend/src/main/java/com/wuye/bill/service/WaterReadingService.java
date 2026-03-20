@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -29,7 +30,6 @@ public class WaterReadingService {
     private final RoomMapper roomMapper;
     private final FeeRuleService feeRuleService;
     private final WaterBillGenerateService waterBillGenerateService;
-    private final WaterUsageAlertService waterUsageAlertService;
     private final AccessGuard accessGuard;
 
     public WaterReadingService(WaterMeterMapper waterMeterMapper,
@@ -37,14 +37,12 @@ public class WaterReadingService {
                                RoomMapper roomMapper,
                                FeeRuleService feeRuleService,
                                WaterBillGenerateService waterBillGenerateService,
-                               WaterUsageAlertService waterUsageAlertService,
                                AccessGuard accessGuard) {
         this.waterMeterMapper = waterMeterMapper;
         this.waterReadingMapper = waterReadingMapper;
         this.roomMapper = roomMapper;
         this.feeRuleService = feeRuleService;
         this.waterBillGenerateService = waterBillGenerateService;
-        this.waterUsageAlertService = waterUsageAlertService;
         this.accessGuard = accessGuard;
     }
 
@@ -105,9 +103,8 @@ public class WaterReadingService {
         reading.setRemark(dto.getRemark());
         reading.setStatus("NORMAL");
         waterReadingMapper.insert(reading);
-        FeeRule feeRule = feeRuleService.requireActiveRule(room.getCommunityId(), "WATER", dto.getReadAt().toLocalDate());
-        reading.setStatus(waterUsageAlertService.evaluateAndPersist(reading, feeRule));
-        waterReadingMapper.updateStatus(reading.getId(), reading.getStatus());
+        LocalDate targetDate = LocalDate.of(dto.getYear(), dto.getMonth(), 1);
+        FeeRule feeRule = feeRuleService.requireActiveRule(room.getCommunityId(), "WATER", targetDate);
         var generatedBill = waterBillGenerateService.generateForReading(reading, feeRule, "ERROR");
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", reading.getId());

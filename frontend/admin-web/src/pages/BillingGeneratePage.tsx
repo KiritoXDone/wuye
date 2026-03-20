@@ -1,20 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarRange, ReceiptText, Waves } from 'lucide-react'
 
 import { generatePropertyBill, generateWaterBill } from '@/api/billing'
+import { getCommunities } from '@/api/communities'
 import PageSection from '@/components/ui/PageSection'
+import type { AdminCommunity } from '@/types/community'
 
 const currentYear = new Date().getFullYear()
 const currentMonth = new Date().getMonth() + 1
 
 export default function BillingGeneratePage() {
+  const [communities, setCommunities] = useState<AdminCommunity[]>([])
+  const [selectedCommunityId, setSelectedCommunityId] = useState<number>(0)
   const [propertyForm, setPropertyForm] = useState({
-    communityId: 1,
+    communityId: 0,
     year: currentYear,
     overwriteStrategy: 'SKIP',
   })
   const [waterForm, setWaterForm] = useState({
-    communityId: 1,
+    communityId: 0,
     year: currentYear,
     month: currentMonth,
     overwriteStrategy: 'SKIP',
@@ -28,11 +32,26 @@ export default function BillingGeneratePage() {
 
   const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), [])
 
+  useEffect(() => {
+    void getCommunities().then((list) => {
+      setCommunities(list)
+      const initialCommunityId = list[0]?.id ?? 0
+      setSelectedCommunityId(initialCommunityId)
+      setPropertyForm((current) => ({ ...current, communityId: initialCommunityId }))
+      setWaterForm((current) => ({ ...current, communityId: initialCommunityId }))
+    })
+  }, [])
+
   async function handlePropertyGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPropertyLoading(true)
     setPropertyError('')
     setPropertyResult('')
+    if (!propertyForm.communityId) {
+      setPropertyError('请先选择小区。')
+      setPropertyLoading(false)
+      return
+    }
     try {
       const result = await generatePropertyBill(propertyForm)
       setPropertyResult(`已完成 ${propertyForm.year} 年物业费开单，本次生成 ${result.generatedCount} 张账单。`)
@@ -48,6 +67,11 @@ export default function BillingGeneratePage() {
     setWaterLoading(true)
     setWaterError('')
     setWaterResult('')
+    if (!waterForm.communityId) {
+      setWaterError('请先选择小区。')
+      setWaterLoading(false)
+      return
+    }
     try {
       const result = await generateWaterBill(waterForm)
       setWaterResult(`已尝试生成 ${waterForm.year}-${String(waterForm.month).padStart(2, '0')} 水费账单，本次生成 ${result.generatedCount} 张账单。`)
@@ -65,6 +89,27 @@ export default function BillingGeneratePage() {
           <div>
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">开账中心</div>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">开账中心</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">先选择目标小区，再执行物业费年度开单或水费补出账，避免手填错误的小区 ID。</p>
+          </div>
+          <div className="min-w-[240px]">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">目标小区</span>
+              <select
+                className="input"
+                value={selectedCommunityId || ''}
+                onChange={(event) => {
+                  const nextCommunityId = Number(event.target.value) || 0
+                  setSelectedCommunityId(nextCommunityId)
+                  setPropertyForm((current) => ({ ...current, communityId: nextCommunityId }))
+                  setWaterForm((current) => ({ ...current, communityId: nextCommunityId }))
+                }}
+              >
+                <option value="">请选择小区</option>
+                {communities.map((community) => (
+                  <option key={community.id} value={community.id}>{community.name}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
       </section>
@@ -78,14 +123,8 @@ export default function BillingGeneratePage() {
           <form className="grid gap-5" onSubmit={handlePropertyGenerate}>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">小区 ID</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  value={propertyForm.communityId}
-                  onChange={(event) => setPropertyForm((current) => ({ ...current, communityId: Number(event.target.value) }))}
-                />
+                <span className="mb-2 block text-sm font-medium text-slate-700">当前小区</span>
+                <input className="input" value={communities.find((item) => item.id === propertyForm.communityId)?.name || '请先选择小区'} readOnly />
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">自然年</span>
@@ -129,14 +168,8 @@ export default function BillingGeneratePage() {
           <form className="grid gap-5" onSubmit={handleWaterGenerate}>
             <div className="grid gap-4 md:grid-cols-3">
               <label className="block md:col-span-1">
-                <span className="mb-2 block text-sm font-medium text-slate-700">小区 ID</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  value={waterForm.communityId}
-                  onChange={(event) => setWaterForm((current) => ({ ...current, communityId: Number(event.target.value) }))}
-                />
+                <span className="mb-2 block text-sm font-medium text-slate-700">当前小区</span>
+                <input className="input" value={communities.find((item) => item.id === waterForm.communityId)?.name || '请先选择小区'} readOnly />
               </label>
               <label className="block md:col-span-1">
                 <span className="mb-2 block text-sm font-medium text-slate-700">年份</span>
