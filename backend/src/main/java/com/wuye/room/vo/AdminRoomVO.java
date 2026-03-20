@@ -1,8 +1,8 @@
-package com.wuye.room.entity;
+package com.wuye.room.vo;
 
 import java.math.BigDecimal;
 
-public class Room {
+public class AdminRoomVO {
 
     private Long id;
     private Long communityId;
@@ -10,6 +10,7 @@ public class Room {
     private String unitNo;
     private String roomNo;
     private Long roomTypeId;
+    private String roomTypeName;
     private BigDecimal areaM2;
     private Integer status;
 
@@ -59,6 +60,14 @@ public class Room {
 
     public void setRoomTypeId(Long roomTypeId) {
         this.roomTypeId = roomTypeId;
+    }
+
+    public String getRoomTypeName() {
+        return roomTypeName;
+    }
+
+    public void setRoomTypeName(String roomTypeName) {
+        this.roomTypeName = roomTypeName;
     }
 
     public BigDecimal getAreaM2() {

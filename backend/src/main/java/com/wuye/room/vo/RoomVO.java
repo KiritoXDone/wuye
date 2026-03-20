@@ -7,6 +7,7 @@ public class RoomVO {
     private Long roomId;
     private Long communityId;
     private String roomLabel;
+    private Long roomTypeId;
     private BigDecimal areaM2;
     private String bindingStatus;
     private String relationType;
@@ -33,6 +34,14 @@ public class RoomVO {
 
     public void setRoomLabel(String roomLabel) {
         this.roomLabel = roomLabel;
+    }
+
+    public Long getRoomTypeId() {
+        return roomTypeId;
+    }
+
+    public void setRoomTypeId(Long roomTypeId) {
+        this.roomTypeId = roomTypeId;
     }
 
     public BigDecimal getAreaM2() {

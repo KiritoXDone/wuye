@@ -73,7 +73,7 @@ public class RoomBindingService {
         }
         Long targetAccountId = loginUser.hasRole("ADMIN") ? binding.getAccountId() : loginUser.accountId();
         accountRoomMapper.updateStatus(targetAccountId, roomId, "ACTIVE", LocalDateTime.now());
-        return requireOwnedRoom(new LoginUser(targetAccountId, "RESIDENT", loginUser.realName(), List.of("RESIDENT"), "SELF", List.of()), roomId, false);
+        return requireOwnedRoom(new LoginUser(targetAccountId, "RESIDENT", "USER", loginUser.realName(), List.of("USER"), "SELF", List.of()), roomId, false);
     }
 
     @Transactional

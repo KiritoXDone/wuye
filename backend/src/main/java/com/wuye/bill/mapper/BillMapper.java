@@ -63,6 +63,7 @@ public interface BillMapper {
                    b.bill_no,
                    b.room_id,
                    CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   rt.type_name AS room_type_name,
                    b.fee_type,
                    b.cycle_type,
                    CASE
@@ -80,6 +81,7 @@ public interface BillMapper {
                    b.due_date
             FROM bill b
             JOIN room r ON r.id = b.room_id
+            LEFT JOIN room_type rt ON rt.id = r.room_type_id
             JOIN account_room ar ON ar.room_id = b.room_id
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
@@ -107,6 +109,7 @@ public interface BillMapper {
                    b.bill_no,
                    b.room_id,
                    CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   rt.type_name AS room_type_name,
                    b.fee_type,
                    b.cycle_type,
                    CASE
@@ -124,6 +127,7 @@ public interface BillMapper {
                    b.due_date
             FROM bill b
             JOIN room r ON r.id = b.room_id
+            LEFT JOIN room_type rt ON rt.id = r.room_type_id
             WHERE (#{periodYear} IS NULL OR b.period_year = #{periodYear})
               AND (#{periodMonth} IS NULL OR b.period_month = #{periodMonth})
               AND (#{feeType} IS NULL OR #{feeType} = '' OR b.fee_type = #{feeType})
@@ -156,6 +160,7 @@ public interface BillMapper {
                    b.bill_no,
                    b.room_id,
                    CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   rt.type_name AS room_type_name,
                    b.fee_type,
                    b.cycle_type,
                    b.period_year,
@@ -168,6 +173,7 @@ public interface BillMapper {
                    b.due_date
             FROM bill b
             JOIN room r ON r.id = b.room_id
+            LEFT JOIN room_type rt ON rt.id = r.room_type_id
             WHERE b.id = #{billId}
             """)
     BillDetailVO findDetailById(@Param("billId") Long billId);
@@ -177,6 +183,7 @@ public interface BillMapper {
                    b.bill_no,
                    b.room_id,
                    CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   rt.type_name AS room_type_name,
                    b.fee_type,
                    b.cycle_type,
                    CASE
@@ -194,6 +201,7 @@ public interface BillMapper {
                    b.due_date
             FROM bill b
             JOIN room r ON r.id = b.room_id
+            LEFT JOIN room_type rt ON rt.id = r.room_type_id
             JOIN account_room ar ON ar.room_id = b.room_id
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'

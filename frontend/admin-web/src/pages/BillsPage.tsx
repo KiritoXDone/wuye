@@ -173,6 +173,7 @@ export default function BillsPage() {
                   <div className="mt-4 text-xl font-semibold text-slate-950">{detail.billNo}</div>
                   <dl className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">房间</dt><dd className="font-medium text-slate-900">{detail.roomLabel}</dd></div>
+                    <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">户型</dt><dd className="font-medium text-slate-900">{detail.roomTypeName || '--'}</dd></div>
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">账期</dt><dd className="font-medium text-slate-900">{formatPeriod(detail.periodYear, detail.periodMonth || undefined, detail.cycleType)}</dd></div>
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">服务周期</dt><dd className="font-medium text-slate-900">{formatServicePeriod(detail.servicePeriodStart, detail.servicePeriodEnd)}</dd></div>
                     <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">应收金额</dt><dd className="font-medium text-slate-900">{formatMoney(detail.amountDue)}</dd></div>

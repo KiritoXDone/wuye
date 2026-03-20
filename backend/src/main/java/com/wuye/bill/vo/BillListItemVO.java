@@ -9,6 +9,7 @@ public class BillListItemVO {
     private String billNo;
     private Long roomId;
     private String roomLabel;
+    private String roomTypeName;
     private String feeType;
     private String cycleType;
     private String period;
@@ -48,6 +49,14 @@ public class BillListItemVO {
 
     public void setRoomLabel(String roomLabel) {
         this.roomLabel = roomLabel;
+    }
+
+    public String getRoomTypeName() {
+        return roomTypeName;
+    }
+
+    public void setRoomTypeName(String roomTypeName) {
+        this.roomTypeName = roomTypeName;
     }
 
     public String getFeeType() {

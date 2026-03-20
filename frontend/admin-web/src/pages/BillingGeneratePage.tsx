@@ -63,8 +63,8 @@ export default function BillingGeneratePage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">年度开单中心</div>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-950">批量开单</h1>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">开账中心</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">开账中心</h1>
           </div>
         </div>
       </section>

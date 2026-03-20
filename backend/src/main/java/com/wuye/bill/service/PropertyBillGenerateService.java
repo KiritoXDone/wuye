@@ -15,7 +15,9 @@ import com.wuye.common.security.LoginUser;
 import com.wuye.common.util.MoneyUtils;
 import com.wuye.common.util.NoGenerator;
 import com.wuye.room.entity.Room;
+import com.wuye.room.entity.RoomType;
 import com.wuye.room.mapper.RoomMapper;
+import com.wuye.room.mapper.RoomTypeMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import java.util.List;
 public class PropertyBillGenerateService {
 
     private final RoomMapper roomMapper;
+    private final RoomTypeMapper roomTypeMapper;
     private final FeeRuleService feeRuleService;
     private final BillMapper billMapper;
     private final BillLineMapper billLineMapper;
@@ -37,6 +40,7 @@ public class PropertyBillGenerateService {
     private final ObjectMapper objectMapper;
 
     public PropertyBillGenerateService(RoomMapper roomMapper,
+                                       RoomTypeMapper roomTypeMapper,
                                        FeeRuleService feeRuleService,
                                        BillMapper billMapper,
                                        BillLineMapper billLineMapper,
@@ -44,6 +48,7 @@ public class PropertyBillGenerateService {
                                        AccessGuard accessGuard,
                                        ObjectMapper objectMapper) {
         this.roomMapper = roomMapper;
+        this.roomTypeMapper = roomTypeMapper;
         this.feeRuleService = feeRuleService;
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
@@ -71,7 +76,9 @@ public class PropertyBillGenerateService {
                 }
                 throw new BusinessException("CONFLICT", "存在重复年度物业费账单: roomId=" + room.getId(), HttpStatus.CONFLICT);
             }
-            BigDecimal amountDue = MoneyUtils.scaleMoney(room.getAreaM2().multiply(billingSemantics.unitPrice()));
+            BigDecimal areaM2 = room.getAreaM2();
+            RoomType roomType = room.getRoomTypeId() == null ? null : roomTypeMapper.findById(room.getRoomTypeId());
+            BigDecimal amountDue = MoneyUtils.scaleMoney(areaM2.multiply(billingSemantics.unitPrice()));
             Bill bill = new Bill();
             bill.setBillNo(NoGenerator.billNo());
             bill.setRoomId(room.getId());
@@ -97,10 +104,13 @@ public class PropertyBillGenerateService {
             billLine.setLineType("PROPERTY");
             billLine.setItemName(dto.getYear() + " 年度物业费");
             billLine.setUnitPrice(billingSemantics.unitPrice());
-            billLine.setQuantity(MoneyUtils.scaleQuantity(room.getAreaM2()));
+            billLine.setQuantity(MoneyUtils.scaleQuantity(areaM2));
             billLine.setLineAmount(amountDue);
             billLine.setExtJson(writeJson(new LinkedHashMap<>() {{
-                put("areaM2", room.getAreaM2());
+                put("areaM2", areaM2);
+                put("roomTypeId", room.getRoomTypeId());
+                put("roomTypeName", roomType == null ? null : roomType.getTypeName());
+                put("areaM2Source", roomType == null ? "ROOM" : "ROOM_TYPE");
                 put("cycleType", billingSemantics.cycleType());
                 put("servicePeriodStart", billingSemantics.servicePeriodStart());
                 put("servicePeriodEnd", billingSemantics.servicePeriodEnd());

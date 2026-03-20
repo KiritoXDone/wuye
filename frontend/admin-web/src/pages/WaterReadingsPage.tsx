@@ -83,7 +83,7 @@ export default function WaterReadingsPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">月度抄表</div>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">水费抄表</div>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">录入抄表</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
