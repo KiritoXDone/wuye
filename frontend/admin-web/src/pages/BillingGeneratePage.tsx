@@ -60,27 +60,11 @@ export default function BillingGeneratePage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">年度开单中心</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">按自然年生成物业费，按账期补齐水费批量出账</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              当前后台以房间为账单主体。物业费默认按年开单，水费仍以月度抄表为主，这里保留批量出账入口用于运营补齐与复核。
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              ['账单主体', '房间', '同一房间共享支付结果'],
-              ['物业费周期', '自然年', '一房一年一张有效账单'],
-              ['水费周期', '自然月', '录入抄表后立即出账'],
-            ].map(([label, value, hint]) => (
-              <div key={label} className="glass-soft rounded-[24px] p-4">
-                <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
-                <div className="mt-1 text-sm leading-6 text-slate-500">{hint}</div>
-              </div>
-            ))}
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">年度开单中心</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">批量开单</h1>
           </div>
         </div>
       </section>
@@ -88,8 +72,8 @@ export default function BillingGeneratePage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <PageSection
           title="年度物业费开单"
-          description="面向收费运营按自然年批量出单，保持服务周期、房间口径与唯一约束一致。"
-          action={<span className="tag">UNIQUE(room_id, fee_type, period_year)</span>}
+          description="按自然年生成。"
+          action={<span className="tag">按年</span>}
         >
           <form className="grid gap-5" onSubmit={handlePropertyGenerate}>
             <div className="grid gap-4 md:grid-cols-2">
@@ -128,18 +112,6 @@ export default function BillingGeneratePage() {
               </select>
             </label>
 
-            <div className="glass-soft rounded-[24px] p-5 text-sm leading-7 text-slate-600">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <ReceiptText className="h-4 w-4 text-primary-700" />
-                开单前检查
-              </div>
-              <ul className="mt-3 list-disc space-y-1 pl-5">
-                <li>确保年费规则、面积单价与服务周期已配置完成。</li>
-                <li>保持数据库唯一约束兜底，避免同房间同年重复生成有效物业费账单。</li>
-                <li>已支付账单不直接覆盖，异常修正应走作废或差额补收流程。</li>
-              </ul>
-            </div>
-
             {propertyError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{propertyError}</div> : null}
             {propertyResult ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{propertyResult}</div> : null}
 
@@ -151,8 +123,8 @@ export default function BillingGeneratePage() {
 
         <PageSection
           title="水费补出账"
-          description="默认生产流程仍是抄表录入即出账；此处用于补齐指定账期的水费批量账单。"
-          action={<span className="tag">建议优先走抄表入口</span>}
+          description="补齐指定账期。"
+          action={<span className="tag">按月</span>}
         >
           <form className="grid gap-5" onSubmit={handleWaterGenerate}>
             <div className="grid gap-4 md:grid-cols-3">
@@ -204,18 +176,6 @@ export default function BillingGeneratePage() {
                 <option value="FAIL">FAIL - 发现重复直接失败</option>
               </select>
             </label>
-
-            <div className="glass-soft rounded-[24px] p-5 text-sm leading-7 text-slate-600">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <CalendarRange className="h-4 w-4 text-primary-700" />
-                月度水费说明
-              </div>
-              <ul className="mt-3 list-disc space-y-1 pl-5">
-                <li>同一房间同一自然月只能有一条有效抄表记录和一张有效水费账单。</li>
-                <li>如需真实生产闭环，请优先从“月度水费抄表”页录入读数并立即出账。</li>
-                <li>本入口更适合规则调整后的补跑与运营补齐。</li>
-              </ul>
-            </div>
 
             {waterError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{waterError}</div> : null}
             {waterResult ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{waterResult}</div> : null}

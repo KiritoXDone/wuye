@@ -63,13 +63,10 @@ export default function CouponTemplatesPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">券体系</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">维护支付前抵扣券与支付后奖励券模板，区分模板与规则语义</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前页面只做模板列表与新增，不混淆模板、实例和核销记录。字段与后端 CouponTemplateCreateDTO 保持一致。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">券体系</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">券模板</h1>
         </div>
       </section>
 
@@ -77,7 +74,7 @@ export default function CouponTemplatesPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <PageSection title="模板列表" description="当前接口返回启用中的模板，可快速核对费种、有效期和抵扣规则。">
+        <PageSection title="模板列表" description="查看当前模板。">
           <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="暂无券模板。">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">

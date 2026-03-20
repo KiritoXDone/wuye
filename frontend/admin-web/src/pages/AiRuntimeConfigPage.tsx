@@ -79,18 +79,15 @@ export default function AiRuntimeConfigPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">系统配置</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">统一维护 AI 运行配置，保留密钥脱敏与留空不覆盖语义</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              当前前端接入 `/admin/agent/runtime-config`。页面应同时支持查看当前配置和更新配置，其中 API Key 留空表示继续保留后端已存密钥。
-            </p>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">系统配置</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">AI 运行配置</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
             <RefreshCcw className="h-4 w-4" />
-            {loading ? '刷新中...' : '重新加载'}
+            {loading ? '刷新中...' : '刷新'}
           </button>
         </div>
       </section>
@@ -99,10 +96,10 @@ export default function AiRuntimeConfigPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <PageSection title="当前配置" description="密钥只显示脱敏结果；如需更新，请在右侧输入新密钥覆盖。">
+        <PageSection title="当前配置" description="查看当前值。">
           <AsyncState loading={loading} error={error} empty={!current} emptyDescription="暂无 AI 运行配置。">
             {current ? (
-              <div className="glass-soft rounded-[24px] p-5 text-sm">
+              <div className="panel-muted p-5 text-sm">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><Sparkles className="h-4 w-4 text-primary-700" />当前配置快照</div>
                 <dl className="mt-4 space-y-3">
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">启用状态</dt><dd className="font-medium text-slate-900">{current.enabled ? '已启用' : '未启用'}</dd></div>
@@ -119,7 +116,7 @@ export default function AiRuntimeConfigPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="更新配置" description="修改后写入后端单例配置；留空 API Key 时保留后端已有密钥。">
+        <PageSection title="更新配置" description="修改并保存。">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block md:col-span-2">
               <span className="mb-2 block text-sm font-medium text-slate-700">启用状态</span>

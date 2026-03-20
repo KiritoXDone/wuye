@@ -58,17 +58,14 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">治理审计</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">按业务、操作人和时间回溯关键后台操作，并查看 detailJson 明细</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前页面提供最小查询能力，优先服务账单、支付、导入导出与权限治理的回溯定位，不扩展成完整审计分析平台。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">治理审计</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">审计日志</h1>
         </div>
       </section>
 
-      <PageSection title="筛选条件" description="先锁定业务线和时间范围，再查看对应明细快照。">
+      <PageSection title="筛选条件" description="筛选并查询。">
         <div className="flex flex-wrap gap-3">
           <select className="input w-40" value={filters.bizType || ''} onChange={(event) => setFilters((current) => ({ ...current, bizType: event.target.value, pageNo: 1 }))}>
             {bizTypeOptions.map((option) => <option key={option.value || 'ALL'} value={option.value}>{option.label}</option>)}

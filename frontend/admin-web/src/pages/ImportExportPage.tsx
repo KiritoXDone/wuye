@@ -122,20 +122,17 @@ export default function ImportExportPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">导入导出任务</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">围绕批次、错误行与异步任务，补齐账单导入导出最小闭环</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前后端导入仅接收 fileUrl，导出采用异步任务模型。页面需要明确区分“创建任务”和“查询结果”，而不是假设浏览器直接上传或同步下载。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">导入导出</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">任务中心</h1>
         </div>
-        {error ? <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</div> : null}
-        {message ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
+        {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</div> : null}
+        {message ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <PageSection title="账单导入" description="填写 fileUrl 创建导入批次，再按批次号查询结果和错误行。">
+        <PageSection title="账单导入" description="创建批次并查看结果。">
           <div className="grid gap-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">导入文件地址</span>
@@ -191,7 +188,7 @@ export default function ImportExportPage() {
           </div>
         </PageSection>
 
-        <PageSection title="账单导出" description="导出是异步任务，成功后返回 fileUrl 与过期时间。">
+        <PageSection title="账单导出" description="创建并查询导出任务。">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">年份</span>

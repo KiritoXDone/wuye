@@ -116,28 +116,25 @@ export default function FeeRulesPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">计费配置</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">维护年度物业费与月度水费规则，让开单与抄表共享同一套计费基线</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              当前上线口径中，物业费按年开单、按年缴纳；水费按月抄表并支持阶梯价和异常阈值。请不要再把物业费解释成默认月度账单。
-            </p>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">计费配置</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">费用规则</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
             <RefreshCcw className="h-4 w-4" />
-            {loading ? '刷新中...' : '刷新规则'}
+            {loading ? '刷新中...' : '刷新'}
           </button>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           {[
             ['物业费规则', `${propertyRuleCount} 条`],
             ['水费规则', `${waterRuleCount} 条`],
             ['阶梯价规则', `${tieredRuleCount} 条`],
           ].map(([label, value]) => (
-            <div key={label} className="glass-soft rounded-[24px] p-4">
+            <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
             </div>
@@ -151,7 +148,7 @@ export default function FeeRulesPage() {
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
         <PageSection
           title="规则台账"
-          description="先按小区查看当前已生效规则，再决定是否新增新的年度物业费或月度水费规则。"
+          description="按小区查看当前规则。"
           action={
             <div className="flex flex-wrap gap-2">
               <input className="input w-28" type="number" min={1} value={communityId} onChange={(event) => setCommunityId(Number(event.target.value))} />
@@ -193,7 +190,7 @@ export default function FeeRulesPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="新增规则" description="物业费默认按年；水费按月并可配置阶梯价和异常阈值。">
+        <PageSection title="新增规则" description="创建新规则。">
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
@@ -234,7 +231,7 @@ export default function FeeRulesPage() {
                   </label>
                 </div>
 
-                <div className="rounded-[24px] border border-slate-200/80 bg-white/75 p-5 backdrop-blur-xl">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       <Waves className="h-4 w-4 text-cyan-600" />
@@ -247,7 +244,7 @@ export default function FeeRulesPage() {
                   </div>
                   <div className="mt-4 space-y-3">
                     {(form.waterTiers || []).map((tier, index) => (
-                      <div key={index} className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
+                      <div key={index} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
                         <input className="input" type="number" step="0.001" value={tier.startUsage} onChange={(event) => updateTier(index, { startUsage: Number(event.target.value) })} placeholder="起始用量" />
                         <input className="input" type="number" step="0.001" value={tier.endUsage ?? ''} onChange={(event) => updateTier(index, { endUsage: event.target.value ? Number(event.target.value) : undefined })} placeholder="结束用量（最后一档可空）" />
                         <input className="input" type="number" step="0.0001" value={tier.unitPrice} onChange={(event) => updateTier(index, { unitPrice: Number(event.target.value) })} placeholder="单价" />
@@ -257,11 +254,7 @@ export default function FeeRulesPage() {
                   </div>
                 </div>
               </>
-            ) : (
-              <div className="glass-soft rounded-[24px] p-5 text-sm leading-7 text-slate-600">
-                年度物业费应以房间面积 × 年单价计算，并按自然年开单，不再沿用“年费折月”的旧展示口径。
-              </div>
-            )}
+            ) : null}
 
             <button type="button" className="btn-primary w-full" onClick={() => void handleCreate()} disabled={submitLoading}>
               {submitLoading ? '提交中...' : '创建费用规则'}

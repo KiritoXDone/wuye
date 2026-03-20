@@ -58,13 +58,10 @@ export default function AgentGroupsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">治理与授权</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">维护 Agent 与用户组的授权关系，核对数据范围最小闭环</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前列表接口返回的是组维度信息，适合核对用户组与组织归属；新增授权时仅提交 agentCode、groupCode、permission、status。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">治理与授权</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">Agent 授权</h1>
         </div>
       </section>
 
@@ -72,7 +69,7 @@ export default function AgentGroupsPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.9fr]">
-        <PageSection title="授权列表" description="按当前后端返回字段展示用户组与权限，用于核对 Agent 数据范围配置。">
+        <PageSection title="授权列表" description="查看当前授权。">
           <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="暂无授权记录。">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
@@ -103,7 +100,7 @@ export default function AgentGroupsPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="新增授权" description="保持与后端 AgentGroupAssignDTO 一致，只提交最小授权字段。">
+        <PageSection title="新增授权" description="提交最小授权字段。">
           <div className="grid gap-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">Agent 编码</span>

@@ -80,24 +80,21 @@ export default function WaterReadingsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">月度抄表闭环</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">录入月度抄表后，立即进入当月水费出账链路</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              当前口径要求同房间同年月仅允许一条有效抄表记录。录入成功后，应在同一业务闭环中同步生成月度水费账单。
-            </p>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">月度抄表</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">录入抄表</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
             <RefreshCcw className="h-4 w-4" />
-            {loading ? '刷新中...' : '刷新记录'}
+            {loading ? '刷新中...' : '刷新'}
           </button>
         </div>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <PageSection title="录入抄表" description="录入读数前先确认房间、年月和上次读数，避免重复抄表与负数用量。">
+        <PageSection title="录入抄表" description="录入后立即出账。">
           <form className="grid gap-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
@@ -135,13 +132,9 @@ export default function WaterReadingsPage() {
               <textarea className="textarea" rows={4} value={form.remark} onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))} placeholder="可填写现场异常说明、表具状态等。" />
             </label>
 
-            <div className="glass-soft rounded-[24px] p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <Droplets className="h-4 w-4 text-cyan-600" />
-                用量预览
-              </div>
-              <div className="mt-3 text-3xl font-semibold text-slate-950">{formatQuantity(usagePreview)}</div>
-              <div className="mt-1 text-sm text-slate-500">系统会以 curr_reading - prev_reading 计算当月用量，并立即进入水费出账流程。</div>
+            <div className="panel-muted p-5">
+              <div className="text-sm font-medium text-slate-500">用量预览</div>
+              <div className="mt-2 text-3xl font-semibold text-slate-950">{formatQuantity(usagePreview)}</div>
             </div>
 
             {submitError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{submitError}</div> : null}
@@ -155,7 +148,7 @@ export default function WaterReadingsPage() {
 
         <PageSection
           title="当期抄表记录"
-          description="按账期查看已录入的抄表结果，重点确认是否存在重复月份、异常用量或待核实状态。"
+          description="按账期查看。"
           action={
             <div className="flex flex-wrap gap-2">
               <input className="input w-28" type="number" min={2020} max={2100} value={filters.periodYear} onChange={(event) => setFilters((current) => ({ ...current, periodYear: Number(event.target.value) }))} />

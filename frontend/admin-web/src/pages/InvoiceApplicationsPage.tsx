@@ -41,13 +41,10 @@ export default function InvoiceApplicationsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">运营协同</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">保留发票申请最小处理入口，不虚构后台列表能力</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前后端已开放住户端申请列表与后台处理接口，但未提供后台申请列表查询。本页只做按申请 ID 处理的最小入口，并对齐 APPLIED / APPROVED / REJECTED 三态语义。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">运营协同</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">发票申请</h1>
         </div>
       </section>
 
@@ -55,10 +52,7 @@ export default function InvoiceApplicationsPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <PageSection title="处理申请" description="输入申请 ID 后，可将状态从 APPLIED 推进到 APPROVED 或 REJECTED。">
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-            请先从住户侧申请记录或联调结果中拿到 applicationId；当前后台页面仅提供处理入口，不提供后台申请列表接口。
-          </div>
+        <PageSection title="处理申请" description="按申请 ID 处理。">
           <div className="mt-4 grid gap-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">申请 ID</span>
@@ -80,7 +74,7 @@ export default function InvoiceApplicationsPage() {
           </div>
         </PageSection>
 
-        <PageSection title="接口边界说明" description="严格对齐现有后端能力，不额外虚构后台申请列表或详情接口。">
+        <PageSection title="接口边界" description="当前页仅提供处理入口。">
           <div className="space-y-3 text-sm text-slate-600">
             <div className="rounded-2xl border border-slate-200 bg-white/75 px-4 py-4"><span className="font-medium text-slate-900">住户侧列表：</span>GET /api/v1/me/invoices/applications</div>
             <div className="rounded-2xl border border-slate-200 bg-white/75 px-4 py-4"><span className="font-medium text-slate-900">后台处理：</span>POST /api/v1/admin/invoices/applications/{'{applicationId}'}/process</div>

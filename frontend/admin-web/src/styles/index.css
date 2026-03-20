@@ -15,15 +15,8 @@
   }
 
   body {
-    @apply text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
     font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif;
-    background-color: #eaf4ff;
-    background-image:
-      radial-gradient(circle at 10% 15%, rgba(56, 189, 248, 0.18), transparent 24%),
-      radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.16), transparent 28%),
-      radial-gradient(circle at 50% 100%, rgba(20, 184, 166, 0.14), transparent 32%),
-      linear-gradient(180deg, #f7fbff 0%, #eef6ff 48%, #ecfeff 100%);
-    background-attachment: fixed;
   }
 
   button,
@@ -36,45 +29,41 @@
 
 @layer components {
   .glass-panel {
-    @apply rounded-[30px] border border-white/70 bg-white/60 shadow-panel backdrop-blur-2xl;
-    box-shadow:
-      0 24px 60px rgba(15, 23, 42, 0.10),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    @apply rounded-2xl border border-slate-200 bg-white;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
   }
 
   .glass-soft {
-    @apply border border-white/70 bg-white/55 backdrop-blur-xl;
-    box-shadow:
-      0 14px 35px rgba(15, 23, 42, 0.07),
-      inset 0 1px 0 rgba(255, 255, 255, 0.48);
+    @apply rounded-2xl border border-slate-200 bg-slate-50;
+    box-shadow: none;
   }
 
   .panel {
-    @apply glass-panel;
+    @apply rounded-2xl border border-slate-200 bg-white;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
   }
 
   .panel-muted {
-    @apply glass-soft rounded-3xl;
+    @apply rounded-2xl border border-slate-200 bg-slate-50;
   }
 
   .input {
-    @apply h-11 w-full rounded-2xl border border-white/80 bg-white/85 px-4 text-sm text-slate-900 outline-none transition duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100;
+    @apply h-11 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition duration-150 focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
   }
 
   .textarea {
-    @apply w-full rounded-2xl border border-white/80 bg-white/85 px-4 py-3 text-sm text-slate-900 outline-none transition duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100;
+    @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition duration-150 focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
   }
 
   .btn-primary {
-    @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white transition duration-200 hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-200 disabled:cursor-not-allowed disabled:opacity-60;
-    box-shadow: 0 12px 28px rgba(29, 78, 216, 0.28);
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition duration-150 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-white/80 bg-white/80 px-5 py-2.5 text-sm font-semibold text-slate-700 transition duration-200 hover:border-slate-200 hover:bg-white focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition duration-150 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .tag {
-    @apply inline-flex min-h-8 items-center rounded-full border border-primary-200/80 bg-primary-50/90 px-3 text-xs font-medium text-primary-800 backdrop-blur;
+    @apply inline-flex min-h-7 items-center rounded-md border border-slate-200 bg-slate-100 px-2.5 text-xs font-medium text-slate-600;
   }
 }

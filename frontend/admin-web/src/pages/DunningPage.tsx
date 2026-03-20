@@ -65,13 +65,10 @@ export default function DunningPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">运营协同</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">支持手动触发催缴，并按账单查看发送日志</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前后端仅对逾期未支付账单生成催缴任务，日志状态以接口返回结果为准。这里保留“手动触发 + 任务列表 + 日志查看”的最小闭环。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">运营协同</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">催缴任务</h1>
         </div>
       </section>
 
@@ -79,7 +76,7 @@ export default function DunningPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <PageSection title="手动触发" description="triggerDate 留空时使用后端默认日期，填写后按指定日期执行一次催缴扫描。">
+        <PageSection title="手动触发" description="按日期触发。">
           <div className="flex flex-wrap gap-3">
             <input className="input w-48" type="date" value={triggerDate} onChange={(event) => setTriggerDate(event.target.value)} />
             <button type="button" className="btn-primary gap-2" onClick={() => void handleTrigger()} disabled={triggerLoading}>
@@ -93,7 +90,7 @@ export default function DunningPage() {
           </div>
         </PageSection>
 
-        <PageSection title="发送日志" description={selectedBillId ? `当前查看账单 ${selectedBillId} 的催缴日志。` : '点击下方任务行的查看日志后，在这里展示发送明细。'}>
+        <PageSection title="发送日志" description={selectedBillId ? `账单 ${selectedBillId}` : '选择任务后查看。'}>
           <AsyncState loading={logLoading} empty={!logs.length} emptyDescription="暂无催缴日志。">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
@@ -123,7 +120,7 @@ export default function DunningPage() {
         </PageSection>
       </div>
 
-      <PageSection title="催缴任务列表" description="列表展示账单、组织、用户组与触发方式，支持按账单查看日志。">
+      <PageSection title="催缴任务列表" description="查看任务与状态。">
         <AsyncState loading={loading} error={error} empty={!tasks.length} emptyDescription="暂无催缴任务。">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">

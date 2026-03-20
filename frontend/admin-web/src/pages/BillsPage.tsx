@@ -64,29 +64,26 @@ export default function BillsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">账单台账</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">统一复核物业费与水费账单，按房间查看应收与已收</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              账单查询默认按房间口径汇总，帮助收费、运营与财务在同一列表中检查账期、服务周期、状态与支付进展。
-            </p>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">账单台账</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">账单列表</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
             <RefreshCcw className="h-4 w-4" />
-            {loading ? '刷新中...' : '刷新台账'}
+            {loading ? '刷新中...' : '刷新'}
           </button>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {[
             ['当前页应收', formatMoney(totalDue)],
             ['当前页已收', formatMoney(totalPaid)],
             ['账单数量', `${list.length} / ${total}`],
             ['当前账期', formatPeriod(query.periodYear, query.periodMonth || null, query.periodMonth ? 'MONTH' : 'YEAR')],
           ].map(([label, value]) => (
-            <div key={label} className="glass-soft rounded-[24px] p-4">
+            <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
             </div>
@@ -97,7 +94,7 @@ export default function BillsPage() {
       <div className="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
         <PageSection
           title="账单列表"
-          description="筛选账期、费种与状态，快速定位问题账单。"
+          description="按账期、费种与状态筛选。"
           action={
             <div className="flex flex-wrap gap-2">
               <input className="input w-28" type="number" min={2020} max={2100} value={query.periodYear || ''} onChange={(event) => setQuery((current) => ({ ...current, periodYear: Number(event.target.value) }))} />
@@ -163,11 +160,11 @@ export default function BillsPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="账单详情" description="明细展示账单服务周期、条目金额和支付状态，便于解释金额来源。">
+        <PageSection title="账单详情" description="查看服务周期与明细。">
           <AsyncState loading={detailLoading} empty={!detail} emptyDescription="请先从左侧选择一张账单查看详情。">
             {detail ? (
               <div className="space-y-4">
-                <div className="glass-soft rounded-[24px] p-5">
+                <div className="panel-muted p-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge value={detail.feeType} />
                     <StatusBadge value={detail.cycleType} />
@@ -184,7 +181,7 @@ export default function BillsPage() {
                   </dl>
                 </div>
 
-                <div className="rounded-[24px] border border-slate-200/80 bg-white/75 p-5 backdrop-blur-xl">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="text-sm font-semibold text-slate-900">账单明细</div>
                   <div className="mt-4 space-y-3">
                     {detail.billLines.length ? detail.billLines.map((line) => (

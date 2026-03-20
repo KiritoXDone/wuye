@@ -34,25 +34,22 @@ export default function WaterAlertsPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">水费风险提示</div>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">按账期查看异常水量预警，辅助追踪但不默认阻断开单</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              当前后端主要返回 OPEN 状态预警事件，用于识别绝对阈值或倍数阈值触发的异常房间，帮助运营在月度抄表闭环中及时复核。
-            </p>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">水量预警</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">异常水量</h1>
           </div>
           <button type="button" className="btn-secondary gap-2" onClick={() => void loadData()} disabled={loading}>
             <RefreshCcw className="h-4 w-4" />
-            {loading ? '刷新中...' : '刷新预警'}
+            {loading ? '刷新中...' : '刷新'}
           </button>
         </div>
       </section>
 
       <PageSection
         title="预警列表"
-        description="阈值与实际值统一保留三位小数，便于快速核对异常区间。"
+        description="按账期查看。"
         action={
           <div className="flex flex-wrap gap-2">
             <input className="input w-28" type="number" min={2020} max={2100} value={filters.periodYear} onChange={(event) => setFilters((current) => ({ ...current, periodYear: Number(event.target.value) }))} />
@@ -66,9 +63,9 @@ export default function WaterAlertsPage() {
         }
       >
         <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="当前账期暂无水量预警。">
-          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             <AlertTriangle className="h-4 w-4" />
-            当前账期：{formatPeriod(filters.periodYear, filters.periodMonth, 'MONTH')}。
+            {formatPeriod(filters.periodYear, filters.periodMonth, 'MONTH')}
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">

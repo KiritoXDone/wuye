@@ -64,13 +64,10 @@ export default function CouponRulesPage() {
 
   return (
     <div className="space-y-6 pb-2">
-      <section className="glass-panel overflow-hidden p-6 sm:p-7">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700">券体系</div>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-950">配置支付成功后的奖励券发放规则，保持模板与规则分层</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            当前页面仅做最小新增与列表核对。创建时提交 templateCode，列表返回 templateId；若需更强映射能力，应后续补后端 VO。
-          </p>
+          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">券体系</div>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-950">发券规则</h1>
         </div>
       </section>
 
@@ -78,7 +75,7 @@ export default function CouponRulesPage() {
       {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <PageSection title="规则列表" description="列表直接展示后端当前规则，方便联调支付成功后的奖励券发放。">
+        <PageSection title="规则列表" description="查看当前规则。">
           <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="暂无发券规则。">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
@@ -109,7 +106,7 @@ export default function CouponRulesPage() {
           </AsyncState>
         </PageSection>
 
-        <PageSection title="新增规则" description="奖励券模板下拉仅展示 VOUCHER 类型模板。">
+        <PageSection title="新增规则" description="创建新规则。">
           <div className="grid gap-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">规则名称</span>
