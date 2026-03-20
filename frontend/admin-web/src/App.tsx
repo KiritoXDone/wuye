@@ -17,7 +17,6 @@ import InvoiceApplicationsPage from '@/pages/InvoiceApplicationsPage'
 import LoginPage from '@/pages/LoginPage'
 import OrgUnitsPage from '@/pages/OrgUnitsPage'
 import UserManagementPage from '@/pages/UserManagementPage'
-import WaterAlertsPage from '@/pages/WaterAlertsPage'
 import WaterReadingsPage from '@/pages/WaterReadingsPage'
 import { useAuthStore } from '@/stores/auth'
 
@@ -91,7 +90,6 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/billing-generate" element={<BillingGeneratePage />} />
             <Route path="/water-readings" element={<WaterReadingsPage />} />
-            <Route path="/water-alerts" element={<WaterAlertsPage />} />
             <Route path="/import-export" element={<ImportExportPage />} />
             <Route path="/fee-rules" element={<FeeRulesPage />} />
             <Route path="/org-units" element={<OrgUnitsPage />} />

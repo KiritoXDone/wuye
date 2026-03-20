@@ -2,12 +2,13 @@ import request from '@/utils/request'
 import type {
   AdminUser,
   AdminUserCreatePayload,
+  AdminUserListQuery,
   AdminUserPasswordResetPayload,
   AdminUserStatusPayload,
 } from '@/types/user'
 
-export function getAdminUsers() {
-  return request.get<AdminUser[]>('/admin/accounts', { params: { accountType: 'ADMIN' } })
+export function getAdminUsers(params?: AdminUserListQuery) {
+  return request.get<AdminUser[]>('/admin/accounts', { params })
 }
 
 export function createAdminUser(payload: AdminUserCreatePayload) {

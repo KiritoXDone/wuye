@@ -80,15 +80,15 @@ export default function CouponTemplatesPage() {
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="px-4 py-3 font-medium">模板编码</th>
-                    <th className="px-4 py-3 font-medium">券名称</th>
-                    <th className="px-4 py-3 font-medium">类型</th>
-                    <th className="px-4 py-3 font-medium">费种</th>
-                    <th className="px-4 py-3 font-medium">抵扣模式</th>
-                    <th className="px-4 py-3 font-medium">抵扣值</th>
-                    <th className="px-4 py-3 font-medium">门槛</th>
-                    <th className="px-4 py-3 font-medium">有效期</th>
-                    <th className="px-4 py-3 font-medium">状态</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">模板编码</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">券名称</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">类型</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">费种</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">抵扣模式</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">抵扣值</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">门槛</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">有效期</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
                   </tr>
                 </thead>
                 <tbody>

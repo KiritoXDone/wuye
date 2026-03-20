@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { AlertTriangle, BellRing, Bot, Building2, DatabaseBackup, Droplets, FileSearch, FileText, Gift, LayoutDashboard, ReceiptText, ScrollText, TicketPercent, UserCog, Waves } from 'lucide-react'
+import { BellRing, Bot, Building2, DatabaseBackup, Droplets, FileSearch, FileText, Gift, LayoutDashboard, ReceiptText, ScrollText, TicketPercent, UserCog, Waves } from 'lucide-react'
 
 export interface AppRouteMeta {
   path: string
@@ -32,12 +32,6 @@ export const coreRoutes: AppRouteMeta[] = [
     label: '账单管理',
     description: '统一复核年度物业费与月度水费账单。',
     icon: FileText,
-  },
-  {
-    path: '/water-alerts',
-    label: '水量预警',
-    description: '按月查看异常用量预警，辅助复核抄表与出账。',
-    icon: AlertTriangle,
   },
   {
     path: '/import-export',

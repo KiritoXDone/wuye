@@ -89,14 +89,14 @@ export default function AuditLogsPage() {
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="px-4 py-3 font-medium">审计 ID</th>
-                    <th className="px-4 py-3 font-medium">业务类型</th>
-                    <th className="px-4 py-3 font-medium">业务主键</th>
-                    <th className="px-4 py-3 font-medium">操作动作</th>
-                    <th className="px-4 py-3 font-medium">操作人 ID</th>
-                    <th className="px-4 py-3 font-medium">来源 IP</th>
-                    <th className="px-4 py-3 font-medium">创建时间</th>
-                    <th className="px-4 py-3 font-medium">操作</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">审计 ID</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">业务类型</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">业务主键</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">操作动作</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">操作人 ID</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">来源 IP</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">创建时间</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>

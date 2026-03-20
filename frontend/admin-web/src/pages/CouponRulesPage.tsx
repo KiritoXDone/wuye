@@ -81,12 +81,12 @@ export default function CouponRulesPage() {
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="px-4 py-3 font-medium">规则名称</th>
-                    <th className="px-4 py-3 font-medium">费种</th>
-                    <th className="px-4 py-3 font-medium">模板 ID</th>
-                    <th className="px-4 py-3 font-medium">最低实付金额</th>
-                    <th className="px-4 py-3 font-medium">发券数量</th>
-                    <th className="px-4 py-3 font-medium">状态</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">规则名称</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">费种</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">模板 ID</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">最低实付金额</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">发券数量</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
                   </tr>
                 </thead>
                 <tbody>

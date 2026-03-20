@@ -35,10 +35,7 @@ public class AdminAccountController {
     @GetMapping
     public ApiResponse<List<AdminAccountVO>> list(@CurrentUser LoginUser loginUser,
                                                   @RequestParam(required = false) String accountType) {
-        if (accountType != null && !"ADMIN".equals(accountType)) {
-            return ApiResponse.success(List.of());
-        }
-        return ApiResponse.success(adminAccountService.listAdmins(loginUser));
+        return ApiResponse.success(adminAccountService.listAccounts(loginUser, accountType));
     }
 
     @PostMapping("/admins")

@@ -33,9 +33,9 @@ public class AdminAccountService {
         this.accessGuard = accessGuard;
     }
 
-    public List<AdminAccountVO> listAdmins(LoginUser loginUser) {
+    public List<AdminAccountVO> listAccounts(LoginUser loginUser, String accountType) {
         accessGuard.requireRole(loginUser, "ADMIN");
-        return accountMapper.listByAccountType("ADMIN").stream().map(this::toAdminAccountVO).toList();
+        return accountMapper.listByAccountType(normalizeAccountType(accountType)).stream().map(this::toAdminAccountVO).toList();
     }
 
     @Transactional
@@ -105,6 +105,14 @@ public class AdminAccountService {
             return null;
         }
         String normalized = mobile.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeAccountType(String accountType) {
+        if (accountType == null) {
+            return null;
+        }
+        String normalized = accountType.trim().toUpperCase();
         return normalized.isEmpty() ? null : normalized;
     }
 }

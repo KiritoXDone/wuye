@@ -28,10 +28,16 @@ public interface AccountMapper {
     Account findByUsername(String username);
 
     @Select("""
+            <script>
             SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at
             FROM account
-            WHERE account_type = #{accountType}
+            <where>
+                <if test='accountType != null and accountType != ""'>
+                    account_type = #{accountType}
+                </if>
+            </where>
             ORDER BY id DESC
+            </script>
             """)
     java.util.List<Account> listByAccountType(@Param("accountType") String accountType);
 

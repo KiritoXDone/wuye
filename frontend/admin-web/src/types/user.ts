@@ -9,6 +9,10 @@ export interface AdminUser {
   lastLoginAt?: string | null
 }
 
+export interface AdminUserListQuery {
+  accountType?: string
+}
+
 export interface AdminUserCreatePayload {
   username: string
   password: string

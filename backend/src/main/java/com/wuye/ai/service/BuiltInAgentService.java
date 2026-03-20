@@ -13,7 +13,6 @@ import com.wuye.report.service.AdminMonthlyReportService;
 import com.wuye.report.vo.AdminDashboardSummaryVO;
 import com.wuye.room.service.RoomBindingService;
 import com.wuye.room.vo.RoomVO;
-import com.wuye.audit.service.AuditLogService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,20 +26,17 @@ public class BuiltInAgentService {
     private final BillQueryService billQueryService;
     private final AdminDashboardService adminDashboardService;
     private final AdminMonthlyReportService adminMonthlyReportService;
-    private final AuditLogService auditLogService;
 
     public BuiltInAgentService(AccessGuard accessGuard,
                                RoomBindingService roomBindingService,
                                BillQueryService billQueryService,
                                AdminDashboardService adminDashboardService,
-                               AdminMonthlyReportService adminMonthlyReportService,
-                               AuditLogService auditLogService) {
+                               AdminMonthlyReportService adminMonthlyReportService) {
         this.accessGuard = accessGuard;
         this.roomBindingService = roomBindingService;
         this.billQueryService = billQueryService;
         this.adminDashboardService = adminDashboardService;
         this.adminMonthlyReportService = adminMonthlyReportService;
-        this.auditLogService = auditLogService;
     }
 
     public AgentResidentBillSummaryVO residentBillSummary(LoginUser loginUser) {
@@ -71,8 +67,6 @@ public class BuiltInAgentService {
         vo.setRooms(rooms);
         vo.setRecentBills(recentBills);
 
-        auditLogService.record(loginUser, "AI_AGENT", String.valueOf(loginUser.accountId()), "RESIDENT_BILL_SUMMARY",
-                java.util.Map.of("recentBillCount", recentBills.size(), "roomCount", rooms.size()));
         return vo;
     }
 
@@ -86,8 +80,6 @@ public class BuiltInAgentService {
         vo.setPropertyYearly(adminMonthlyReportService.propertyYearly(loginUser, periodYear == null ? summary.getPeriodYear() : periodYear));
         vo.setWaterMonthly(adminMonthlyReportService.waterMonthly(loginUser, summary.getPeriodYear(), summary.getPeriodMonth()));
 
-        auditLogService.record(loginUser, "AI_AGENT", String.valueOf(loginUser.accountId()), "ADMIN_BILL_STATS",
-                java.util.Map.of("periodYear", vo.getPeriodYear(), "periodMonth", vo.getPeriodMonth()));
         return vo;
     }
 }
