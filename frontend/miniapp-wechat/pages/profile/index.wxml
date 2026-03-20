@@ -1,0 +1,79 @@
+<view class="page-shell safe-bottom">
+  <view class="page-hero">
+    <view class="page-eyebrow">我的</view>
+    <view class="page-title">房间与账户</view>
+    <view class="page-subtitle">在这里绑定房间、解绑房间，以及切换登录账号。</view>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">操作失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+  </view>
+
+  <view wx:if="{{successMessage}}" class="panel state-card state-card--success">
+    <view class="state-title text-success">操作成功</view>
+    <view class="state-desc">{{successMessage}}</view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="section-title">绑定房间</view>
+    <picker mode="selector" range="{{communities}}" range-key="communityName" value="{{selectedCommunityIndex}}" bindchange="handleCommunityChange">
+      <view class="picker-field">
+        <view class="picker-field__label">小区</view>
+        <view class="picker-field__value">{{communities.length ? communities[selectedCommunityIndex].communityName : '暂无小区'}}</view>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{buildings}}" range-key="buildingNo" value="{{selectedBuildingIndex}}" bindchange="handleBuildingChange">
+      <view class="picker-field">
+        <view class="picker-field__label">楼栋</view>
+        <view class="picker-field__value">{{buildings.length ? buildings[selectedBuildingIndex].buildingNo : '暂无楼栋'}}</view>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{units}}" range-key="unitNo" value="{{selectedUnitIndex}}" bindchange="handleUnitChange">
+      <view class="picker-field">
+        <view class="picker-field__label">单元</view>
+        <view class="picker-field__value">{{units.length ? units[selectedUnitIndex].unitNo : '暂无单元'}}</view>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{roomOptions}}" range-key="roomLabel" value="{{selectedRoomIndex}}" bindchange="handleRoomChange">
+      <view class="picker-field">
+        <view class="picker-field__label">房号</view>
+        <view class="picker-field__value">{{roomOptions.length ? roomOptions[selectedRoomIndex].roomLabel : '暂无房间'}}</view>
+      </view>
+    </picker>
+    <button class="button-primary" bindtap="handleBindRoom" loading="{{bindSubmitting}}" disabled="{{bindSubmitting || !roomOptions.length}}">绑定房间</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="panel state-card">
+    <view class="state-title">正在加载</view>
+  </view>
+
+  <view wx:elif="{{!rooms.length}}" class="panel state-card">
+    <view class="state-title">暂无已绑定房间</view>
+    <view class="state-desc">可通过上方分级选单完成绑定。</view>
+  </view>
+
+  <view wx:else class="list-stack">
+    <view wx:for="{{rooms}}" wx:key="roomId" class="panel card-stack room-home-card">
+      <view class="room-home-card__top">
+        <view>
+          <view class="card-kicker">{{item.communityName || '已绑定房间'}}</view>
+          <view class="room-home-card__title">{{item.roomLabel}}</view>
+        </view>
+        <view class="status-chip status-chip--{{item.bindingStatus}}">{{item.statusLabel}}</view>
+      </view>
+      <view class="metric-grid room-home-card__metrics">
+        <view class="metric-card">
+          <view class="metric-label">面积</view>
+          <view class="metric-value">{{item.areaText}}</view>
+        </view>
+      </view>
+      <button class="button-secondary" data-room-id="{{item.roomId}}" data-room-label="{{item.roomLabel}}" bindtap="handleUnbindRoom">解绑房间</button>
+    </view>
+  </view>
+
+  <view class="panel card-stack">
+    <view class="section-title">账户操作</view>
+    <button class="button-ghost" bindtap="handleLogout">切换登录账号</button>
+  </view>
+</view>

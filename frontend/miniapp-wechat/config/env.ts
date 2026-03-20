@@ -1,4 +1,5 @@
-export const API_BASE_URL = 'http://127.0.0.1:8080'
+export const API_BASE_URL = 'http://127.0.0.1:8081'
+export const IS_DEV = true
 export const DEFAULT_DEV_LOGIN_CODE = 'resident-zhangsan'
 export const QUICK_DEV_LOGIN_CODES = ['resident-zhangsan', 'resident-lisi']
 export const DEFAULT_PAGE_SIZE = 50

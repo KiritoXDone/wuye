@@ -5,6 +5,18 @@
   </view>
 
   <view class="panel card-stack">
+    <label wx:if="{{isDev}}" class="form-field">
+      <view class="form-label">调试 mock 登录</view>
+      <switch checked="{{useMockLogin}}" bindchange="handleMockSwitchChange" />
+    </label>
+
+    <picker wx:if="{{isDev && useMockLogin}}" mode="selector" range="{{quickCodes}}" value="0" bindchange="handleCodeChange">
+      <view class="list-item">
+        <view class="list-item__label">Mock 账号</view>
+        <view class="list-item__value">{{selectedCode}}</view>
+      </view>
+    </picker>
+
     <button class="button-primary" bindtap="handleLogin" loading="{{submitting}}" disabled="{{submitting}}">登录</button>
 
     <view wx:if="{{errorMessage}}" class="state-card">

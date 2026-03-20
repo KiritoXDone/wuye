@@ -149,6 +149,6 @@ Page({
   },
 
   backToRooms() {
-    wx.reLaunch({ url: '/pages/rooms/index' })
+    wx.switchTab({ url: '/pages/rooms/index' })
   }
 })

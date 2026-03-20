@@ -1,11 +1,15 @@
-import { DEFAULT_DEV_LOGIN_CODE } from '../../config/env'
+import { DEFAULT_DEV_LOGIN_CODE, IS_DEV, QUICK_DEV_LOGIN_CODES } from '../../config/env'
 import { loginWechat } from '../../services/auth'
 import { hasAuthSession, setAuthSession } from '../../utils/auth'
 
 Page({
   data: {
     submitting: false,
-    errorMessage: ''
+    errorMessage: '',
+    selectedCode: DEFAULT_DEV_LOGIN_CODE,
+    quickCodes: QUICK_DEV_LOGIN_CODES,
+    isDev: IS_DEV,
+    useMockLogin: false,
   },
 
   onShow() {
@@ -22,7 +26,7 @@ Page({
     this.setData({ submitting: true, errorMessage: '' })
 
     try {
-      const code = await this.fetchWechatCode()
+      const code = this.data.isDev && this.data.useMockLogin ? this.data.selectedCode : await this.fetchWechatCode()
       const result = await loginWechat({
         code,
         nickname: '住户用户'
@@ -44,12 +48,20 @@ Page({
             resolve(res.code)
             return
           }
-          resolve(DEFAULT_DEV_LOGIN_CODE)
+          reject(new Error('未能获取微信登录凭证'))
         },
         fail: () => {
           reject(new Error('未能获取微信登录凭证'))
         }
       })
     })
+  },
+
+  handleCodeChange(event: WechatMiniprogram.CustomEvent) {
+    this.setData({ selectedCode: event.detail.value, errorMessage: '' })
+  },
+
+  handleMockSwitchChange(event: WechatMiniprogram.CustomEvent) {
+    this.setData({ useMockLogin: !!event.detail.value, errorMessage: '' })
   }
 })
