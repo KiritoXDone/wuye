@@ -60,7 +60,7 @@ export default function AppShell() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="text-right text-sm text-slate-500">
                 <div className="font-medium text-slate-900">{profile?.realName || '管理员'}</div>
-                <div>{profile?.groupIds?.length ? `已授权 ${profile.groupIds.length} 个用户组` : '全局管理范围'}</div>
+                <div>{profile?.productRole === 'ADMIN' ? '管理员账户' : '普通用户账户'}</div>
               </div>
               <button type="button" className="btn-secondary gap-2" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />

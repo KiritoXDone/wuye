@@ -6,9 +6,6 @@ export interface DunningTask {
   id: number
   taskNo: string
   billId: number
-  groupId?: number
-  orgUnitId?: number
-  tenantCode?: string
   triggerType: string
   triggerDate: string
   status: string

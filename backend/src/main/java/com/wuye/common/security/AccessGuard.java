@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class AccessGuard {
 
     public void requireRole(LoginUser loginUser, String role) {
-        if (loginUser == null || !loginUser.hasRole(role)) {
+        if (loginUser == null || !matchesRole(loginUser, role)) {
             throw new BusinessException("FORBIDDEN", "无权限访问该资源", HttpStatus.FORBIDDEN);
         }
     }
@@ -22,8 +22,21 @@ public class AccessGuard {
     }
 
     public void requireAnyRole(LoginUser loginUser, String... roles) {
-        if (loginUser == null || roles == null || Arrays.stream(roles).noneMatch(loginUser::hasRole)) {
+        if (loginUser == null || roles == null || Arrays.stream(roles).noneMatch(role -> matchesRole(loginUser, role))) {
             throw new BusinessException("FORBIDDEN", "无权限访问该资源", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private boolean matchesRole(LoginUser loginUser, String role) {
+        if (loginUser.hasRole(role)) {
+            return true;
+        }
+        if ("FINANCE".equals(role)) {
+            return loginUser.hasRole("ADMIN");
+        }
+        if ("RESIDENT".equals(role)) {
+            return loginUser.hasRole("USER");
+        }
+        return false;
     }
 }

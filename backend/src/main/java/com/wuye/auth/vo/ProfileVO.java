@@ -6,9 +6,9 @@ public class ProfileVO {
 
     private Long accountId;
     private String accountType;
+    private String productRole;
     private String realName;
     private List<String> roles;
-    private List<Long> groupIds;
 
     public Long getAccountId() {
         return accountId;
@@ -24,6 +24,14 @@ public class ProfileVO {
 
     public void setAccountType(String accountType) {
         this.accountType = accountType;
+    }
+
+    public String getProductRole() {
+        return productRole;
+    }
+
+    public void setProductRole(String productRole) {
+        this.productRole = productRole;
     }
 
     public String getRealName() {
@@ -42,11 +50,4 @@ public class ProfileVO {
         this.roles = roles;
     }
 
-    public List<Long> getGroupIds() {
-        return groupIds;
-    }
-
-    public void setGroupIds(List<Long> groupIds) {
-        this.groupIds = groupIds;
-    }
 }

@@ -128,9 +128,6 @@ export default function DunningPage() {
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-4 py-3 font-medium">任务编号</th>
                   <th className="px-4 py-3 font-medium">账单 ID</th>
-                  <th className="px-4 py-3 font-medium">用户组 ID</th>
-                  <th className="px-4 py-3 font-medium">组织 ID</th>
-                  <th className="px-4 py-3 font-medium">租户编码</th>
                   <th className="px-4 py-3 font-medium">任务说明</th>
                   <th className="px-4 py-3 font-medium">触发方式</th>
                   <th className="px-4 py-3 font-medium">触发日期</th>
@@ -144,9 +141,6 @@ export default function DunningPage() {
                   <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-white/50">
                     <td className="px-4 py-4 font-medium text-slate-900">{item.taskNo}</td>
                     <td className="px-4 py-4 text-slate-600">{item.billId}</td>
-                    <td className="px-4 py-4 text-slate-600">{item.groupId || '--'}</td>
-                    <td className="px-4 py-4 text-slate-600">{item.orgUnitId || '--'}</td>
-                    <td className="px-4 py-4 text-slate-600">{item.tenantCode || '--'}</td>
                     <td className="px-4 py-4 text-slate-600">{item.remark || '--'}</td>
                     <td className="px-4 py-4"><StatusBadge value={item.triggerType} /></td>
                     <td className="px-4 py-4 text-slate-600">{formatDate(item.triggerDate)}</td>

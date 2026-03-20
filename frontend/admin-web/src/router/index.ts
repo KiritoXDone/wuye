@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { AlertTriangle, BellRing, Bot, DatabaseBackup, Droplets, FileSearch, FileText, Gift, LayoutDashboard, Network, ReceiptText, ScrollText, ShieldCheck, TicketPercent, Waves } from 'lucide-react'
+import { AlertTriangle, BellRing, Bot, Building2, DatabaseBackup, Droplets, FileSearch, FileText, Gift, LayoutDashboard, ReceiptText, ScrollText, TicketPercent, UserCog, Waves } from 'lucide-react'
 
 export interface AppRouteMeta {
   path: string
@@ -17,14 +17,14 @@ export const coreRoutes: AppRouteMeta[] = [
   },
   {
     path: '/billing-generate',
-    label: '年度物业费',
-    description: '按自然年生成物业费账单，服务周期清晰可追溯。',
+    label: '开账中心',
+    description: '统一处理物业费开单与水费补出账。',
     icon: ReceiptText,
   },
   {
     path: '/water-readings',
-    label: '月度水费抄表',
-    description: '录入抄表后立即出账，维持月度水费闭环。',
+    label: '水费抄表',
+    description: '录入抄表后立即出账。',
     icon: Droplets,
   },
   {
@@ -53,21 +53,27 @@ export const coreRoutes: AppRouteMeta[] = [
   },
   {
     path: '/org-units',
-    label: '组织架构',
-    description: '核对组织单元、父级关系与小区映射。',
-    icon: Network,
+    label: '房间管理',
+    description: '按小区维护户型并给房间绑定户型与面积。',
+    icon: Building2,
   },
   {
-    path: '/agent-groups',
-    label: 'Agent 授权',
-    description: '维护 Agent 与用户组的最小授权关系。',
-    icon: ShieldCheck,
+    path: '/users',
+    label: '用户管理',
+    description: '维护后台管理员账户的创建、启停与密码重置。',
+    icon: UserCog,
   },
   {
     path: '/audit-logs',
     label: '审计日志',
     description: '按业务、操作人和时间回溯关键后台操作。',
     icon: FileSearch,
+  },
+  {
+    path: '/built-in-agent',
+    label: '内置 Agent',
+    description: '用于账单查询与统计的系统内置智能能力。',
+    icon: Bot,
   },
   {
     path: '/ai-runtime-config',

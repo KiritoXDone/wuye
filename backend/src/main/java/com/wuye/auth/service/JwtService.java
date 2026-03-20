@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class JwtService {
@@ -25,16 +24,13 @@ public class JwtService {
     private final SecretKey secretKey;
     private final String issuer;
     private final long expireHours;
-    private final com.wuye.agent.service.AgentAuthorizationService agentAuthorizationService;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.issuer}") String issuer,
-                      @Value("${app.jwt.expire-hours}") long expireHours,
-                      com.wuye.agent.service.AgentAuthorizationService agentAuthorizationService) {
+                      @Value("${app.jwt.expire-hours}") long expireHours) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.issuer = issuer;
         this.expireHours = expireHours;
-        this.agentAuthorizationService = agentAuthorizationService;
     }
 
     public LoginVO issueLogin(Account account) {
@@ -49,7 +45,8 @@ public class JwtService {
         vo.setExpiresIn(expireHours * 3600);
         vo.setAccountId(account.getId());
         vo.setAccountType(account.getAccountType());
-        vo.setRoles(List.of(account.getAccountType()));
+        vo.setProductRole(resolveProductRole(account.getAccountType()));
+        vo.setRoles(resolveRoles(account.getAccountType()));
         vo.setNeedResetPassword(Boolean.FALSE);
         return vo;
     }
@@ -80,11 +77,12 @@ public class JwtService {
     private LoginUser toLoginUser(Claims claims) {
         Long accountId = ((Number) claims.get("accountId")).longValue();
         String accountType = claims.get("accountType", String.class);
+        String productRole = claims.get("productRole", String.class);
         String realName = claims.get("realName", String.class);
         List<String> roles = readStringList(claims.get("roles"));
         String dataScope = claims.get("dataScope", String.class);
         List<Long> groupIds = readLongList(claims.get("groupIds"));
-        return new LoginUser(accountId, accountType, realName, roles, dataScope, groupIds);
+        return new LoginUser(accountId, accountType, productRole, realName, roles, dataScope, groupIds);
     }
 
     private String buildToken(Account account, LocalDateTime issuedAt, LocalDateTime expiredAt, String tokenType) {
@@ -96,29 +94,28 @@ public class JwtService {
                 .claim("tokenType", tokenType)
                 .claim("accountId", account.getId())
                 .claim("accountType", account.getAccountType())
+                .claim("productRole", resolveProductRole(account.getAccountType()))
                 .claim("realName", account.getRealName())
-                .claim("roles", List.of(account.getAccountType()))
+                .claim("roles", resolveRoles(account.getAccountType()))
                 .claim("dataScope", resolveDataScope(account.getAccountType()))
-                .claim("groupIds", resolveGroupIds(account))
+                .claim("groupIds", Collections.emptyList())
                 .signWith(secretKey)
                 .compact();
     }
 
-    private List<Long> resolveGroupIds(Account account) {
-        if (!"AGENT".equals(account.getAccountType())) {
-            return Collections.emptyList();
+    private String resolveProductRole(String accountType) {
+        if ("ADMIN".equals(accountType) || "FINANCE".equals(accountType)) {
+            return "ADMIN";
         }
-        return agentAuthorizationService.loadAuthorizedGroupIds(account.getId());
+        return "USER";
+    }
+
+    private List<String> resolveRoles(String accountType) {
+        return List.of(resolveProductRole(accountType));
     }
 
     private String resolveDataScope(String accountType) {
-        if ("ADMIN".equals(accountType) || "FINANCE".equals(accountType)) {
-            return "ALL";
-        }
-        if ("AGENT".equals(accountType)) {
-            return "GROUP";
-        }
-        return "SELF";
+        return "ADMIN".equals(resolveProductRole(accountType)) ? "ALL" : "SELF";
     }
 
     private Date toDate(LocalDateTime localDateTime) {
@@ -146,8 +143,6 @@ public class JwtService {
         for (Object value : values) {
             if (value instanceof Number number) {
                 result.add(number.longValue());
-            } else if (value != null) {
-                result.add(Long.parseLong(Objects.toString(value)));
             }
         }
         return result;

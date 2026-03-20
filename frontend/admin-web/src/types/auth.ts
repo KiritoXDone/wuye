@@ -11,6 +11,7 @@ export interface LoginResult {
   expiresIn: number
   accountId: number
   accountType: string
+  productRole: 'ADMIN' | 'USER'
   roles: string[]
   needResetPassword: boolean
 }
@@ -18,7 +19,7 @@ export interface LoginResult {
 export interface Profile {
   accountId: number
   accountType: string
+  productRole: 'ADMIN' | 'USER'
   realName: string
   roles: string[]
-  groupIds: number[]
 }

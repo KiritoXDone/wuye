@@ -4,8 +4,8 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'rea
 import AppShell from '@/layouts/AppShell'
 import BillsPage from '@/pages/BillsPage'
 import BillingGeneratePage from '@/pages/BillingGeneratePage'
-import AgentGroupsPage from '@/pages/AgentGroupsPage'
 import AiRuntimeConfigPage from '@/pages/AiRuntimeConfigPage'
+import BuiltInAgentPage from '@/pages/BuiltInAgentPage'
 import AuditLogsPage from '@/pages/AuditLogsPage'
 import CouponRulesPage from '@/pages/CouponRulesPage'
 import CouponTemplatesPage from '@/pages/CouponTemplatesPage'
@@ -16,6 +16,7 @@ import ImportExportPage from '@/pages/ImportExportPage'
 import InvoiceApplicationsPage from '@/pages/InvoiceApplicationsPage'
 import LoginPage from '@/pages/LoginPage'
 import OrgUnitsPage from '@/pages/OrgUnitsPage'
+import UserManagementPage from '@/pages/UserManagementPage'
 import WaterAlertsPage from '@/pages/WaterAlertsPage'
 import WaterReadingsPage from '@/pages/WaterReadingsPage'
 import { useAuthStore } from '@/stores/auth'
@@ -94,8 +95,9 @@ export default function App() {
             <Route path="/import-export" element={<ImportExportPage />} />
             <Route path="/fee-rules" element={<FeeRulesPage />} />
             <Route path="/org-units" element={<OrgUnitsPage />} />
-            <Route path="/agent-groups" element={<AgentGroupsPage />} />
+            <Route path="/users" element={<UserManagementPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />
+            <Route path="/built-in-agent" element={<BuiltInAgentPage />} />
             <Route path="/ai-runtime-config" element={<AiRuntimeConfigPage />} />
             <Route path="/dunning" element={<DunningPage />} />
             <Route path="/coupon-templates" element={<CouponTemplatesPage />} />

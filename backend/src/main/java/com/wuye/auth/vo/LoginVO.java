@@ -9,6 +9,7 @@ public class LoginVO {
     private long expiresIn;
     private Long accountId;
     private String accountType;
+    private String productRole;
     private List<String> roles;
     private Boolean needResetPassword;
 
@@ -50,6 +51,14 @@ public class LoginVO {
 
     public void setAccountType(String accountType) {
         this.accountType = accountType;
+    }
+
+    public String getProductRole() {
+        return productRole;
+    }
+
+    public void setProductRole(String productRole) {
+        this.productRole = productRole;
     }
 
     public List<String> getRoles() {

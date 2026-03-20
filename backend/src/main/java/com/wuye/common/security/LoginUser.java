@@ -4,6 +4,7 @@ import java.util.List;
 
 public record LoginUser(Long accountId,
                         String accountType,
+                        String productRole,
                         String realName,
                         List<String> roles,
                         String dataScope,
