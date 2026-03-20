@@ -1,27 +1,33 @@
-package com.wuye.room.vo;
+package com.wuye.room.dto;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public class RoomVO {
+public class AdminRoomCreateDTO {
 
-    private Long roomId;
+    @NotNull
+    @Min(1)
     private Long communityId;
-    private String communityName;
+
+    @NotBlank
     private String buildingNo;
+
+    @NotBlank
     private String unitNo;
+
+    @NotBlank
     private String roomNo;
-    private String roomLabel;
+
+    @Min(1)
     private Long roomTypeId;
+
+    @NotNull
+    @DecimalMin(value = "0.01")
     private BigDecimal areaM2;
-    private String bindingStatus;
-
-    public Long getRoomId() {
-        return roomId;
-    }
-
-    public void setRoomId(Long roomId) {
-        this.roomId = roomId;
-    }
 
     public Long getCommunityId() {
         return communityId;
@@ -29,14 +35,6 @@ public class RoomVO {
 
     public void setCommunityId(Long communityId) {
         this.communityId = communityId;
-    }
-
-    public String getCommunityName() {
-        return communityName;
-    }
-
-    public void setCommunityName(String communityName) {
-        this.communityName = communityName;
     }
 
     public String getBuildingNo() {
@@ -63,14 +61,6 @@ public class RoomVO {
         this.roomNo = roomNo;
     }
 
-    public String getRoomLabel() {
-        return roomLabel;
-    }
-
-    public void setRoomLabel(String roomLabel) {
-        this.roomLabel = roomLabel;
-    }
-
     public Long getRoomTypeId() {
         return roomTypeId;
     }
@@ -86,13 +76,4 @@ public class RoomVO {
     public void setAreaM2(BigDecimal areaM2) {
         this.areaM2 = areaM2;
     }
-
-    public String getBindingStatus() {
-        return bindingStatus;
-    }
-
-    public void setBindingStatus(String bindingStatus) {
-        this.bindingStatus = bindingStatus;
-    }
-
 }

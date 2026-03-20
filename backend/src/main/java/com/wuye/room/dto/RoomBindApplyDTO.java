@@ -1,67 +1,19 @@
 package com.wuye.room.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public class RoomBindApplyDTO {
 
-    @NotNull(message = "communityId 不能为空")
-    private Long communityId;
-    @NotBlank(message = "buildingNo 不能为空")
-    private String buildingNo;
-    @NotBlank(message = "unitNo 不能为空")
-    private String unitNo;
-    @NotBlank(message = "roomNo 不能为空")
-    private String roomNo;
-    @NotBlank(message = "relationType 不能为空")
-    private String relationType;
-    private String applyRemark;
+    @NotNull(message = "roomId 不能为空")
+    @Min(value = 1, message = "roomId 非法")
+    private Long roomId;
 
-    public Long getCommunityId() {
-        return communityId;
+    public Long getRoomId() {
+        return roomId;
     }
 
-    public void setCommunityId(Long communityId) {
-        this.communityId = communityId;
-    }
-
-    public String getBuildingNo() {
-        return buildingNo;
-    }
-
-    public void setBuildingNo(String buildingNo) {
-        this.buildingNo = buildingNo;
-    }
-
-    public String getUnitNo() {
-        return unitNo;
-    }
-
-    public void setUnitNo(String unitNo) {
-        this.unitNo = unitNo;
-    }
-
-    public String getRoomNo() {
-        return roomNo;
-    }
-
-    public void setRoomNo(String roomNo) {
-        this.roomNo = roomNo;
-    }
-
-    public String getRelationType() {
-        return relationType;
-    }
-
-    public void setRelationType(String relationType) {
-        this.relationType = relationType;
-    }
-
-    public String getApplyRemark() {
-        return applyRemark;
-    }
-
-    public void setApplyRemark(String applyRemark) {
-        this.applyRemark = applyRemark;
+    public void setRoomId(Long roomId) {
+        this.roomId = roomId;
     }
 }

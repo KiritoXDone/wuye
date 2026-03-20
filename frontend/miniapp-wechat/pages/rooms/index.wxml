@@ -1,11 +1,11 @@
 <view class="page-shell safe-bottom">
   <view class="page-hero home-hero">
     <view class="page-eyebrow">首页</view>
-    <view class="page-title">我的房间</view>
+    <view class="page-title">已绑定房间</view>
 
     <view class="home-hero__stats">
       <view class="home-stat-card">
-        <view class="home-stat-card__label">已绑定房间</view>
+        <view class="home-stat-card__label">绑定房间</view>
         <view class="home-stat-card__value">{{rooms.length}}</view>
       </view>
       <view class="home-stat-card home-stat-card--accent">
@@ -15,16 +15,10 @@
     </view>
   </view>
 
-  <view class="panel card-stack action-panel">
-    <view class="section-heading">
-      <view class="section-title">常用入口</view>
-        <view class="summary-pill">
-          <view class="summary-pill__label">待缴金额</view>
-          <view class="summary-pill__value">¥ {{unpaidAmountText}}</view>
-        </view>
-      </view>
-    <button class="button-secondary" bindtap="openResidentBills">查看全部账单</button>
-    <button class="button-ghost" bindtap="handleLogout">切换登录账号</button>
+  <view class="panel action-panel action-panel--summary">
+    <view class="action-panel__label">待付金额</view>
+    <view class="action-panel__value">¥ {{unpaidAmountText}}</view>
+    <view class="action-panel__hint">当前绑定房间待支付总额</view>
   </view>
 
   <view wx:if="{{loading}}" class="panel state-card">
@@ -38,30 +32,24 @@
   </view>
 
   <view wx:elif="{{!rooms.length}}" class="panel state-card">
-    <view class="state-title">暂无房间</view>
+    <view class="state-title">暂无已绑定房间</view>
+    <view class="state-desc">请前往“我的”完成房间绑定后，再查看对应账单。</view>
+    <button class="button-inline" bindtap="openProfile">去绑定房间</button>
   </view>
 
   <view wx:else class="list-stack">
     <view wx:for="{{rooms}}" wx:key="roomId" class="panel card-stack room-home-card">
       <view class="room-home-card__top">
         <view class="card-kicker">房间 {{index + 1}}</view>
-        <view class="status-chip status-chip--{{item.bindingStatus}}">{{item.bindingStatusLabel}}</view>
       </view>
-
       <view class="room-home-card__title">{{item.roomLabel}}</view>
-
       <view class="metric-grid room-home-card__metrics">
         <view class="metric-card">
           <view class="metric-label">面积</view>
           <view class="metric-value">{{item.areaText}}</view>
         </view>
-        <view class="metric-card">
-          <view class="metric-label">绑定关系</view>
-          <view class="metric-value room-home-card__metric-value">{{item.relationTypeLabel}}</view>
-        </view>
       </view>
-
-      <button class="button-primary" data-room-id="{{item.roomId}}" data-room-label="{{item.roomLabel}}" bindtap="openRoomBills">查看本房间账单</button>
+      <button class="button-primary" data-room-id="{{item.roomId}}" bindtap="openRoomBills">查看该房间账单</button>
     </view>
   </view>
 </view>

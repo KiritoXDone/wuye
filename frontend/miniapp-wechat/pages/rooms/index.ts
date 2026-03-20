@@ -1,15 +1,12 @@
 import { getResidentBillSummary } from '../../services/agent'
 import { getMyRooms } from '../../services/room'
-import { clearAuthSession, hasAuthSession } from '../../utils/auth'
-import { formatBillStatus, formatMoney, formatRelationType } from '../../utils/format'
+import { hasAuthSession } from '../../utils/auth'
+import { formatMoney } from '../../utils/format'
 
 type RoomViewItem = {
   roomId: number
   roomLabel: string
-  bindingStatus: string
-  bindingStatusLabel: string
   areaText: string
-  relationTypeLabel: string
 }
 
 Page({
@@ -17,7 +14,6 @@ Page({
     loading: true,
     errorMessage: '',
     rooms: [] as RoomViewItem[],
-    activeRoomCount: 0,
     unpaidBillCount: 0,
     unpaidAmountText: '0.00'
   },
@@ -38,38 +34,30 @@ Page({
     this.setData({ loading: true, errorMessage: '' })
     try {
       const [rooms, summary] = await Promise.all([getMyRooms(), getResidentBillSummary()])
-      const normalizedRooms = rooms.map((room) => ({
-        roomId: room.roomId,
-        roomLabel: room.roomLabel,
-        bindingStatus: room.bindingStatus,
-        bindingStatusLabel: formatBillStatus(room.bindingStatus),
-        areaText: formatMoney(room.areaM2),
-        relationTypeLabel: formatRelationType(room.relationType)
-      }))
+      const activeRooms = rooms
+        .filter((room) => room.bindingStatus === 'ACTIVE')
+        .map((room) => ({
+          roomId: room.roomId,
+          roomLabel: room.roomLabel,
+          areaText: formatMoney(room.areaM2),
+        }))
       this.setData({
-        rooms: normalizedRooms,
-        activeRoomCount: normalizedRooms.filter((item) => item.bindingStatus === 'ACTIVE').length,
+        rooms: activeRooms,
         unpaidBillCount: summary.unpaidBillCount,
         unpaidAmountText: formatMoney(summary.unpaidAmountTotal)
       })
     } catch (error) {
-      this.setData({ errorMessage: error instanceof Error ? error.message : '加载房间失败' })
+      this.setData({ errorMessage: error instanceof Error ? error.message : '加载首页失败' })
     } finally {
       this.setData({ loading: false })
     }
   },
 
   openRoomBills(event: WechatMiniprogram.BaseEvent) {
-    const { roomId, roomLabel } = event.currentTarget.dataset
-    wx.navigateTo({ url: `/pages/bills/index?roomId=${roomId}&roomLabel=${encodeURIComponent(roomLabel)}` })
+    const { roomId } = event.currentTarget.dataset
+    wx.switchTab({ url: '/pages/bills/index' })
+    const app = getApp<{ globalData: { selectedBillRoomId?: number } }>()
+    app.globalData.selectedBillRoomId = Number(roomId)
   },
 
-  openResidentBills() {
-    wx.navigateTo({ url: '/pages/bills/index' })
-  },
-
-  handleLogout() {
-    clearAuthSession()
-    wx.reLaunch({ url: '/pages/login/index' })
-  }
 })

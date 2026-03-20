@@ -13,14 +13,14 @@ import java.time.LocalDateTime;
 public interface AccountRoomMapper {
 
     @Select("""
-            SELECT id, account_id, room_id, relation_type, status, bind_source, confirmed_at, remark
+            SELECT id, account_id, room_id, status, bind_source, confirmed_at, remark
             FROM account_room
             WHERE account_id = #{accountId} AND room_id = #{roomId}
             """)
     AccountRoom findByAccountAndRoom(@Param("accountId") Long accountId, @Param("roomId") Long roomId);
 
     @Select("""
-            SELECT id, account_id, room_id, relation_type, status, bind_source, confirmed_at, remark
+            SELECT id, account_id, room_id, status, bind_source, confirmed_at, remark
             FROM account_room
             WHERE room_id = #{roomId} AND status = #{status}
             ORDER BY id DESC
@@ -29,15 +29,14 @@ public interface AccountRoomMapper {
     AccountRoom findLatestByRoomAndStatus(@Param("roomId") Long roomId, @Param("status") String status);
 
     @Insert("""
-            INSERT INTO account_room(account_id, room_id, relation_type, status, bind_source, confirmed_at, remark)
-            VALUES(#{accountId}, #{roomId}, #{relationType}, #{status}, #{bindSource}, #{confirmedAt}, #{remark})
+            INSERT INTO account_room(account_id, room_id, status, bind_source, confirmed_at, remark)
+            VALUES(#{accountId}, #{roomId}, #{status}, #{bindSource}, #{confirmedAt}, #{remark})
             """)
     int insert(AccountRoom accountRoom);
 
     @Update("""
             UPDATE account_room
-            SET relation_type = #{relationType},
-                status = #{status},
+            SET status = #{status},
                 bind_source = #{bindSource},
                 confirmed_at = #{confirmedAt},
                 remark = #{remark},
@@ -64,4 +63,11 @@ public interface AccountRoomMapper {
                      @Param("roomId") Long roomId,
                      @Param("status") String status,
                      @Param("confirmedAt") LocalDateTime confirmedAt);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM account_room
+            WHERE room_id = #{roomId}
+            """)
+    long countByRoomId(@Param("roomId") Long roomId);
 }

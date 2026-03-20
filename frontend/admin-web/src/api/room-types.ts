@@ -12,3 +12,7 @@ export function createRoomType(payload: RoomTypeUpsertPayload) {
 export function updateRoomType(roomTypeId: number, payload: RoomTypeUpsertPayload) {
   return request.put<RoomTypeUpsertPayload, RoomType>(`/admin/room-types/${roomTypeId}`, payload)
 }
+
+export function disableRoomType(roomTypeId: number, payload: RoomTypeUpsertPayload) {
+  return updateRoomType(roomTypeId, { ...payload, status: 0 })
+}

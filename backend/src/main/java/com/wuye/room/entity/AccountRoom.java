@@ -7,7 +7,6 @@ public class AccountRoom {
     private Long id;
     private Long accountId;
     private Long roomId;
-    private String relationType;
     private String status;
     private String bindSource;
     private LocalDateTime confirmedAt;
@@ -35,14 +34,6 @@ public class AccountRoom {
 
     public void setRoomId(Long roomId) {
         this.roomId = roomId;
-    }
-
-    public String getRelationType() {
-        return relationType;
-    }
-
-    public void setRelationType(String relationType) {
-        this.relationType = relationType;
     }
 
     public String getStatus() {

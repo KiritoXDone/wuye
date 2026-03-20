@@ -43,8 +43,7 @@ public interface RoomTypeMapper {
             SELECT id, community_id, type_code, type_name, area_m2, status
             FROM room_type
             WHERE community_id = #{communityId}
-              AND status = 1
-            ORDER BY id
+            ORDER BY status DESC, id ASC
             """)
     List<RoomTypeVO> listByCommunityId(@Param("communityId") Long communityId);
 }
