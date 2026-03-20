@@ -1,3 +1,4 @@
+import { getResidentBillSummary } from '../../services/agent'
 import { getMyRooms } from '../../services/room'
 import { clearAuthSession, hasAuthSession } from '../../utils/auth'
 import { formatBillStatus, formatMoney, formatRelationType } from '../../utils/format'
@@ -16,7 +17,9 @@ Page({
     loading: true,
     errorMessage: '',
     rooms: [] as RoomViewItem[],
-    activeRoomCount: 0
+    activeRoomCount: 0,
+    unpaidBillCount: 0,
+    unpaidAmountText: '0.00'
   },
 
   onShow() {
@@ -34,7 +37,7 @@ Page({
   async fetchRooms() {
     this.setData({ loading: true, errorMessage: '' })
     try {
-      const rooms = await getMyRooms()
+      const [rooms, summary] = await Promise.all([getMyRooms(), getResidentBillSummary()])
       const normalizedRooms = rooms.map((room) => ({
         roomId: room.roomId,
         roomLabel: room.roomLabel,
@@ -45,7 +48,9 @@ Page({
       }))
       this.setData({
         rooms: normalizedRooms,
-        activeRoomCount: normalizedRooms.filter((item) => item.bindingStatus === 'ACTIVE').length
+        activeRoomCount: normalizedRooms.filter((item) => item.bindingStatus === 'ACTIVE').length,
+        unpaidBillCount: summary.unpaidBillCount,
+        unpaidAmountText: formatMoney(summary.unpaidAmountTotal)
       })
     } catch (error) {
       this.setData({ errorMessage: error instanceof Error ? error.message : '加载房间失败' })

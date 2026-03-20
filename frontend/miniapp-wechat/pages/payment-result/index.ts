@@ -10,24 +10,24 @@ function resolveStatusMeta(status: string, rewardIssuedCount?: number) {
     return {
       statusTitle: '支付成功',
       statusDescription: typeof rewardIssuedCount === 'number'
-        ? `本次缴费已完成，并同步发放 ${rewardIssuedCount} 张奖励券。`
-        : '本次缴费已完成，可以继续查看账单详情或电子凭证。',
-      statusEmoji: '✓'
+        ? `已发放 ${rewardIssuedCount} 张奖励券。`
+        : '已完成。',
+      statusEmoji: ''
     }
   }
 
   if (status === 'FAILED' || status === 'CLOSED') {
     return {
       statusTitle: '支付失败',
-      statusDescription: '本次支付未成功完成，你可以返回账单详情重新发起支付。',
-      statusEmoji: '!'
+      statusDescription: '请重试。',
+      statusEmoji: ''
     }
   }
 
   return {
     statusTitle: '支付处理中',
-    statusDescription: '结果仍在确认中，页面会自动刷新最新支付状态。',
-    statusEmoji: '…'
+    statusDescription: '请稍候。',
+    statusEmoji: ''
   }
 }
 
@@ -40,8 +40,8 @@ Page({
     paymentStatus: 'PAYING',
     paymentStatusLabel: formatBillStatus('PAYING'),
     statusTitle: '支付处理中',
-    statusDescription: '结果仍在确认中，请稍候。',
-    statusEmoji: '…',
+    statusDescription: '请稍候。',
+    statusEmoji: '',
     billIdText: '--',
     paidAtText: '--',
     rewardIssuedCount: null as number | null,

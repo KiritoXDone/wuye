@@ -1,39 +1,15 @@
 <view class="page-shell">
   <view class="page-hero">
-    <view class="page-eyebrow">居民登录</view>
-    <view class="page-title">物业缴费小程序</view>
-    <view class="page-subtitle">输入账号标识后即可进入我的房间，继续查看账单和缴费结果。</view>
+    <view class="page-eyebrow">登录</view>
+    <view class="page-title">物业缴费</view>
   </view>
 
   <view class="panel card-stack">
-    <view>
-      <view class="section-title">登录方式</view>
-      <view class="section-subtitle">可直接输入账号标识，也可以尝试获取微信登录标识。</view>
-    </view>
-
-    <input class="input" value="{{code}}" placeholder="请输入 resident-zhangsan" bindinput="handleCodeInput" />
-
-    <view class="chip-row">
-      <view wx:for="{{quickCodes}}" wx:key="*this" class="pill {{code === item ? 'pill-active' : ''}}" data-code="{{item}}" bindtap="handleQuickFill">
-        {{item}}
-      </view>
-    </view>
-
-    <view class="button-row">
-      <button class="button-secondary" bindtap="fillWechatCode" loading="{{wxCodeLoading}}" disabled="{{submitting || wxCodeLoading}}">尝试获取微信 code</button>
-      <button class="button-primary" bindtap="handleLogin" loading="{{submitting}}" disabled="{{submitting || !code}}">登录并进入我的房间</button>
-    </view>
+    <button class="button-primary" bindtap="handleLogin" loading="{{submitting}}" disabled="{{submitting}}">登录</button>
 
     <view wx:if="{{errorMessage}}" class="state-card">
       <view class="state-title text-danger">登录失败</view>
       <view class="state-desc">{{errorMessage}}</view>
     </view>
-  </view>
-
-  <view class="panel card-stack">
-    <view class="section-title">使用提示</view>
-    <view class="surface-note">默认请求地址：{{baseUrl}}</view>
-    <view class="text-muted">房间是账单查看与缴费的主入口，登录后会先进入“我的房间”。</view>
-    <view class="text-muted">如果当前环境无法请求本地服务，请确认已经允许本地调试地址。</view>
   </view>
 </view>

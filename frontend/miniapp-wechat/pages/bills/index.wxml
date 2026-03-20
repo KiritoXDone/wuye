@@ -2,15 +2,11 @@
   <view class="page-hero bills-hero">
     <view class="page-eyebrow">{{roomMode ? '房间账单' : '居民账单'}}</view>
     <view class="page-title">{{pageTitle}}</view>
-    <view class="page-subtitle">{{pageSubtitle}}</view>
   </view>
 
   <view class="panel card-stack bills-filter-card">
     <view class="section-heading">
-      <view>
-        <view class="section-title">账单筛选</view>
-        <view class="section-subtitle">优先关注待缴账单，完成后可继续查看结果与凭证。</view>
-      </view>
+      <view class="section-title">账单筛选</view>
       <view class="summary-pill">
         <view class="summary-pill__label">当前显示</view>
         <view class="summary-pill__value">{{displayBills.length}} 笔</view>
@@ -24,8 +20,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="panel state-card">
-    <view class="state-title">正在加载账单</view>
-    <view class="state-desc">{{loadingHint}}</view>
+    <view class="state-title">正在加载</view>
   </view>
 
   <view wx:elif="{{errorMessage}}" class="panel state-card">
@@ -35,8 +30,7 @@
   </view>
 
   <view wx:elif="{{!displayBills.length}}" class="panel state-card">
-    <view class="state-title">当前没有匹配账单</view>
-    <view class="state-desc">{{emptyHint}}</view>
+    <view class="state-title">暂无账单</view>
   </view>
 
   <view wx:else class="list-stack">
@@ -61,20 +55,14 @@
         <view class="metric-card">
           <view class="metric-label">房间</view>
           <view class="metric-value bill-list-card__metric-value">{{item.roomLabel}}</view>
-          <view class="metric-note">本次账单所属房间</view>
         </view>
         <view class="metric-card">
           <view class="metric-label">到期日</view>
           <view class="metric-value bill-list-card__metric-value">{{item.dueDateText}}</view>
-          <view class="metric-note">请尽量在到期前完成缴费</view>
         </view>
       </view>
 
-      <view class="surface-note bill-list-card__note">
-        {{item.status === 'PAID' ? '本账单已完成缴费，可继续查看支付结果或电子凭证。' : '点击进入后可选择优惠券并确认支付方式。'}}
-      </view>
-
-      <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">{{item.status === 'PAID' ? '查看账单详情' : '去支付'}}</button>
+      <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">{{item.status === 'PAID' ? '查看详情' : '立即支付'}}</button>
     </view>
   </view>
 </view>

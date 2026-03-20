@@ -1,13 +1,11 @@
 <view class="page-shell safe-bottom">
   <view class="page-hero">
-    <view class="page-eyebrow">电子凭证</view>
+    <view class="page-eyebrow">凭证</view>
     <view class="page-title">电子凭证</view>
-    <view class="page-subtitle">支付成功后可在这里查看本次账单的电子凭证，用于留存与核对。</view>
   </view>
 
   <view wx:if="{{loading}}" class="panel state-card">
-    <view class="state-title">正在加载电子凭证</view>
-    <view class="state-desc">正在为你同步本次支付对应的电子凭证。</view>
+    <view class="state-title">正在加载</view>
   </view>
 
   <view wx:elif="{{errorMessage}}" class="panel state-card">
@@ -21,14 +19,14 @@
       <view class="info-row">
         <view>
           <view class="section-title">{{voucher.voucherNo}}</view>
-          <view class="section-subtitle">支付单号 {{voucher.payOrderNo}}</view>
+          <view class="section-subtitle">{{voucher.payOrderNo}}</view>
         </view>
         <view class="status-chip status-chip--{{voucher.status}}">{{voucher.voucherStatusLabel}}</view>
       </view>
       <view class="amount-primary">¥ {{voucher.amountText}}</view>
       <view class="meta-grid">
         <view class="meta-item">
-          <view class="meta-label">账单ID</view>
+          <view class="meta-label">账单</view>
           <view class="meta-value">{{voucher.billId}}</view>
         </view>
         <view class="meta-item">
@@ -57,16 +55,12 @@
           <view class="info-key">签发时间</view>
           <view class="info-value">{{voucher.content.issuedAt}}</view>
         </view>
-        <view class="info-row">
-          <view class="info-key">使用说明</view>
-          <view class="info-value">可作为本次缴费的留存凭证，便于后续核对账单与支付记录。</view>
-        </view>
       </view>
     </view>
 
     <view class="fixed-action-bar button-row">
       <button class="button-primary" bindtap="fetchVoucher">刷新凭证</button>
-      <button class="button-secondary" bindtap="openBillDetail">返回账单详情</button>
+      <button class="button-secondary" bindtap="openBillDetail">查看账单</button>
     </view>
   </block>
 </view>

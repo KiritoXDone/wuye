@@ -7,7 +7,7 @@
 }
 
 .bill-list-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.95) 100%);
+  background: var(--color-surface);
 }
 
 .bill-list-card__top {
@@ -30,10 +30,10 @@
 
 .bill-period-chip {
   padding: 12rpx 20rpx;
-  border: 1rpx solid var(--color-primary-border);
+  border: 1rpx solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-caption);
   font-weight: 600;
 }

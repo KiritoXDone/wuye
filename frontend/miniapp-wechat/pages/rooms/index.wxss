@@ -11,10 +11,9 @@
 
 .home-stat-card {
   padding: var(--space-3);
-  border: 1rpx solid var(--color-primary-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-overlay);
-  box-shadow: var(--shadow-soft);
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   box-sizing: border-box;
 }
 
@@ -51,7 +50,7 @@
 }
 
 .room-home-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 254, 0.96) 100%);
+  background: var(--color-surface);
 }
 
 .room-home-card__top {

@@ -85,8 +85,8 @@ function buildDefaultAmountState(detail: BillDetailView | null) {
     selectedCouponInstanceId: 0,
     selectedCouponName: '',
     couponHint: detail?.availableCoupons.length
-      ? '选择优惠券后会自动刷新实付金额。'
-      : '当前账单暂无可用券。',
+      ? '选择优惠券后会刷新金额。'
+      : '暂无可用券。',
     couponValidating: false,
     discountAmountText: formatMoney(0),
     payAmountText: formatMoney(amountDue)
@@ -172,8 +172,8 @@ Page({
       discountAmountText: formatMoney(0),
       payAmountText: annualPayment ? '按年汇总后生成' : formatMoney(this.data.billDetail.amountDue),
       couponHint: annualPayment
-        ? '按年缴纳将覆盖当前房间本年度 12 个月物业费，暂不支持优惠券。'
-        : (this.data.billDetail.availableCoupons.length ? '选择优惠券后会自动刷新实付金额。' : '当前账单暂无可用券。')
+        ? '按年缴纳不支持优惠券。'
+        : (this.data.billDetail.availableCoupons.length ? '选择优惠券后会刷新金额。' : '暂无可用券。')
     })
   },
 

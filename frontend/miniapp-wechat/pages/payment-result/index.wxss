@@ -13,35 +13,6 @@
   max-width: none;
 }
 
-.result-icon {
-  width: 152rpx;
-  height: 152rpx;
-  margin: 0 auto var(--space-3);
-  border-radius: var(--radius-pill);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-display);
-  font-weight: 700;
-  line-height: 1;
-}
-
-.result-icon--SUCCESS {
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.result-icon--PAYING,
-.result-icon--CREATED {
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.result-icon--FAILED,
-.result-icon--CLOSED {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
 
 .result-hero__meta {
   display: flex;

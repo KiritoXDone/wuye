@@ -1,14 +1,10 @@
-import { API_BASE_URL, DEFAULT_DEV_LOGIN_CODE, QUICK_DEV_LOGIN_CODES } from '../../config/env'
+import { DEFAULT_DEV_LOGIN_CODE } from '../../config/env'
 import { loginWechat } from '../../services/auth'
 import { hasAuthSession, setAuthSession } from '../../utils/auth'
 
 Page({
   data: {
-    code: DEFAULT_DEV_LOGIN_CODE,
-    quickCodes: QUICK_DEV_LOGIN_CODES,
-    baseUrl: API_BASE_URL,
     submitting: false,
-    wxCodeLoading: false,
     errorMessage: ''
   },
 
@@ -18,42 +14,17 @@ Page({
     }
   },
 
-  handleCodeInput(event: WechatMiniprogram.Input) {
-    this.setData({ code: event.detail.value, errorMessage: '' })
-  },
-
-  handleQuickFill(event: WechatMiniprogram.BaseEvent) {
-    this.setData({ code: event.currentTarget.dataset.code, errorMessage: '' })
-  },
-
-  fillWechatCode() {
-    this.setData({ wxCodeLoading: true, errorMessage: '' })
-    wx.login({
-      success: (res) => {
-        this.setData({ code: res.code || DEFAULT_DEV_LOGIN_CODE })
-        if (res.code) {
-          wx.showToast({ title: '已填入微信 code', icon: 'none' })
-        }
-      },
-      fail: () => {
-        this.setData({ errorMessage: '未能获取微信 code，请继续使用本地演示 code 联调。' })
-      },
-      complete: () => {
-        this.setData({ wxCodeLoading: false })
-      }
-    })
-  },
-
   async handleLogin() {
-    if (!this.data.code || this.data.submitting) {
+    if (this.data.submitting) {
       return
     }
 
     this.setData({ submitting: true, errorMessage: '' })
 
     try {
+      const code = await this.fetchWechatCode()
       const result = await loginWechat({
-        code: this.data.code,
+        code,
         nickname: '住户用户'
       })
       setAuthSession(result)
@@ -63,5 +34,22 @@ Page({
     } finally {
       this.setData({ submitting: false })
     }
+  },
+
+  fetchWechatCode() {
+    return new Promise<string>((resolve, reject) => {
+      wx.login({
+        success: (res) => {
+          if (res.code) {
+            resolve(res.code)
+            return
+          }
+          resolve(DEFAULT_DEV_LOGIN_CODE)
+        },
+        fail: () => {
+          reject(new Error('未能获取微信登录凭证'))
+        }
+      })
+    })
   }
 })
