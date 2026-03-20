@@ -25,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,21 +169,20 @@ public class PaymentService {
         if (dto.getCouponInstanceId() != null) {
             throw new BusinessException("INVALID_ARGUMENT", "按年缴费暂不支持优惠券", HttpStatus.BAD_REQUEST);
         }
-        List<Bill> bills = new ArrayList<>(billMapper.listByRoomFeeTypeAndYear(anchorBill.getRoomId(), "PROPERTY", anchorBill.getPeriodYear()));
-        if (bills.size() != 12) {
-            throw new BusinessException("CONFLICT", "当前房间该年度物业费账单未生成完整 12 个月，暂不支持按年缴纳", HttpStatus.CONFLICT);
+        if (!"YEAR".equals(anchorBill.getCycleType()) || anchorBill.getPeriodMonth() != null) {
+            throw new BusinessException("CONFLICT", "当前物业费账单仍是旧月度口径，暂不支持按新年度口径缴纳", HttpStatus.CONFLICT);
         }
-        bills.sort(Comparator.comparing(Bill::getPeriodMonth));
-        for (int month = 1; month <= 12; month++) {
-            Bill current = bills.get(month - 1);
-            if (!Objects.equals(current.getPeriodMonth(), month)) {
-                throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在缺失月份，暂不支持按年缴纳", HttpStatus.CONFLICT);
-            }
-            if (!"ISSUED".equals(current.getStatus())) {
-                throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在非待缴状态，暂不支持按年缴纳", HttpStatus.CONFLICT);
-            }
+        if (!"ISSUED".equals(anchorBill.getStatus())) {
+            throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在非待缴状态，暂不支持按年缴纳", HttpStatus.CONFLICT);
         }
-        return bills;
+        Bill yearlyBill = billMapper.findByUniqueKey(anchorBill.getRoomId(), "PROPERTY", anchorBill.getPeriodYear(), null);
+        if (yearlyBill == null) {
+            throw new BusinessException("NOT_FOUND", "当前房间该年度物业费账单不存在", HttpStatus.NOT_FOUND);
+        }
+        if (!"ISSUED".equals(yearlyBill.getStatus())) {
+            throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在非待缴状态，暂不支持按年缴纳", HttpStatus.CONFLICT);
+        }
+        return List.of(yearlyBill);
     }
 
     private BigDecimal sumOriginAmount(List<Bill> bills) {

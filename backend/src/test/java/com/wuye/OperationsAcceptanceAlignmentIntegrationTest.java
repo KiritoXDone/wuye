@@ -104,7 +104,7 @@ class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTe
                                   "communityId": 100,
                                   "feeType": "PROPERTY",
                                   "unitPrice": 2.5000,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "YEAR",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "发票与催缴验收"
@@ -132,7 +132,7 @@ class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billsResult);
-        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-08");
+        long propertyBillId = billsJson.path("data").path("list").get(0).path("billId").asLong();
         BigDecimal amountDue = findBillAmountById(billsJson, propertyBillId);
 
         MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
@@ -227,17 +227,6 @@ class OperationsAcceptanceAlignmentIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].sendChannel").value("SYSTEM"))
                 .andExpect(jsonPath("$.data[0].status").value("SENT"));
-    }
-
-    private long findBillIdByFeeTypeAndPeriod(JsonNode billsJson, String feeType, String period) {
-        for (JsonNode item : billsJson.path("data").path("list")) {
-            if (feeType.equals(item.path("feeType").asText())
-                    && period.equals(item.path("period").asText())) {
-                return item.path("billId").asLong();
-            }
-        }
-        assertThat(period + ":" + feeType).as("未找到指定账期账单").isBlank();
-        return -1L;
     }
 
     private BigDecimal findBillAmountById(JsonNode billsJson, long billId) {

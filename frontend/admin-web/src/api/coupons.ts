@@ -7,17 +7,17 @@ import type {
 } from '@/types/coupon'
 
 export function getCouponTemplates() {
-  return request.get<never, CouponTemplate[]>('/admin/coupon-templates')
+  return request.get<CouponTemplate[]>('/admin/coupon-templates')
 }
 
 export function createCouponTemplate(payload: CouponTemplateCreatePayload) {
-  return request.post<never, CouponTemplate>('/admin/coupon-templates', payload)
+  return request.post<CouponTemplateCreatePayload, CouponTemplate>('/admin/coupon-templates', payload)
 }
 
 export function getCouponRules() {
-  return request.get<never, CouponRule[]>('/admin/coupon-rules')
+  return request.get<CouponRule[]>('/admin/coupon-rules')
 }
 
 export function createCouponRule(payload: CouponRuleCreatePayload) {
-  return request.post<never, CouponRule>('/admin/coupon-rules', payload)
+  return request.post<CouponRuleCreatePayload, CouponRule>('/admin/coupon-rules', payload)
 }

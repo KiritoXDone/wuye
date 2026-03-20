@@ -66,50 +66,63 @@ public class WaterBillGenerateService {
         List<WaterMeterReading> readings = waterReadingMapper.listByCommunityAndPeriod(dto.getCommunityId(), dto.getYear(), dto.getMonth());
         int generated = 0;
         for (WaterMeterReading reading : readings) {
-            Bill existed = billMapper.findByUniqueKey(reading.getRoomId(), "WATER", dto.getYear(), dto.getMonth());
-            if (existed != null) {
-                if ("SKIP".equalsIgnoreCase(dto.getOverwriteStrategy())) {
-                    continue;
-                }
-                throw new BusinessException("CONFLICT", "存在重复水费账单: roomId=" + reading.getRoomId(), HttpStatus.CONFLICT);
+            if (generateForReading(reading, feeRule, dto.getOverwriteStrategy()) != null) {
+                generated++;
             }
-            WaterChargeResult chargeResult = calculateCharge(feeRule, reading.getUsageAmount());
-            Bill bill = new Bill();
-            bill.setBillNo(NoGenerator.billNo());
-            bill.setRoomId(reading.getRoomId());
-            bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(reading.getRoomId()));
-            bill.setFeeType("WATER");
-            bill.setPeriodYear(dto.getYear());
-            bill.setPeriodMonth(dto.getMonth());
-            bill.setAmountDue(chargeResult.amountDue());
-            bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
-            bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
-            bill.setDueDate(targetDate.with(TemporalAdjusters.lastDayOfMonth()));
-            bill.setStatus("ISSUED");
-            bill.setSourceType("GENERATED");
-            bill.setRemark("水费自动开单");
-            billMapper.insert(bill);
-
-            BillLine line = new BillLine();
-            line.setBillId(bill.getId());
-            line.setLineNo(1);
-            line.setLineType("WATER");
-            line.setItemName(dto.getYear() + "-" + String.format("%02d", dto.getMonth()) + " 水费");
-            line.setUnitPrice(chargeResult.displayUnitPrice());
-            line.setQuantity(reading.getUsageAmount());
-            line.setLineAmount(chargeResult.amountDue());
-            line.setExtJson(writeJson(new LinkedHashMap<>() {{
-                put("prevReading", reading.getPrevReading());
-                put("currReading", reading.getCurrReading());
-                put("usage", reading.getUsageAmount());
-                put("meterId", reading.getMeterId());
-                put("pricingMode", feeRule.getPricingMode());
-                put("tierBreakdown", chargeResult.tierBreakdown());
-            }}));
-            billLineMapper.insert(line);
-            generated++;
         }
         return generated;
+    }
+
+    @Transactional
+    public Bill generateForReading(WaterMeterReading reading, FeeRule feeRule, String overwriteStrategy) {
+        Bill existed = billMapper.findByUniqueKey(reading.getRoomId(), "WATER", reading.getPeriodYear(), reading.getPeriodMonth());
+        if (existed != null) {
+            if ("SKIP".equalsIgnoreCase(overwriteStrategy)) {
+                return null;
+            }
+            throw new BusinessException("CONFLICT", "存在重复水费账单: roomId=" + reading.getRoomId(), HttpStatus.CONFLICT);
+        }
+        LocalDate targetDate = LocalDate.of(reading.getPeriodYear(), reading.getPeriodMonth(), 1);
+        WaterChargeResult chargeResult = calculateCharge(feeRule, reading.getUsageAmount());
+        Bill bill = new Bill();
+        bill.setBillNo(NoGenerator.billNo());
+        bill.setRoomId(reading.getRoomId());
+        bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(reading.getRoomId()));
+        bill.setFeeType("WATER");
+        bill.setCycleType("MONTH");
+        bill.setPeriodYear(reading.getPeriodYear());
+        bill.setPeriodMonth(reading.getPeriodMonth());
+        bill.setServicePeriodStart(targetDate);
+        bill.setServicePeriodEnd(targetDate.with(TemporalAdjusters.lastDayOfMonth()));
+        bill.setAmountDue(chargeResult.amountDue());
+        bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
+        bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
+        bill.setDueDate(targetDate.with(TemporalAdjusters.lastDayOfMonth()));
+        bill.setStatus("ISSUED");
+        bill.setSourceType("GENERATED");
+        bill.setRemark("水费自动开单");
+        billMapper.insert(bill);
+
+        BillLine line = new BillLine();
+        line.setBillId(bill.getId());
+        line.setLineNo(1);
+        line.setLineType("WATER");
+        line.setItemName(reading.getPeriodYear() + "-" + String.format("%02d", reading.getPeriodMonth()) + " 水费");
+        line.setUnitPrice(chargeResult.displayUnitPrice());
+        line.setQuantity(reading.getUsageAmount());
+        line.setLineAmount(chargeResult.amountDue());
+        line.setExtJson(writeJson(new LinkedHashMap<>() {{
+            put("prevReading", reading.getPrevReading());
+            put("currReading", reading.getCurrReading());
+            put("usage", reading.getUsageAmount());
+            put("meterId", reading.getMeterId());
+            put("pricingMode", feeRule.getPricingMode());
+            put("servicePeriodStart", bill.getServicePeriodStart());
+            put("servicePeriodEnd", bill.getServicePeriodEnd());
+            put("tierBreakdown", chargeResult.tierBreakdown());
+        }}));
+        billLineMapper.insert(line);
+        return bill;
     }
 
     private WaterChargeResult calculateCharge(FeeRule feeRule, BigDecimal usageAmount) {

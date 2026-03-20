@@ -1,0 +1,99 @@
+interface StatusBadgeProps {
+  value?: string | null
+}
+
+const statusMap: Record<string, string> = {
+  PROPERTY: 'bg-primary-50 text-primary-700 border-primary-200',
+  WATER: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  YEAR: 'bg-amber-50 text-amber-700 border-amber-200',
+  MONTH: 'bg-violet-50 text-violet-700 border-violet-200',
+  ISSUED: 'bg-amber-50 text-amber-700 border-amber-200',
+  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  CANCELLED: 'bg-slate-100 text-slate-600 border-slate-200',
+  ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  OPEN: 'bg-rose-50 text-rose-700 border-rose-200',
+  PARTIAL_SUCCESS: 'bg-amber-50 text-amber-700 border-amber-200',
+  SUCCESS: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  FAILED: 'bg-rose-50 text-rose-700 border-rose-200',
+  ABS_THRESHOLD: 'bg-orange-50 text-orange-700 border-orange-200',
+  MULTIPLIER_THRESHOLD: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+  VIEW: 'bg-sky-50 text-sky-700 border-sky-200',
+  MANAGE: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  BILL: 'bg-primary-50 text-primary-700 border-primary-200',
+  PAYMENT: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  COUPON: 'bg-pink-50 text-pink-700 border-pink-200',
+  AUTH: 'bg-slate-100 text-slate-700 border-slate-300',
+  IMPORT: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  EXPORT: 'bg-teal-50 text-teal-700 border-teal-200',
+  CREATE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  UPDATE: 'bg-amber-50 text-amber-700 border-amber-200',
+  LOGIN: 'bg-sky-50 text-sky-700 border-sky-200',
+  LOGOUT: 'bg-slate-100 text-slate-700 border-slate-300',
+  PAYMENT_DISCOUNT: 'bg-orange-50 text-orange-700 border-orange-200',
+  VOUCHER: 'bg-pink-50 text-pink-700 border-pink-200',
+  FIXED: 'bg-amber-50 text-amber-700 border-amber-200',
+  PERCENT: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  APPLIED: 'bg-sky-50 text-sky-700 border-sky-200',
+  APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+  MANUAL: 'bg-violet-50 text-violet-700 border-violet-200',
+  AUTO: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  SENT: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '0': 'bg-slate-100 text-slate-700 border-slate-300',
+  '1': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  ALL: 'bg-slate-100 text-slate-700 border-slate-300',
+}
+
+const labelMap: Record<string, string> = {
+  PROPERTY: '物业费',
+  WATER: '水费',
+  YEAR: '年度',
+  MONTH: '月度',
+  ISSUED: '已出账',
+  PAID: '已支付',
+  CANCELLED: '已取消',
+  ACTIVE: '有效',
+  OPEN: '待处理',
+  PARTIAL_SUCCESS: '部分成功',
+  SUCCESS: '成功',
+  FAILED: '失败',
+  ABS_THRESHOLD: '绝对阈值',
+  MULTIPLIER_THRESHOLD: '倍数阈值',
+  VIEW: '查看',
+  MANAGE: '管理',
+  BILL: '账单',
+  PAYMENT: '支付',
+  COUPON: '券',
+  AUTH: '登录鉴权',
+  IMPORT: '导入',
+  EXPORT: '导出',
+  CREATE: '创建',
+  UPDATE: '更新',
+  LOGIN: '登录',
+  LOGOUT: '退出',
+  PAYMENT_DISCOUNT: '支付前抵扣券',
+  VOUCHER: '支付后奖励券',
+  FIXED: '固定金额',
+  PERCENT: '比例折扣',
+  APPLIED: '已申请',
+  APPROVED: '已通过',
+  REJECTED: '已驳回',
+  MANUAL: '手动触发',
+  AUTO: '自动触发',
+  SENT: '已发送',
+  '0': '停用',
+  '1': '启用',
+  ALL: '全部费种',
+}
+
+export default function StatusBadge({ value }: StatusBadgeProps) {
+  if (!value) {
+    return <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">--</span>
+  }
+
+  return (
+    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${statusMap[value] || 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+      {labelMap[value] || value}
+    </span>
+  )
+}

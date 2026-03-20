@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +187,6 @@ public class ImportExportService {
         String billNo = required(row, "bill_no");
         String feeType = required(row, "fee_type");
         Integer periodYear = parseInt(required(row, "period_year"), "period_year");
-        Integer periodMonth = parseInt(required(row, "period_month"), "period_month");
         String communityCode = required(row, "community_code");
         String buildingNo = required(row, "building_no");
         String unitNo = required(row, "unit_no");
@@ -194,6 +194,10 @@ public class ImportExportService {
         String groupCode = required(row, "group_code");
         BigDecimal amountDue = parseMoney(required(row, "amount_due"), "amount_due");
         LocalDate dueDate = parseDate(required(row, "due_date"), "due_date");
+        boolean propertyBill = "PROPERTY".equals(feeType);
+        Integer periodMonth = propertyBill
+                ? parseOptionalInt(row.get("period_month"), "period_month")
+                : parseInt(required(row, "period_month"), "period_month");
 
         Long communityId = communityMapper.findIdByCommunityCode(communityCode);
         if (communityId == null) {
@@ -208,7 +212,8 @@ public class ImportExportService {
         if (room == null) {
             throw new BusinessException("VALIDATION_FAILED", "room 不存在", HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        if (billMapper.findByUniqueKey(room.getId(), feeType, periodYear, periodMonth) != null) {
+        Integer uniqueMonth = propertyBill ? null : periodMonth;
+        if (billMapper.findByUniqueKey(room.getId(), feeType, periodYear, uniqueMonth) != null) {
             throw new BusinessException("VALIDATION_FAILED", "同房间同账期账单已存在", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
@@ -217,8 +222,15 @@ public class ImportExportService {
         bill.setRoomId(room.getId());
         bill.setGroupId(groupId);
         bill.setFeeType(feeType);
+        bill.setCycleType(propertyBill ? "YEAR" : "MONTH");
         bill.setPeriodYear(periodYear);
-        bill.setPeriodMonth(periodMonth);
+        bill.setPeriodMonth(propertyBill ? null : periodMonth);
+        bill.setServicePeriodStart(propertyBill
+                ? LocalDate.of(periodYear, 1, 1)
+                : LocalDate.of(periodYear, periodMonth, 1));
+        bill.setServicePeriodEnd(propertyBill
+                ? LocalDate.of(periodYear, 12, 31)
+                : LocalDate.of(periodYear, periodMonth, 1).with(TemporalAdjusters.lastDayOfMonth()));
         bill.setAmountDue(MoneyUtils.scaleMoney(amountDue));
         bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
         bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
@@ -287,6 +299,13 @@ public class ImportExportService {
         } catch (NumberFormatException ex) {
             throw new BusinessException("VALIDATION_FAILED", field + " 格式错误", HttpStatus.UNPROCESSABLE_ENTITY);
         }
+    }
+
+    private Integer parseOptionalInt(String value, String field) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return parseInt(value.trim(), field);
     }
 
     private BigDecimal parseMoney(String value, String field) {

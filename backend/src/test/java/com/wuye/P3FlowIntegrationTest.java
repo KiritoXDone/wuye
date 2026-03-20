@@ -30,7 +30,7 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "PROPERTY",
                                   "unitPrice": 2.80,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "YEAR",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "P3 审计规则"
@@ -77,7 +77,7 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
         Path importFile = Files.createTempFile("wuye-audit-import-", ".csv");
         Files.writeString(importFile, """
                 bill_no,fee_type,period_year,period_month,community_code,building_no,unit_no,room_no,group_code,amount_due,due_date,remark
-                B-IMP-AUDIT-001,PROPERTY,2026,3,COMM-001,1,2,302,G-COMM001-1-2,220.00,2026-03-31,审计导入测试
+                B-IMP-AUDIT-001,PROPERTY,2026,,COMM-001,1,2,302,G-COMM001-1-2,220.00,2026-12-31,审计导入测试
                 """, StandardCharsets.UTF_8);
 
         MvcResult importResult = mockMvc.perform(post("/api/v1/admin/imports/bills")
@@ -100,7 +100,6 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "periodYear": 2026,
-                                  "periodMonth": 3,
                                   "feeType": "PROPERTY",
                                   "status": "ISSUED"
                                 }

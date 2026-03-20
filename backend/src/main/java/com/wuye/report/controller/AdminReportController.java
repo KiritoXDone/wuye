@@ -25,6 +25,19 @@ public class AdminReportController {
         this.adminMonthlyReportService = adminMonthlyReportService;
     }
 
+    @GetMapping("/property-yearly")
+    public ApiResponse<AdminMonthlyReportVO> propertyYearly(@CurrentUser LoginUser loginUser,
+                                                            @RequestParam("periodYear") @NotNull Integer periodYear) {
+        return ApiResponse.success(adminMonthlyReportService.propertyYearly(loginUser, periodYear));
+    }
+
+    @GetMapping("/water-monthly")
+    public ApiResponse<AdminMonthlyReportVO> waterMonthly(@CurrentUser LoginUser loginUser,
+                                                          @RequestParam("periodYear") @NotNull Integer periodYear,
+                                                          @RequestParam("periodMonth") @NotNull @Min(1) @Max(12) Integer periodMonth) {
+        return ApiResponse.success(adminMonthlyReportService.waterMonthly(loginUser, periodYear, periodMonth));
+    }
+
     @GetMapping("/monthly")
     public ApiResponse<AdminMonthlyReportVO> monthly(@CurrentUser LoginUser loginUser,
                                                      @RequestParam("periodYear") @NotNull Integer periodYear,

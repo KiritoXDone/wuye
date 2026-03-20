@@ -1,7 +1,7 @@
 export interface BillGeneratePayload {
   communityId: number
   year: number
-  month: number
+  month?: number
   overwriteStrategy?: string
 }
 

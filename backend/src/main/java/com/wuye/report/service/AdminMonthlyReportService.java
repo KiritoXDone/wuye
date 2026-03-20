@@ -20,9 +20,22 @@ public class AdminMonthlyReportService {
         this.accessGuard = accessGuard;
     }
 
+    public AdminMonthlyReportVO propertyYearly(LoginUser loginUser, Integer periodYear) {
+        accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
+        return normalize(reportMapper.propertyYearly(periodYear));
+    }
+
+    public AdminMonthlyReportVO waterMonthly(LoginUser loginUser, Integer periodYear, Integer periodMonth) {
+        accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
+        return normalize(reportMapper.waterMonthly(periodYear, periodMonth));
+    }
+
     public AdminMonthlyReportVO monthly(LoginUser loginUser, Integer periodYear, Integer periodMonth) {
         accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
-        AdminMonthlyReportVO vo = reportMapper.monthly(periodYear, periodMonth);
+        return normalize(reportMapper.monthly(periodYear, periodMonth));
+    }
+
+    private AdminMonthlyReportVO normalize(AdminMonthlyReportVO vo) {
         if (vo.getPaidCount() == null) {
             vo.setPaidCount(0L);
         }

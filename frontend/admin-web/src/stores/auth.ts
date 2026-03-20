@@ -1,82 +1,85 @@
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { create } from 'zustand'
 
 import { getMyProfile, loginByPassword, postLogout } from '@/api/auth'
-import { storage } from '@/utils/storage'
 import type { LoginPayload, LoginResult, Profile } from '@/types/auth'
+import { storage } from '@/utils/storage'
 
 const ACCESS_TOKEN_KEY = 'wuye_admin_access_token'
 const REFRESH_TOKEN_KEY = 'wuye_admin_refresh_token'
 const LOGIN_INFO_KEY = 'wuye_admin_login_info'
 
-export const useAuthStore = defineStore('auth', () => {
-  const accessToken = ref(storage.get(ACCESS_TOKEN_KEY, ''))
-  const refreshToken = ref(storage.get(REFRESH_TOKEN_KEY, ''))
-  const loginInfo = ref<LoginResult | null>(storage.get<LoginResult | null>(LOGIN_INFO_KEY, null))
-  const profile = ref<Profile | null>(null)
-  const profileLoaded = ref(false)
+interface AuthState {
+  accessToken: string
+  refreshToken: string
+  loginInfo: LoginResult | null
+  profile: Profile | null
+  profileLoaded: boolean
+  hasToken: boolean
+  applySession: (result: LoginResult) => void
+  login: (payload: LoginPayload) => Promise<LoginResult>
+  fetchProfile: () => Promise<Profile | null>
+  logout: () => Promise<void>
+  clearSession: () => void
+}
 
-  const hasToken = computed(() => Boolean(accessToken.value))
+const initialAccessToken = storage.get(ACCESS_TOKEN_KEY, '')
+const initialRefreshToken = storage.get(REFRESH_TOKEN_KEY, '')
+const initialLoginInfo = storage.get<LoginResult | null>(LOGIN_INFO_KEY, null)
 
-  function applySession(result: LoginResult) {
-    accessToken.value = result.accessToken
-    refreshToken.value = result.refreshToken
-    loginInfo.value = result
+export const useAuthStore = create<AuthState>((set, get) => ({
+  accessToken: initialAccessToken,
+  refreshToken: initialRefreshToken,
+  loginInfo: initialLoginInfo,
+  profile: null,
+  profileLoaded: false,
+  hasToken: Boolean(initialAccessToken),
+  applySession: (result) => {
     storage.set(ACCESS_TOKEN_KEY, result.accessToken)
     storage.set(REFRESH_TOKEN_KEY, result.refreshToken)
     storage.set(LOGIN_INFO_KEY, result)
-  }
-
-  async function login(payload: LoginPayload) {
+    set({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      loginInfo: result,
+      profileLoaded: false,
+      hasToken: Boolean(result.accessToken),
+    })
+  },
+  login: async (payload) => {
     const result = await loginByPassword(payload)
-    applySession(result)
-    await fetchProfile()
+    get().applySession(result)
+    await get().fetchProfile()
     return result
-  }
-
-  async function fetchProfile() {
-    if (!hasToken.value) {
-      profile.value = null
-      profileLoaded.value = false
+  },
+  fetchProfile: async () => {
+    if (!get().accessToken) {
+      set({ profile: null, profileLoaded: false, hasToken: false })
       return null
     }
     const result = await getMyProfile()
-    profile.value = result
-    profileLoaded.value = true
+    set({ profile: result, profileLoaded: true, hasToken: true })
     return result
-  }
-
-  async function logout() {
+  },
+  logout: async () => {
     try {
-      if (hasToken.value) {
+      if (get().accessToken) {
         await postLogout()
       }
     } finally {
-      clearSession()
+      get().clearSession()
     }
-  }
-
-  function clearSession() {
-    accessToken.value = ''
-    refreshToken.value = ''
-    loginInfo.value = null
-    profile.value = null
-    profileLoaded.value = false
+  },
+  clearSession: () => {
     storage.remove(ACCESS_TOKEN_KEY)
     storage.remove(REFRESH_TOKEN_KEY)
     storage.remove(LOGIN_INFO_KEY)
-  }
-
-  return {
-    accessToken,
-    refreshToken,
-    loginInfo,
-    profile,
-    profileLoaded,
-    hasToken,
-    login,
-    fetchProfile,
-    logout,
-    clearSession,
-  }
-})
+    set({
+      accessToken: '',
+      refreshToken: '',
+      loginInfo: null,
+      profile: null,
+      profileLoaded: false,
+      hasToken: false,
+    })
+  },
+}))

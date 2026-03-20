@@ -84,12 +84,12 @@ class AgentScopeConsistencyIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "%s",
                                   "unitPrice": %s,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "%s",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "scope test"
                                 }
-                                """.formatted(feeType, unitPrice)))
+                                """.formatted(feeType, unitPrice, "PROPERTY".equals(feeType) ? "YEAR" : "MONTH")))
                 .andExpect(status().isOk());
     }
 }

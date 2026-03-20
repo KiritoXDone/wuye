@@ -15,7 +15,9 @@ export interface BillListItem {
   roomId: number
   roomLabel: string
   feeType: string
+  cycleType?: string
   period: string
+  servicePeriod?: string
   amountDue: number | string
   amountPaid: number | string
   status: string
@@ -29,7 +31,7 @@ export interface BillLine {
   unitPrice: number | string
   quantity: number | string
   lineAmount: number | string
-  ext: Record<string, unknown>
+  ext?: Record<string, unknown>
 }
 
 export interface BillDetail {
@@ -38,8 +40,11 @@ export interface BillDetail {
   roomId: number
   roomLabel: string
   feeType: string
+  cycleType?: string
   periodYear: number
-  periodMonth: number
+  periodMonth?: number | null
+  servicePeriodStart?: string | null
+  servicePeriodEnd?: string | null
   amountDue: number | string
   amountPaid: number | string
   status: string

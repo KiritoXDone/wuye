@@ -13,8 +13,11 @@ public class BillDetailVO {
     private Long roomId;
     private String roomLabel;
     private String feeType;
+    private String cycleType;
     private Integer periodYear;
     private Integer periodMonth;
+    private LocalDate servicePeriodStart;
+    private LocalDate servicePeriodEnd;
     private BigDecimal amountDue;
     private BigDecimal amountPaid;
     private String status;
@@ -62,6 +65,14 @@ public class BillDetailVO {
         this.feeType = feeType;
     }
 
+    public String getCycleType() {
+        return cycleType;
+    }
+
+    public void setCycleType(String cycleType) {
+        this.cycleType = cycleType;
+    }
+
     public Integer getPeriodYear() {
         return periodYear;
     }
@@ -76,6 +87,22 @@ public class BillDetailVO {
 
     public void setPeriodMonth(Integer periodMonth) {
         this.periodMonth = periodMonth;
+    }
+
+    public LocalDate getServicePeriodStart() {
+        return servicePeriodStart;
+    }
+
+    public void setServicePeriodStart(LocalDate servicePeriodStart) {
+        this.servicePeriodStart = servicePeriodStart;
+    }
+
+    public LocalDate getServicePeriodEnd() {
+        return servicePeriodEnd;
+    }
+
+    public void setServicePeriodEnd(LocalDate servicePeriodEnd) {
+        this.servicePeriodEnd = servicePeriodEnd;
     }
 
     public BigDecimal getAmountDue() {

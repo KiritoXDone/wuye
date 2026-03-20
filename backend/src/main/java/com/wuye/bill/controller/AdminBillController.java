@@ -64,10 +64,16 @@ public class AdminBillController {
         return ApiResponse.success(billQueryService.getBillDetail(loginUser, billId));
     }
 
+    @PostMapping("/bills/generate/property-yearly")
+    public ApiResponse<Map<String, Object>> generatePropertyYearly(@CurrentUser LoginUser loginUser,
+                                                                   @Valid @RequestBody PropertyBillGenerateDTO dto) {
+        return ApiResponse.success(Map.of("generatedCount", propertyBillGenerateService.generate(loginUser, dto)));
+    }
+
     @PostMapping("/bills/generate/property")
     public ApiResponse<Map<String, Object>> generateProperty(@CurrentUser LoginUser loginUser,
                                                              @Valid @RequestBody PropertyBillGenerateDTO dto) {
-        return ApiResponse.success(Map.of("generatedCount", propertyBillGenerateService.generate(loginUser, dto)));
+        return generatePropertyYearly(loginUser, dto);
     }
 
     @PostMapping("/water-meters")
@@ -91,8 +97,8 @@ public class AdminBillController {
     }
 
     @PostMapping("/water-readings")
-    public ApiResponse<WaterMeterReading> createWaterReading(@CurrentUser LoginUser loginUser,
-                                                             @Valid @RequestBody WaterReadingCreateDTO dto) {
+    public ApiResponse<Map<String, Object>> createWaterReading(@CurrentUser LoginUser loginUser,
+                                                                @Valid @RequestBody WaterReadingCreateDTO dto) {
         return ApiResponse.success(waterReadingService.createReading(loginUser, dto));
     }
 

@@ -11,6 +11,21 @@ public interface ReportMapper {
 
     @Select("""
             SELECT #{periodYear} AS period_year,
+                   NULL AS period_month,
+                   COUNT(DISTINCT CASE WHEN status = 'PAID' THEN room_id END) AS paid_count,
+                   COUNT(DISTINCT room_id) AS total_count,
+                   COALESCE(SUM(amount_paid), 0) AS paid_amount,
+                   COALESCE(SUM(discount_amount_total), 0) AS discount_amount,
+                   COALESCE(SUM(amount_due - amount_paid), 0) AS unpaid_amount
+            FROM bill
+            WHERE period_year = #{periodYear}
+              AND fee_type = 'PROPERTY'
+              AND cycle_type = 'YEAR'
+            """)
+    AdminMonthlyReportVO propertyYearly(@Param("periodYear") Integer periodYear);
+
+    @Select("""
+            SELECT #{periodYear} AS period_year,
                    #{periodMonth} AS period_month,
                    COUNT(DISTINCT CASE WHEN status = 'PAID' THEN room_id END) AS paid_count,
                    COUNT(DISTINCT room_id) AS total_count,
@@ -19,7 +34,24 @@ public interface ReportMapper {
                    COALESCE(SUM(amount_due - amount_paid), 0) AS unpaid_amount
             FROM bill
             WHERE period_year = #{periodYear}
+              AND fee_type = 'WATER'
+              AND cycle_type = 'MONTH'
               AND period_month = #{periodMonth}
+            """)
+    AdminMonthlyReportVO waterMonthly(@Param("periodYear") Integer periodYear, @Param("periodMonth") Integer periodMonth);
+
+    @Select("""
+            SELECT #{periodYear} AS period_year,
+                   #{periodMonth} AS period_month,
+                   COUNT(DISTINCT CASE WHEN status = 'PAID' THEN room_id END) AS paid_count,
+                   COUNT(DISTINCT room_id) AS total_count,
+                   COALESCE(SUM(amount_paid), 0) AS paid_amount,
+                   COALESCE(SUM(discount_amount_total), 0) AS discount_amount,
+                   COALESCE(SUM(amount_due - amount_paid), 0) AS unpaid_amount
+            FROM bill
+            WHERE period_year = #{periodYear}
+              AND ((cycle_type = 'MONTH' AND period_month = #{periodMonth})
+                   OR (cycle_type = 'YEAR' AND fee_type = 'PROPERTY'))
             """)
     AdminMonthlyReportVO monthly(@Param("periodYear") Integer periodYear, @Param("periodMonth") Integer periodMonth);
 
@@ -33,7 +65,8 @@ public interface ReportMapper {
             JOIN group_room gr ON gr.room_id = b.room_id
             WHERE gr.group_id = #{groupId}
               AND b.period_year = #{periodYear}
-              AND b.period_month = #{periodMonth}
+              AND ((b.cycle_type = 'MONTH' AND b.period_month = #{periodMonth})
+                   OR (b.cycle_type = 'YEAR' AND b.fee_type = 'PROPERTY'))
             """)
     AgentMonthlyReportVO agentMonthly(@Param("groupId") Long groupId,
                                       @Param("periodYear") Integer periodYear,

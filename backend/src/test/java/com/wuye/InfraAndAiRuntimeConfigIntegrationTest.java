@@ -122,7 +122,7 @@ class InfraAndAiRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        long billId = findBillIdByFeeTypeAndPeriod(read(billsResult), "PROPERTY", "2026-10");
+        long billId = read(billsResult).path("data").path("list").get(0).path("billId").asLong();
         BigDecimal amountDue = findBillAmountById(read(billsResult), billId);
 
         var paymentResult = mockMvc.perform(post("/api/v1/payments")
@@ -186,12 +186,12 @@ class InfraAndAiRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "%s",
                                   "unitPrice": %s,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "%s",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "infra test"
                                 }
-                                """.formatted(feeType, unitPrice)))
+                                """.formatted(feeType, unitPrice, "PROPERTY".equals(feeType) ? "YEAR" : "MONTH")))
                 .andExpect(status().isOk());
     }
 }

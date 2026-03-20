@@ -109,7 +109,7 @@ class P2FlowIntegrationTest extends AbstractIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.generatedCount").value(1));
+                .andExpect(jsonPath("$.data.generatedCount").value(0));
 
         MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
                         .param("pageNo", "1")
@@ -153,7 +153,7 @@ class P2FlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billsResult);
-        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-08");
+        long propertyBillId = billsJson.path("data").path("list").get(0).path("billId").asLong();
         BigDecimal amountDue = findBillAmountById(billsJson, propertyBillId);
 
         MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
@@ -285,12 +285,12 @@ class P2FlowIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "%s",
                                   "unitPrice": %s,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "%s",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "测试规则"
                                 }
-                                """.formatted(feeType, unitPrice)))
+                                """.formatted(feeType, unitPrice, "PROPERTY".equals(feeType) ? "YEAR" : "MONTH")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feeType").value(feeType));
     }

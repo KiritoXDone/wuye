@@ -2,6 +2,7 @@ package com.wuye.bill.service;
 
 import com.wuye.bill.dto.WaterMeterCreateDTO;
 import com.wuye.bill.dto.WaterReadingCreateDTO;
+import com.wuye.bill.entity.FeeRule;
 import com.wuye.bill.entity.WaterMeter;
 import com.wuye.bill.entity.WaterMeterReading;
 import com.wuye.bill.mapper.WaterMeterMapper;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class WaterReadingService {
@@ -25,6 +28,7 @@ public class WaterReadingService {
     private final WaterReadingMapper waterReadingMapper;
     private final RoomMapper roomMapper;
     private final FeeRuleService feeRuleService;
+    private final WaterBillGenerateService waterBillGenerateService;
     private final WaterUsageAlertService waterUsageAlertService;
     private final AccessGuard accessGuard;
 
@@ -32,12 +36,14 @@ public class WaterReadingService {
                                WaterReadingMapper waterReadingMapper,
                                RoomMapper roomMapper,
                                FeeRuleService feeRuleService,
+                               WaterBillGenerateService waterBillGenerateService,
                                WaterUsageAlertService waterUsageAlertService,
                                AccessGuard accessGuard) {
         this.waterMeterMapper = waterMeterMapper;
         this.waterReadingMapper = waterReadingMapper;
         this.roomMapper = roomMapper;
         this.feeRuleService = feeRuleService;
+        this.waterBillGenerateService = waterBillGenerateService;
         this.waterUsageAlertService = waterUsageAlertService;
         this.accessGuard = accessGuard;
     }
@@ -67,7 +73,7 @@ public class WaterReadingService {
     }
 
     @Transactional
-    public WaterMeterReading createReading(LoginUser loginUser, WaterReadingCreateDTO dto) {
+    public Map<String, Object> createReading(LoginUser loginUser, WaterReadingCreateDTO dto) {
         accessGuard.requireRole(loginUser, "ADMIN");
         if (dto.getCurrReading().compareTo(dto.getPrevReading()) < 0) {
             throw new BusinessException("INVALID_ARGUMENT", "currReading 不能小于 prevReading", HttpStatus.BAD_REQUEST);
@@ -99,9 +105,28 @@ public class WaterReadingService {
         reading.setRemark(dto.getRemark());
         reading.setStatus("NORMAL");
         waterReadingMapper.insert(reading);
-        reading.setStatus(waterUsageAlertService.evaluateAndPersist(reading,
-                feeRuleService.requireActiveRule(room.getCommunityId(), "WATER", dto.getReadAt().toLocalDate())));
+        FeeRule feeRule = feeRuleService.requireActiveRule(room.getCommunityId(), "WATER", dto.getReadAt().toLocalDate());
+        reading.setStatus(waterUsageAlertService.evaluateAndPersist(reading, feeRule));
         waterReadingMapper.updateStatus(reading.getId(), reading.getStatus());
-        return reading;
+        var generatedBill = waterBillGenerateService.generateForReading(reading, feeRule, "ERROR");
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", reading.getId());
+        result.put("roomId", reading.getRoomId());
+        result.put("meterId", reading.getMeterId());
+        result.put("periodYear", reading.getPeriodYear());
+        result.put("periodMonth", reading.getPeriodMonth());
+        result.put("prevReading", reading.getPrevReading());
+        result.put("currReading", reading.getCurrReading());
+        result.put("usageAmount", reading.getUsageAmount());
+        result.put("readByAdminId", reading.getReadByAdminId());
+        result.put("readAt", reading.getReadAt());
+        result.put("photoUrl", reading.getPhotoUrl());
+        result.put("remark", reading.getRemark());
+        result.put("status", reading.getStatus());
+        result.put("reading", reading);
+        result.put("billId", generatedBill.getId());
+        result.put("billNo", generatedBill.getBillNo());
+        result.put("generatedBill", generatedBill);
+        return result;
     }
 }

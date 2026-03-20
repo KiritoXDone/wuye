@@ -138,7 +138,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.generatedCount").value(1));
+                .andExpect(jsonPath("$.data.generatedCount").value(0));
 
         MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
                         .param("pageNo", "1")
@@ -271,7 +271,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "PROPERTY",
                                   "unitPrice": 2.5000,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "YEAR",
                                   "effectiveFrom": "2026-01-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "年度缴费测试规则"
@@ -280,21 +280,19 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feeType").value("PROPERTY"));
 
-        for (int month = 1; month <= 12; month++) {
-            mockMvc.perform(post("/api/v1/admin/bills/generate/property")
-                            .header("Authorization", "Bearer " + adminToken)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "communityId": 100,
-                                      "year": 2026,
-                                      "month": %s,
-                                      "overwriteStrategy": "SKIP"
-                                    }
-                                    """.formatted(month)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.generatedCount").value(2));
-        }
+        mockMvc.perform(post("/api/v1/admin/bills/generate/property")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "communityId": 100,
+                                  "year": 2026,
+                                  "month": 1,
+                                  "overwriteStrategy": "SKIP"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.generatedCount").value(2));
 
         MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
                         .param("pageNo", "1")
@@ -303,8 +301,8 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billsResult);
-        long januaryBillId = findBillIdByFeeTypeAndRoomAndPeriod(billsJson, "PROPERTY", 1001L, "2026-01");
-        BigDecimal annualAmount = sumPropertyBillAmountsForRoomAndYear(billsJson, 1001L, 2026);
+        long januaryBillId = findBillIdByFeeTypeAndRoom(billsJson, "PROPERTY", 1001L);
+        BigDecimal annualAmount = findBillAmountById(billsJson, januaryBillId);
 
         MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
                         .header("Authorization", "Bearer " + residentToken)
@@ -319,7 +317,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                                 """.formatted(januaryBillId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.annualPayment").value(true))
-                .andExpect(jsonPath("$.data.coveredBillCount").value(12))
+                .andExpect(jsonPath("$.data.coveredBillCount").value(1))
                 .andExpect(jsonPath("$.data.payAmount").value(annualAmount.doubleValue()))
                 .andReturn();
         String payOrderNo = read(paymentResult).path("data").path("payOrderNo").asText();
@@ -346,7 +344,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.annualPayment").value(true))
-                .andExpect(jsonPath("$.data.coveredBillCount").value(12));
+                .andExpect(jsonPath("$.data.coveredBillCount").value(1));
 
         MvcResult roomBillsResult = mockMvc.perform(get("/api/v1/me/rooms/1001/bills")
                         .header("Authorization", "Bearer " + residentToken))
@@ -354,7 +352,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andReturn();
         JsonNode roomBillsJson = read(roomBillsResult);
         for (JsonNode item : roomBillsJson.path("data").path("list")) {
-            if ("PROPERTY".equals(item.path("feeType").asText()) && item.path("period").asText().startsWith("2026-")) {
+            if ("PROPERTY".equals(item.path("feeType").asText()) && item.path("billId").asLong() == januaryBillId) {
                 assertThat(item.path("status").asText()).isEqualTo("PAID");
             }
         }
@@ -366,7 +364,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void propertyYearCycleRuleShouldBeStoredAndAppliedAsMonthlyAllocatedBills() throws Exception {
+    void propertyYearCycleRuleShouldBeStoredAndAppliedAsYearlyBill() throws Exception {
         mockMvc.perform(post("/api/v1/admin/fee-rules")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -412,19 +410,18 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billsResult);
-        long propertyBillId = findBillIdByFeeTypeAndRoomAndPeriod(billsJson, "PROPERTY", 1001L, "2026-01");
+        long propertyBillId = findBillIdByFeeTypeAndRoom(billsJson, "PROPERTY", 1001L);
 
         mockMvc.perform(get("/api/v1/bills/" + propertyBillId)
                         .header("Authorization", "Bearer " + residentToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.amountDue").value(246.25))
-                .andExpect(jsonPath("$.data.billLines[0].unitPrice").value(2.5))
-                .andExpect(jsonPath("$.data.billLines[0].lineAmount").value(246.25))
-                .andExpect(jsonPath("$.data.billLines[0].itemName").value("2026-01 物业费（年）"))
+                .andExpect(jsonPath("$.data.amountDue").value(2955.0))
+                .andExpect(jsonPath("$.data.billLines[0].unitPrice").value(30.0))
+                .andExpect(jsonPath("$.data.billLines[0].lineAmount").value(2955.0))
+                .andExpect(jsonPath("$.data.billLines[0].itemName").value("2026 年度物业费"))
                 .andExpect(jsonPath("$.data.billLines[0].ext.cycleType").value("YEAR"))
-                .andExpect(jsonPath("$.data.billLines[0].ext.cycleLabel").value("年"))
-                .andExpect(jsonPath("$.data.billLines[0].ext.annualUnitPrice").value(30.0))
-                .andExpect(jsonPath("$.data.billLines[0].ext.monthlyUnitPrice").value(2.5));
+                .andExpect(jsonPath("$.data.billLines[0].ext.unitPrice").value(30.0))
+                .andExpect(jsonPath("$.data.billLines[0].ext.formula").value("area * annualUnitPrice"));
     }
 
     @Test
@@ -450,8 +447,6 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
     @Test
     void paymentIdempotencyKeyMustMatchSameRequestSemantics() throws Exception {
         createFeeRule("PROPERTY", "2.5000");
-        String period = "2026-04";
-
         mockMvc.perform(post("/api/v1/admin/bills/generate/property")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -525,8 +520,6 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
     @Test
     void duplicateCallbackWithDifferentTradeNoShouldBeRejected() throws Exception {
         createFeeRule("PROPERTY", "2.5000");
-        String period = "2026-05";
-
         mockMvc.perform(post("/api/v1/admin/bills/generate/property")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -547,7 +540,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billsResult);
-        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", period);
+        long propertyBillId = findBillIdByFeeType(billsJson, "PROPERTY");
 
         MvcResult paymentResult = mockMvc.perform(post("/api/v1/payments")
                         .header("Authorization", "Bearer " + residentToken)
@@ -619,7 +612,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billResult);
-        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-06");
+        long propertyBillId = findBillIdByFeeType(billsJson, "PROPERTY");
 
         mockMvc.perform(get("/api/v1/bills/" + propertyBillId)
                         .header("Authorization", "Bearer " + residentToken))
@@ -721,7 +714,6 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                         .content("""
                                 {
                                   "periodYear": 2026,
-                                  "periodMonth": 6,
                                   "feeType": "PROPERTY",
                                   "status": "PAID"
                                 }
@@ -759,7 +751,7 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode billsJson = read(billResult);
-        long propertyBillId = findBillIdByFeeTypeAndPeriod(billsJson, "PROPERTY", "2026-06");
+        long propertyBillId = findBillIdByFeeType(billsJson, "PROPERTY");
 
         mockMvc.perform(post("/api/v1/payments")
                         .header("Authorization", "Bearer " + residentToken)
@@ -800,13 +792,13 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
             }
 
             var successRow = sheet.createRow(1);
-            var successValues = List.of("B-IMPORT-001", "PROPERTY", "2026", "7", "COMM-001", "1", "2", "302", "G-COMM001-1-2", "188.88", "2026-07-31", "导入成功");
+            var successValues = List.of("B-IMPORT-001", "WATER", "2026", "7", "COMM-001", "1", "2", "302", "G-COMM001-1-2", "188.88", "2026-07-31", "导入成功");
             for (int i = 0; i < successValues.size(); i++) {
                 successRow.createCell(i).setCellValue(successValues.get(i));
             }
 
             var failRow = sheet.createRow(2);
-            var failValues = List.of("B-IMPORT-002", "PROPERTY", "2026", "7", "COMM-001", "1", "2", "302", "INVALID", "188.88", "2026-07-31", "导入失败");
+            var failValues = List.of("B-IMPORT-002", "WATER", "2026", "7", "COMM-001", "1", "2", "302", "INVALID", "188.88", "2026-07-31", "导入失败");
             for (int i = 0; i < failValues.size(); i++) {
                 failRow.createCell(i).setCellValue(failValues.get(i));
             }
@@ -824,12 +816,12 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
                                   "communityId": 100,
                                   "feeType": "%s",
                                   "unitPrice": %s,
-                                  "cycleType": "MONTH",
+                                  "cycleType": "%s",
                                   "effectiveFrom": "2026-03-01",
                                   "effectiveTo": "2026-12-31",
                                   "remark": "测试规则"
                                 }
-                                """.formatted(feeType, unitPrice)))
+                                """.formatted(feeType, unitPrice, "PROPERTY".equals(feeType) ? "YEAR" : "MONTH")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feeType").value(feeType));
     }
@@ -896,15 +888,4 @@ class MvpFlowIntegrationTest extends AbstractIntegrationTest {
         return total;
     }
 
-    private BigDecimal sumPropertyBillAmountsForRoomAndYear(JsonNode billsJson, long roomId, int year) {
-        BigDecimal total = BigDecimal.ZERO;
-        for (JsonNode item : billsJson.path("data").path("list")) {
-            if ("PROPERTY".equals(item.path("feeType").asText())
-                    && roomId == item.path("roomId").asLong()
-                    && item.path("period").asText().startsWith(year + "-")) {
-                total = total.add(item.path("amountDue").decimalValue());
-            }
-        }
-        return total;
-    }
 }

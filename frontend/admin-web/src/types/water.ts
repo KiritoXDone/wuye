@@ -35,3 +35,10 @@ export interface WaterReadingPayload {
   photoUrl?: string
   remark?: string
 }
+
+export interface WaterReadingCreateResult {
+  reading: WaterReading
+  billId: number
+  billNo: string
+  generatedBill?: Record<string, unknown>
+}

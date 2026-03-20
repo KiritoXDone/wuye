@@ -1,50 +1,60 @@
-import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import axios, { type AxiosRequestConfig } from 'axios'
 
-import router from '@/router'
 import type { ApiResponse } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
 
-const service = axios.create({
+const client = axios.create({
   baseURL: '/api/v1',
   timeout: 15000,
 })
 
-service.interceptors.request.use((config) => {
-  const authStore = useAuthStore()
-  if (authStore.accessToken) {
-    config.headers.Authorization = `Bearer ${authStore.accessToken}`
+client.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
 
-service.interceptors.response.use(
-  (response) => {
-    const body = response.data as ApiResponse<unknown>
-    if (body.code !== '0') {
-      ElMessage.error(body.message || '请求失败')
-      return Promise.reject(new Error(body.message || 'Request failed'))
-    }
-    return body.data
-  },
+function unwrapResponse<T>(response: { data: ApiResponse<T> }) {
+  const body = response.data
+  if (body.code !== '0') {
+    throw new Error(body.message || '请求失败')
+  }
+  return body.data
+}
+
+client.interceptors.response.use(
+  (response) => response,
   async (error) => {
-    const authStore = useAuthStore()
     const status = error.response?.status
     const message = error.response?.data?.message || error.message || '请求失败'
 
     if (status === 401) {
-      authStore.clearSession()
-      if (router.currentRoute.value.path !== '/login') {
-        await router.push({
-          path: '/login',
-          query: { redirect: router.currentRoute.value.fullPath },
-        })
+      useAuthStore.getState().clearSession()
+      if (window.location.pathname !== '/login') {
+        const redirect = `${window.location.pathname}${window.location.search}`
+        window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`
       }
     }
 
-    ElMessage.error(message)
-    return Promise.reject(error)
+    return Promise.reject(new Error(message))
   },
 )
 
-export default service
+const request = {
+  async get<R = unknown>(url: string, config?: AxiosRequestConfig) {
+    return unwrapResponse<R>(await client.get(url, config))
+  },
+  async post<T = unknown, R = unknown>(url: string, data?: T, config?: AxiosRequestConfig) {
+    return unwrapResponse<R>(await client.post(url, data, config))
+  },
+  async put<T = unknown, R = unknown>(url: string, data?: T, config?: AxiosRequestConfig) {
+    return unwrapResponse<R>(await client.put(url, data, config))
+  },
+  async delete<R = unknown>(url: string, config?: AxiosRequestConfig) {
+    return unwrapResponse<R>(await client.delete(url, config))
+  },
+}
+
+export default request

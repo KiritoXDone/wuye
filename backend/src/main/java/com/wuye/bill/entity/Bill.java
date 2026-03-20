@@ -11,8 +11,11 @@ public class Bill {
     private Long roomId;
     private Long groupId;
     private String feeType;
+    private String cycleType;
     private Integer periodYear;
     private Integer periodMonth;
+    private LocalDate servicePeriodStart;
+    private LocalDate servicePeriodEnd;
     private BigDecimal amountDue;
     private BigDecimal discountAmountTotal;
     private BigDecimal amountPaid;
@@ -63,6 +66,14 @@ public class Bill {
         this.feeType = feeType;
     }
 
+    public String getCycleType() {
+        return cycleType;
+    }
+
+    public void setCycleType(String cycleType) {
+        this.cycleType = cycleType;
+    }
+
     public Integer getPeriodYear() {
         return periodYear;
     }
@@ -77,6 +88,22 @@ public class Bill {
 
     public void setPeriodMonth(Integer periodMonth) {
         this.periodMonth = periodMonth;
+    }
+
+    public LocalDate getServicePeriodStart() {
+        return servicePeriodStart;
+    }
+
+    public void setServicePeriodStart(LocalDate servicePeriodStart) {
+        this.servicePeriodStart = servicePeriodStart;
+    }
+
+    public LocalDate getServicePeriodEnd() {
+        return servicePeriodEnd;
+    }
+
+    public void setServicePeriodEnd(LocalDate servicePeriodEnd) {
+        this.servicePeriodEnd = servicePeriodEnd;
     }
 
     public BigDecimal getAmountDue() {

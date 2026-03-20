@@ -1,14 +1,14 @@
 import request from '@/utils/request'
-import type { WaterMeter, WaterMeterPayload, WaterReading, WaterReadingPayload } from '@/types/water'
+import type { WaterMeter, WaterMeterPayload, WaterReading, WaterReadingCreateResult, WaterReadingPayload } from '@/types/water'
 
 export function getWaterReadings(params: { periodYear?: number; periodMonth?: number }) {
-  return request.get<never, WaterReading[]>('/admin/water-readings', { params })
+  return request.get<WaterReading[]>('/admin/water-readings', { params })
 }
 
 export function createWaterMeter(payload: WaterMeterPayload) {
-  return request.post<never, WaterMeter>('/admin/water-meters', payload)
+  return request.post<WaterMeterPayload, WaterMeter>('/admin/water-meters', payload)
 }
 
 export function createWaterReading(payload: WaterReadingPayload) {
-  return request.post('/admin/water-readings', payload)
+  return request.post<WaterReadingPayload, WaterReadingCreateResult>('/admin/water-readings', payload)
 }

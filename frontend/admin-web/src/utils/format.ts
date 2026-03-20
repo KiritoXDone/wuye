@@ -18,8 +18,7 @@ export function formatPercent(value?: number | string | null) {
   if (value === null || value === undefined || value === '') {
     return '0.00%'
   }
-  const numeric = Number(value)
-  return `${numeric.toFixed(2)}%`
+  return `${Number(value).toFixed(2)}%`
 }
 
 export function formatDate(value?: string | null, fallback = '--') {
@@ -36,9 +35,22 @@ export function formatDateTime(value?: string | null, fallback = '--') {
   return dayjs(value).format('YYYY-MM-DD HH:mm')
 }
 
-export function formatPeriod(year?: number, month?: number) {
-  if (!year || !month) {
+export function formatPeriod(year?: number | null, month?: number | null, cycleType?: string | null) {
+  if (!year) {
     return '--'
   }
+  if (cycleType === 'YEAR' || !month) {
+    return `${year} 年度`
+  }
   return `${year}-${String(month).padStart(2, '0')}`
+}
+
+export function formatServicePeriod(start?: string | null, end?: string | null) {
+  if (!start && !end) {
+    return '--'
+  }
+  if (start && end) {
+    return `${formatDate(start)} ~ ${formatDate(end)}`
+  }
+  return formatDate(start || end)
 }
