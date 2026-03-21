@@ -92,6 +92,44 @@
   font-size: var(--font-size-body);
 }
 
+.picker-field {
+  min-height: 88rpx;
+  padding: 0 var(--space-3);
+  border: 1rpx solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-strong);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.picker-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.picker-field__value {
+  color: var(--color-text);
+  font-size: var(--font-size-body);
+  font-weight: 500;
+}
+
+.textarea-input {
+  min-height: 180rpx;
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.state-card--success {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
 .button-primary,
 .button-secondary,
 .button-ghost,
@@ -242,6 +280,29 @@
   color: var(--color-text);
   font-size: var(--font-size-subtitle);
   font-weight: 700;
+}
+
+.action-panel--summary {
+  gap: var(--space-2);
+}
+
+.action-panel__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
+}
+
+.action-panel__value {
+  color: var(--color-text);
+  font-size: var(--font-size-hero);
+  font-weight: 700;
+  line-height: var(--line-height-tight);
+}
+
+.action-panel__hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
 }
 
 .metric-grid {
