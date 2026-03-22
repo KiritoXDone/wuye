@@ -7,7 +7,6 @@ export interface AdminRoom {
   roomTypeId?: number | null
   roomTypeName?: string | null
   areaM2: number | string
-  status: number
 }
 
 export interface AdminRoomListQuery {
@@ -17,7 +16,6 @@ export interface AdminRoomListQuery {
   roomNoKeyword?: string
   roomSuffix?: string
   roomTypeId?: number
-  status?: number
 }
 
 export interface AdminRoomCreatePayload {

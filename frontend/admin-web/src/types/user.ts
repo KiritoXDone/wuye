@@ -9,6 +9,10 @@ export interface AdminUser {
   lastLoginAt?: string | null
 }
 
+export interface AdminUserStatusUpdatePayload {
+  status: '0' | '1'
+}
+
 export interface AdminUserListQuery {
   accountType?: string
 }
@@ -20,10 +24,14 @@ export interface AdminUserCreatePayload {
   mobile?: string
 }
 
-export interface AdminUserStatusPayload {
-  status: '0' | '1'
-}
-
 export interface AdminUserPasswordResetPayload {
   newPassword: string
+}
+
+export interface AdminUserRoom {
+  roomId: number
+  roomLabel: string
+  communityName?: string
+  areaM2?: number | string
+  bindingStatus?: string
 }

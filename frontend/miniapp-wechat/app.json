@@ -4,9 +4,11 @@
     "pages/rooms/index",
     "pages/bills/index",
     "pages/profile/index",
+    "pages/agent/index",
     "pages/bill-detail/index",
     "pages/payment-result/index",
-    "pages/voucher/index"
+    "pages/voucher/index",
+    "pages/rewards/index"
   ],
   "tabBar": {
     "color": "#6b7280",
@@ -25,6 +27,12 @@
         "text": "账单",
         "iconPath": "assets/tabbar/bills.png",
         "selectedIconPath": "assets/tabbar/bills-active.png"
+      },
+      {
+        "pagePath": "pages/agent/index",
+        "text": "助手",
+        "iconPath": "assets/tabbar/agent-bot.png",
+        "selectedIconPath": "assets/tabbar/agent-bot-active.png"
       },
       {
         "pagePath": "pages/profile/index",

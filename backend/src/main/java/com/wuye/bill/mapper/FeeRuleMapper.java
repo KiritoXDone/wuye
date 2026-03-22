@@ -2,11 +2,13 @@ package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.FeeRule;
 import com.wuye.bill.vo.FeeRuleVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +30,7 @@ public interface FeeRuleMapper {
                    effective_from, effective_to, remark
             FROM fee_rule
             WHERE community_id = #{communityId}
+              AND status = 1
             ORDER BY id DESC
             """)
     List<FeeRuleVO> listByCommunity(@Param("communityId") Long communityId);
@@ -47,4 +50,20 @@ public interface FeeRuleMapper {
     FeeRule findActiveRule(@Param("communityId") Long communityId,
                            @Param("feeType") String feeType,
                            @Param("targetDate") LocalDate targetDate);
+
+    @Select("""
+            SELECT id, community_id, fee_type, rule_name, unit_price, cycle_type, pricing_mode,
+                   effective_from, effective_to, status, remark
+            FROM fee_rule
+            WHERE id = #{id}
+            """)
+    FeeRule findById(@Param("id") Long id);
+
+    @Update("""
+            UPDATE fee_rule
+            SET status = 0
+            WHERE id = #{id}
+              AND status = 1
+            """)
+    int deleteById(@Param("id") Long id);
 }

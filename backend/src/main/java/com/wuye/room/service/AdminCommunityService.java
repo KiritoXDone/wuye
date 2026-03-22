@@ -36,7 +36,6 @@ public class AdminCommunityService {
         Community community = new Community();
         community.setCommunityCode(dto.getCommunityCode().trim());
         community.setName(dto.getName().trim());
-        community.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         communityMapper.insert(community);
         return requireOne(community.getId());
     }
@@ -48,18 +47,21 @@ public class AdminCommunityService {
         ensureCodeUnique(dto.getCommunityCode(), communityId);
         existed.setCommunityCode(dto.getCommunityCode().trim());
         existed.setName(dto.getName().trim());
-        existed.setStatus(dto.getStatus() == null ? existed.getStatus() : dto.getStatus());
         communityMapper.update(existed);
         return requireOne(communityId);
     }
 
     @Transactional
-    public AdminCommunityVO disable(LoginUser loginUser, Long communityId) {
+    public void hardDelete(LoginUser loginUser, Long communityId) {
         accessGuard.requireRole(loginUser, "ADMIN");
-        Community existed = requireEntity(communityId);
-        existed.setStatus(0);
-        communityMapper.update(existed);
-        return requireOne(communityId);
+        requireEntity(communityId);
+        if (communityMapper.countRoomTypes(communityId) > 0 || communityMapper.countRooms(communityId) > 0) {
+            throw new BusinessException("COMMUNITY_DELETE_BLOCKED", "小区下仍存在户型或房间，禁止删除", HttpStatus.CONFLICT);
+        }
+        int affected = communityMapper.deleteById(communityId);
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "小区已停用", HttpStatus.CONFLICT);
+        }
     }
 
     private void ensureCodeUnique(String communityCode, Long excludeId) {

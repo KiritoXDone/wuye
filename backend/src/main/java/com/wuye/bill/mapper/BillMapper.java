@@ -3,6 +3,7 @@ package com.wuye.bill.mapper;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillListItemVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -35,6 +36,7 @@ public interface BillMapper {
             WHERE room_id = #{roomId}
               AND fee_type = #{feeType}
               AND period_year = #{year}
+              AND status IN ('ISSUED', 'PAID')
               <choose>
                 <when test='month != null'>
                   AND period_month = #{month}
@@ -49,6 +51,30 @@ public interface BillMapper {
                          @Param("feeType") String feeType,
                          @Param("year") Integer year,
                          @Param("month") Integer month);
+
+    @Select("""
+            <script>
+            SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
+                   amount_due, discount_amount_total, amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
+            FROM bill
+            WHERE room_id = #{roomId}
+              AND fee_type = #{feeType}
+              AND period_year = #{year}
+              <choose>
+                <when test='month != null'>
+                  AND period_month = #{month}
+                </when>
+                <otherwise>
+                  AND period_month IS NULL
+                </otherwise>
+              </choose>
+            LIMIT 1
+            </script>
+            """)
+    Bill findAnyByUniqueKey(@Param("roomId") Long roomId,
+                            @Param("feeType") String feeType,
+                            @Param("year") Integer year,
+                            @Param("month") Integer month);
 
     @Select("""
             SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
@@ -85,6 +111,7 @@ public interface BillMapper {
             JOIN account_room ar ON ar.room_id = b.room_id
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
+              AND b.status IN ('ISSUED', 'PAID')
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
               AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
@@ -102,6 +129,7 @@ public interface BillMapper {
             JOIN account_room ar ON ar.room_id = b.room_id
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
+              AND b.status IN ('ISSUED', 'PAID')
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
               AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             """)
@@ -137,6 +165,7 @@ public interface BillMapper {
               AND (#{periodMonth} IS NULL OR b.period_month = #{periodMonth})
               AND (#{feeType} IS NULL OR #{feeType} = '' OR b.fee_type = #{feeType})
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+              AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
             LIMIT #{limit} OFFSET #{offset}
             """)
@@ -144,6 +173,7 @@ public interface BillMapper {
                                         @Param("periodMonth") Integer periodMonth,
                                         @Param("feeType") String feeType,
                                         @Param("status") String status,
+                                        @Param("roomId") Long roomId,
                                         @Param("offset") int offset,
                                         @Param("limit") int limit);
 
@@ -154,11 +184,13 @@ public interface BillMapper {
               AND (#{periodMonth} IS NULL OR b.period_month = #{periodMonth})
               AND (#{feeType} IS NULL OR #{feeType} = '' OR b.fee_type = #{feeType})
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+              AND (#{roomId} IS NULL OR b.room_id = #{roomId})
             """)
     long countAdminBills(@Param("periodYear") Integer periodYear,
                          @Param("periodMonth") Integer periodMonth,
                          @Param("feeType") String feeType,
-                         @Param("status") String status);
+                         @Param("status") String status,
+                         @Param("roomId") Long roomId);
 
     @Select("""
             SELECT b.id AS bill_id,
@@ -210,10 +242,14 @@ public interface BillMapper {
             JOIN account_room ar ON ar.room_id = b.room_id
             WHERE ar.account_id = #{accountId}
               AND ar.status = 'ACTIVE'
+              AND b.status IN ('ISSUED', 'PAID')
               AND b.room_id = #{roomId}
+              AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
             """)
-    List<BillListItemVO> listByAccountIdAndRoom(@Param("accountId") Long accountId, @Param("roomId") Long roomId);
+    List<BillListItemVO> listByAccountIdAndRoom(@Param("accountId") Long accountId,
+                                                @Param("roomId") Long roomId,
+                                                @Param("status") String status);
 
     @Update("""
             UPDATE bill
@@ -285,6 +321,53 @@ public interface BillMapper {
             SELECT COUNT(1)
             FROM bill
             WHERE room_id = #{roomId}
+              AND status IN ('ISSUED', 'PAID')
             """)
     long countByRoomId(@Param("roomId") Long roomId);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM bill
+            WHERE room_id = #{roomId}
+              AND fee_type = 'WATER'
+              AND period_year = #{periodYear}
+              AND period_month = #{periodMonth}
+              AND status IN ('ISSUED', 'PAID')
+            """)
+    long countWaterBillsByRoomAndPeriod(@Param("roomId") Long roomId,
+                                        @Param("periodYear") Integer periodYear,
+                                        @Param("periodMonth") Integer periodMonth);
+
+    @Update("""
+            UPDATE bill
+            SET status = 'CANCELLED',
+                cancelled_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{billId}
+              AND status = 'ISSUED'
+            """)
+    int deleteById(@Param("billId") Long billId);
+
+    @Update("""
+            UPDATE bill
+            SET bill_no = #{billNo},
+                group_id = #{groupId},
+                cycle_type = #{cycleType},
+                period_month = #{periodMonth},
+                service_period_start = #{servicePeriodStart},
+                service_period_end = #{servicePeriodEnd},
+                amount_due = #{amountDue},
+                discount_amount_total = #{discountAmountTotal},
+                amount_paid = #{amountPaid},
+                due_date = #{dueDate},
+                status = #{status},
+                paid_at = #{paidAt},
+                cancelled_at = #{cancelledAt},
+                source_type = #{sourceType},
+                remark = #{remark},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND status = 'CANCELLED'
+            """)
+    int reissueCancelled(Bill bill);
 }

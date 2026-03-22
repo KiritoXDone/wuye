@@ -19,7 +19,6 @@ public interface CommunityMapper {
             SELECT id
             FROM community
             WHERE community_code = #{communityCode}
-              AND status = 1
             """)
     Long findIdByCommunityCode(@Param("communityCode") String communityCode);
 
@@ -34,14 +33,16 @@ public interface CommunityMapper {
             LEFT JOIN (
                 SELECT community_id, COUNT(1) AS room_type_count
                 FROM room_type
+                WHERE status = 1
                 GROUP BY community_id
             ) rt ON rt.community_id = c.id
             LEFT JOIN (
                 SELECT community_id, COUNT(1) AS room_count
                 FROM room
+                WHERE status = 1
                 GROUP BY community_id
             ) r ON r.community_id = c.id
-            ORDER BY c.status DESC, c.id ASC
+            ORDER BY c.id ASC
             """)
     List<AdminCommunityVO> listAdminCommunities();
 
@@ -62,8 +63,8 @@ public interface CommunityMapper {
     Community findByCodeExcludingId(@Param("communityCode") String communityCode, @Param("excludeId") Long excludeId);
 
     @Insert("""
-            INSERT INTO community(community_code, name, status)
-            VALUES(#{communityCode}, #{name}, #{status})
+            INSERT INTO community(community_code, name)
+            VALUES(#{communityCode}, #{name})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Community community);
@@ -72,11 +73,19 @@ public interface CommunityMapper {
             UPDATE community
             SET community_code = #{communityCode},
                 name = #{name},
-                status = #{status},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
     int update(Community community);
+
+    @Update("""
+            UPDATE community
+            SET status = 0,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{communityId}
+              AND status = 1
+            """)
+    int deleteById(@Param("communityId") Long communityId);
 
     @Select("""
             SELECT COUNT(1)

@@ -69,6 +69,7 @@
       </view>
 
       <button class="button-primary" data-bill-id="{{item.billId}}" bindtap="openBillDetail">{{item.status === 'PAID' ? '查看详情' : '立即支付'}}</button>
+      <button class="button-secondary" data-room-label="{{item.roomLabel}}" data-fee-type-label="{{item.feeTypeLabel}}" data-period="{{item.period}}" bindtap="openAgentForBill">咨询助手</button>
     </view>
   </view>
 </view>

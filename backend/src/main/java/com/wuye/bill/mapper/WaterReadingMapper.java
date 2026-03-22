@@ -2,6 +2,7 @@ package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.WaterMeterReading;
 import com.wuye.bill.vo.AdminWaterReadingVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -74,7 +75,8 @@ public interface WaterReadingMapper {
                    wr.status
             FROM water_meter_reading wr
             JOIN room r ON r.id = wr.room_id
-            WHERE (#{periodYear} IS NULL OR wr.period_year = #{periodYear})
+            WHERE wr.status IN ('NORMAL', 'ABNORMAL')
+              AND (#{periodYear} IS NULL OR wr.period_year = #{periodYear})
               AND (#{periodMonth} IS NULL OR wr.period_month = #{periodMonth})
             ORDER BY wr.period_year DESC, wr.period_month DESC, wr.room_id ASC
             """)
@@ -93,6 +95,24 @@ public interface WaterReadingMapper {
             SELECT COUNT(1)
             FROM water_meter_reading
             WHERE room_id = #{roomId}
+              AND status IN ('NORMAL', 'ABNORMAL')
             """)
     long countByRoomId(@Param("roomId") Long roomId);
+
+    @Select("""
+            SELECT id, room_id, meter_id, period_year, period_month, prev_reading, curr_reading, usage_amount,
+                   read_by_admin_id, read_at, photo_url, remark, status
+            FROM water_meter_reading
+            WHERE id = #{id}
+            """)
+    WaterMeterReading findById(@Param("id") Long id);
+
+    @Update("""
+            UPDATE water_meter_reading
+            SET status = 'DELETED',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND status IN ('NORMAL', 'ABNORMAL')
+            """)
+    int deleteById(@Param("id") Long id);
 }

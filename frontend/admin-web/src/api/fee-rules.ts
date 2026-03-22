@@ -10,3 +10,7 @@ export function getFeeRules(communityId: number) {
 export function createFeeRule(payload: FeeRuleCreatePayload) {
   return request.post<FeeRuleCreatePayload, FeeRule>('/admin/fee-rules', payload)
 }
+
+export function deleteFeeRule(ruleId: number) {
+  return request.delete(`/admin/fee-rules/${ruleId}`)
+}

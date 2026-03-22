@@ -47,8 +47,9 @@ public class AdminCommunityController {
     }
 
     @DeleteMapping("/{communityId}")
-    public ApiResponse<AdminCommunityVO> disable(@CurrentUser LoginUser loginUser,
-                                                 @PathVariable Long communityId) {
-        return ApiResponse.success(adminCommunityService.disable(loginUser, communityId));
+    public ApiResponse<Void> delete(@CurrentUser LoginUser loginUser,
+                                    @PathVariable Long communityId) {
+        adminCommunityService.hardDelete(loginUser, communityId);
+        return ApiResponse.success();
     }
 }

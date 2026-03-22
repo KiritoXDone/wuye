@@ -9,6 +9,9 @@ import com.wuye.auth.vo.AdminAccountVO;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import com.wuye.room.mapper.AccountRoomMapper;
+import com.wuye.room.mapper.RoomMapper;
+import com.wuye.room.vo.RoomVO;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,11 +28,15 @@ public class AdminAccountService {
     private static final DateTimeFormatter ACCOUNT_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final AccountMapper accountMapper;
+    private final RoomMapper roomMapper;
+    private final AccountRoomMapper accountRoomMapper;
     private final AccessGuard accessGuard;
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-    public AdminAccountService(AccountMapper accountMapper, AccessGuard accessGuard) {
+    public AdminAccountService(AccountMapper accountMapper, RoomMapper roomMapper, AccountRoomMapper accountRoomMapper, AccessGuard accessGuard) {
         this.accountMapper = accountMapper;
+        this.roomMapper = roomMapper;
+        this.accountRoomMapper = accountRoomMapper;
         this.accessGuard = accessGuard;
     }
 
@@ -73,6 +80,48 @@ public class AdminAccountService {
         accessGuard.requireRole(loginUser, "ADMIN");
         Account account = requireAdminAccount(accountId);
         accountMapper.updatePasswordHash(account.getId(), passwordEncoder.encode(dto.getNewPassword()));
+    }
+
+    @Transactional
+    public void deleteAccount(LoginUser loginUser, Long accountId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        if (loginUser.accountId().equals(accountId)) {
+            throw new BusinessException("CONFLICT", "不能停用当前登录账户", HttpStatus.CONFLICT);
+        }
+        Account account = accountMapper.findById(accountId);
+        if (account == null) {
+            throw new BusinessException("NOT_FOUND", "账户不存在", HttpStatus.NOT_FOUND);
+        }
+        if (account.getStatus() != null && account.getStatus() == 0) {
+            return;
+        }
+        accountMapper.updateStatus(accountId, 0);
+    }
+
+    public List<RoomVO> listAccountRooms(LoginUser loginUser, Long accountId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        Account account = accountMapper.findById(accountId);
+        if (account == null) {
+            throw new BusinessException("NOT_FOUND", "账户不存在", HttpStatus.NOT_FOUND);
+        }
+        return roomMapper.listByAccountId(accountId);
+    }
+
+    @Transactional
+    public void unbindAccountRoom(LoginUser loginUser, Long accountId, Long roomId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        Account account = accountMapper.findById(accountId);
+        if (account == null) {
+            throw new BusinessException("NOT_FOUND", "账户不存在", HttpStatus.NOT_FOUND);
+        }
+        var binding = accountRoomMapper.findByAccountAndRoom(accountId, roomId);
+        if (binding == null) {
+            throw new BusinessException("NOT_FOUND", "绑定关系不存在", HttpStatus.NOT_FOUND);
+        }
+        if (!"ACTIVE".equals(binding.getStatus())) {
+            throw new BusinessException("CONFLICT", "当前绑定已停用", HttpStatus.CONFLICT);
+        }
+        accountRoomMapper.updateStatusById(binding.getId(), "INACTIVE", null);
     }
 
     private Account requireAdminAccount(Long accountId) {

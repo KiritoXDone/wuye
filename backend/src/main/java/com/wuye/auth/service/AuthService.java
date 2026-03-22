@@ -11,6 +11,7 @@ import com.wuye.auth.vo.LoginVO;
 import com.wuye.auth.vo.ProfileVO;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.LoginUser;
+import com.wuye.coupon.service.CouponService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,14 +24,17 @@ public class AuthService {
     private final AccountMapper accountMapper;
     private final AccountIdentityMapper accountIdentityMapper;
     private final JwtService jwtService;
+    private final CouponService couponService;
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     public AuthService(AccountMapper accountMapper,
                        AccountIdentityMapper accountIdentityMapper,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       CouponService couponService) {
         this.accountMapper = accountMapper;
         this.accountIdentityMapper = accountIdentityMapper;
         this.jwtService = jwtService;
+        this.couponService = couponService;
     }
 
     public LoginVO loginWechat(WechatLoginDTO dto) {
@@ -41,6 +45,7 @@ public class AuthService {
         Account account = loadEnabledAccount(identity.getAccountId());
         rejectAgentAccount(account);
         accountMapper.updateLastLoginAt(account.getId(), LocalDateTime.now());
+        couponService.issueLoginCoupons(account);
         return jwtService.issueLogin(account);
     }
 

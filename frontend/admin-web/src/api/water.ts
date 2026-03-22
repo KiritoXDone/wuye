@@ -12,3 +12,7 @@ export function createWaterMeter(payload: WaterMeterPayload) {
 export function createWaterReading(payload: WaterReadingPayload) {
   return request.post<WaterReadingPayload, WaterReadingCreateResult>('/admin/water-readings', payload)
 }
+
+export function deleteWaterReading(readingId: number) {
+  return request.delete(`/admin/water-readings/${readingId}`)
+}

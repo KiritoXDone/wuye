@@ -79,24 +79,49 @@ public class PropertyBillGenerateService {
             BigDecimal areaM2 = room.getAreaM2();
             RoomType roomType = room.getRoomTypeId() == null ? null : roomTypeMapper.findById(room.getRoomTypeId());
             BigDecimal amountDue = MoneyUtils.scaleMoney(areaM2.multiply(billingSemantics.unitPrice()));
-            Bill bill = new Bill();
-            bill.setBillNo(NoGenerator.billNo());
-            bill.setRoomId(room.getId());
-            bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(room.getId()));
-            bill.setFeeType("PROPERTY");
-            bill.setCycleType("YEAR");
-            bill.setPeriodYear(dto.getYear());
-            bill.setPeriodMonth(null);
-            bill.setServicePeriodStart(billingSemantics.servicePeriodStart());
-            bill.setServicePeriodEnd(billingSemantics.servicePeriodEnd());
-            bill.setAmountDue(amountDue);
-            bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
-            bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
-            bill.setDueDate(billingSemantics.dueDate());
-            bill.setStatus("ISSUED");
-            bill.setSourceType("GENERATED");
-            bill.setRemark(billingSemantics.remark());
-            billMapper.insert(bill);
+            Bill bill = billMapper.findAnyByUniqueKey(room.getId(), "PROPERTY", dto.getYear(), null);
+            if (bill == null) {
+                bill = new Bill();
+                bill.setBillNo(NoGenerator.billNo());
+                bill.setRoomId(room.getId());
+                bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(room.getId()));
+                bill.setFeeType("PROPERTY");
+                bill.setCycleType("YEAR");
+                bill.setPeriodYear(dto.getYear());
+                bill.setPeriodMonth(null);
+                bill.setServicePeriodStart(billingSemantics.servicePeriodStart());
+                bill.setServicePeriodEnd(billingSemantics.servicePeriodEnd());
+                bill.setAmountDue(amountDue);
+                bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
+                bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
+                bill.setDueDate(billingSemantics.dueDate());
+                bill.setStatus("ISSUED");
+                bill.setSourceType("GENERATED");
+                bill.setRemark(billingSemantics.remark());
+                billMapper.insert(bill);
+            } else if ("CANCELLED".equals(bill.getStatus())) {
+                bill.setBillNo(NoGenerator.billNo());
+                bill.setGroupId(groupRoomMapper.findPrimaryGroupIdByRoomId(room.getId()));
+                bill.setCycleType("YEAR");
+                bill.setPeriodMonth(null);
+                bill.setServicePeriodStart(billingSemantics.servicePeriodStart());
+                bill.setServicePeriodEnd(billingSemantics.servicePeriodEnd());
+                bill.setAmountDue(amountDue);
+                bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
+                bill.setAmountPaid(BigDecimal.ZERO.setScale(2));
+                bill.setDueDate(billingSemantics.dueDate());
+                bill.setStatus("ISSUED");
+                bill.setPaidAt(null);
+                bill.setCancelledAt(null);
+                bill.setSourceType("GENERATED");
+                bill.setRemark(billingSemantics.remark());
+                if (billMapper.reissueCancelled(bill) == 0) {
+                    throw new BusinessException("CONFLICT", "账单状态已变化，无法重新开单: roomId=" + room.getId(), HttpStatus.CONFLICT);
+                }
+                billLineMapper.deleteByBillId(bill.getId());
+            } else {
+                throw new BusinessException("CONFLICT", "存在重复年度物业费账单: roomId=" + room.getId(), HttpStatus.CONFLICT);
+            }
 
             BillLine billLine = new BillLine();
             billLine.setBillId(bill.getId());

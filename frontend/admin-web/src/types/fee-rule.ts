@@ -7,7 +7,7 @@ export interface FeeRule {
   unitPrice: number | string
   cycleType: string
   pricingMode?: string
-  effectiveFrom: string
+  effectiveFrom?: string
   effectiveTo?: string
   remark?: string
   waterTiers?: FeeRuleWaterTier[]

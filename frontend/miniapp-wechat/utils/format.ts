@@ -39,9 +39,23 @@ export function formatBillStatus(value?: string): string {
     PENDING: '待确认',
     INACTIVE: '已失效',
     CANCELLED: '已取消',
-    VOID: '已作废'
+    VOID: '已作废',
+    NEW: '可用',
+    LOCKED: '锁定中',
+    USED: '已使用',
+    PENDING_EXCHANGE: '待兑换',
+    FULFILLED: '已领取'
   }
   return map[value || ''] || '状态未知'
+}
+
+export function formatExchangeStatus(value?: string): string {
+  const map: Record<string, string> = {
+    PENDING: '待领取',
+    FULFILLED: '已领取',
+    CANCELLED: '已取消'
+  }
+  return map[value || ''] || '未兑换'
 }
 
 export function formatQuantity(value?: number | string | null): string {

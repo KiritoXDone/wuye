@@ -92,7 +92,9 @@ public class RoomController {
     }
 
     @GetMapping("/{roomId}/bills")
-    public ApiResponse<PageResponse<BillListItemVO>> roomBills(@CurrentUser LoginUser loginUser, @PathVariable Long roomId) {
-        return ApiResponse.success(billQueryService.listRoomBills(loginUser, roomId));
+    public ApiResponse<PageResponse<BillListItemVO>> roomBills(@CurrentUser LoginUser loginUser,
+                                                               @PathVariable Long roomId,
+                                                               @RequestParam(required = false) String status) {
+        return ApiResponse.success(billQueryService.listRoomBills(loginUser, roomId, status));
     }
 }

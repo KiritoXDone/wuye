@@ -73,7 +73,14 @@
   </view>
 
   <view class="panel card-stack">
+    <view class="section-title">奖励权益</view>
+    <view class="state-desc">查看支付后奖励券和可兑换的米面油权益。</view>
+    <button class="button-secondary" bindtap="openRewards">我的奖励券</button>
+  </view>
+
+  <view class="panel card-stack">
     <view class="section-title">账户操作</view>
+    <view class="state-desc">智能助手已加入底部 tab，可在“账单”和“我的”之间打开。</view>
     <button class="button-ghost" bindtap="handleLogout">切换登录账号</button>
   </view>
 </view>

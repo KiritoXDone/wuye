@@ -13,6 +13,6 @@ export function updateCommunity(communityId: number, payload: CommunityUpsertPay
   return request.put<CommunityUpsertPayload, AdminCommunity>(`/admin/communities/${communityId}`, payload)
 }
 
-export function disableCommunity(communityId: number) {
-  return request.delete<AdminCommunity>(`/admin/communities/${communityId}`)
+export function deleteCommunity(communityId: number) {
+  return request.delete<void>(`/admin/communities/${communityId}`)
 }

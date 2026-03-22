@@ -90,6 +90,27 @@ public class FeeRuleService {
         return rules;
     }
 
+    @Transactional
+    public void delete(LoginUser loginUser, Long ruleId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        FeeRule feeRule = feeRuleMapper.findById(ruleId);
+        if (feeRule == null) {
+            throw new BusinessException("NOT_FOUND", "费用规则不存在", HttpStatus.NOT_FOUND);
+        }
+        feeRuleWaterTierMapper.deleteByFeeRuleId(ruleId);
+        int affected = feeRuleMapper.deleteById(ruleId);
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "费用规则已停用", HttpStatus.CONFLICT);
+        }
+        auditLogService.record(loginUser, "BILL", String.valueOf(ruleId), "DISABLE", Map.of(
+                "feeRuleId", ruleId,
+                "communityId", feeRule.getCommunityId(),
+                "feeType", feeRule.getFeeType(),
+                "ruleName", feeRule.getRuleName(),
+                "status", 0
+        ));
+    }
+
     public FeeRule requireActiveRule(Long communityId, String feeType, LocalDate targetDate) {
         FeeRule feeRule = feeRuleMapper.findActiveRule(communityId, feeType, targetDate);
         if (feeRule != null) {

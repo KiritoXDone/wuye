@@ -2,6 +2,7 @@ package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.FeeRuleWaterTier;
 import com.wuye.bill.vo.FeeRuleWaterTierVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -35,4 +36,10 @@ public interface FeeRuleWaterTierMapper {
             ORDER BY tier_order ASC
             """)
     List<FeeRuleWaterTierVO> listVOByFeeRuleId(@Param("feeRuleId") Long feeRuleId);
+
+    @Delete("""
+            DELETE FROM fee_rule_water_tier
+            WHERE fee_rule_id = #{feeRuleId}
+            """)
+    int deleteByFeeRuleId(@Param("feeRuleId") Long feeRuleId);
 }

@@ -7,6 +7,7 @@ import com.wuye.room.dto.RoomTypeUpsertDTO;
 import com.wuye.room.service.RoomTypeService;
 import com.wuye.room.vo.RoomTypeVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,5 +46,12 @@ public class AdminRoomTypeController {
                                           @PathVariable Long roomTypeId,
                                           @Valid @RequestBody RoomTypeUpsertDTO dto) {
         return ApiResponse.success(roomTypeService.update(loginUser, roomTypeId, dto));
+    }
+
+    @DeleteMapping("/{roomTypeId}/hard-delete")
+    public ApiResponse<Void> hardDelete(@CurrentUser LoginUser loginUser,
+                                        @PathVariable Long roomTypeId) {
+        roomTypeService.hardDelete(loginUser, roomTypeId);
+        return ApiResponse.success();
     }
 }

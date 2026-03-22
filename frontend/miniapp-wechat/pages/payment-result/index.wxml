@@ -5,10 +5,6 @@
     <view class="page-subtitle result-hero__subtitle">{{statusDescription}}</view>
     <view class="result-hero__meta">
       <view class="status-chip status-chip--{{paymentStatus}}">{{paymentStatusLabel}}</view>
-      <view wx:if="{{paymentStatus === 'PAYING'}}" class="summary-pill">
-        <view class="summary-pill__label">自动刷新</view>
-        <view class="summary-pill__value">{{pollAttempt}} / {{pollLimit}}</view>
-      </view>
     </view>
   </view>
 
@@ -33,10 +29,6 @@
         <view class="info-key">电子凭证</view>
         <view class="info-value">{{voucherIssued ? '已生成' : '待生成'}}</view>
       </view>
-      <view wx:if="{{paymentStatus === 'PAYING'}}" class="info-row">
-        <view class="info-key">轮询进度</view>
-        <view class="info-value">{{pollAttempt}} / {{pollLimit}}</view>
-      </view>
     </view>
   </view>
 
@@ -49,11 +41,9 @@
 
   <view class="fixed-action-bar button-row">
     <button wx:if="{{paymentStatus === 'SUCCESS' && voucherIssued}}" class="button-primary" bindtap="openVoucher">查看电子凭证</button>
-    <button wx:elif="{{paymentStatus === 'FAILED' || paymentStatus === 'CLOSED'}}" class="button-primary" bindtap="openBillDetail">重新支付</button>
-    <button wx:else class="button-primary" bindtap="refreshStatus" loading="{{loading}}" disabled="{{loading}}">立即刷新状态</button>
-    <button wx:if="{{paymentStatus === 'SUCCESS' && voucherIssued}}" class="button-secondary" bindtap="openBillDetail">返回账单详情</button>
-    <button wx:elif="{{paymentStatus === 'FAILED' || paymentStatus === 'CLOSED'}}" class="button-secondary" bindtap="refreshStatus" loading="{{loading}}" disabled="{{loading}}">再查一次结果</button>
-    <button wx:else class="button-secondary" bindtap="openBillDetail">返回账单详情</button>
-    <button class="button-ghost" bindtap="backToRooms">返回房间</button>
+    <button wx:else class="button-primary" bindtap="openBillDetail">返回账单详情</button>
+    <button class="button-secondary" bindtap="openAgent">咨询助手</button>
+    <button wx:if="{{paymentStatus === 'SUCCESS' && voucherIssued}}" class="button-ghost" bindtap="openBillDetail">返回账单详情</button>
+    <button wx:else class="button-ghost" bindtap="backToRooms">返回房间</button>
   </view>
 </view>

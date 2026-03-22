@@ -17,9 +17,9 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="hidden w-72 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
-        <div className="flex h-full flex-col gap-6 overflow-y-auto px-5 py-6 text-slate-900">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
+      <aside className="hidden h-full w-72 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+        <div className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto px-5 py-6 text-slate-900">
           <div>
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">运营后台</div>
             <h1 className="mt-2 text-xl font-semibold text-slate-950">物业运营管理平台</h1>
@@ -49,8 +49,8 @@ export default function AppShell() {
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1">
-        <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <h2 className="text-2xl font-semibold text-slate-900">{currentRoute.label}</h2>
@@ -70,7 +70,7 @@ export default function AppShell() {
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>

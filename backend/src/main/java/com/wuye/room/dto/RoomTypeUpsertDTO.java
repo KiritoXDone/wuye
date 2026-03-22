@@ -23,8 +23,6 @@ public class RoomTypeUpsertDTO {
     @DecimalMin(value = "0.01")
     private BigDecimal areaM2;
 
-    private Integer status = 1;
-
     public Long getCommunityId() {
         return communityId;
     }
@@ -55,13 +53,5 @@ public class RoomTypeUpsertDTO {
 
     public void setAreaM2(BigDecimal areaM2) {
         this.areaM2 = areaM2;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
     }
 }

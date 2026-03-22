@@ -1,10 +1,14 @@
 package com.wuye.bill.service;
 
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.bill.dto.WaterMeterCreateDTO;
 import com.wuye.bill.dto.WaterReadingCreateDTO;
+import com.wuye.bill.entity.Bill;
 import com.wuye.bill.entity.FeeRule;
 import com.wuye.bill.entity.WaterMeter;
 import com.wuye.bill.entity.WaterMeterReading;
+import com.wuye.bill.mapper.BillLineMapper;
+import com.wuye.bill.mapper.BillMapper;
 import com.wuye.bill.mapper.WaterMeterMapper;
 import com.wuye.bill.mapper.WaterReadingMapper;
 import com.wuye.common.exception.BusinessException;
@@ -30,20 +34,29 @@ public class WaterReadingService {
     private final RoomMapper roomMapper;
     private final FeeRuleService feeRuleService;
     private final WaterBillGenerateService waterBillGenerateService;
+    private final BillMapper billMapper;
+    private final BillLineMapper billLineMapper;
     private final AccessGuard accessGuard;
+    private final AuditLogService auditLogService;
 
     public WaterReadingService(WaterMeterMapper waterMeterMapper,
                                WaterReadingMapper waterReadingMapper,
                                RoomMapper roomMapper,
                                FeeRuleService feeRuleService,
                                WaterBillGenerateService waterBillGenerateService,
-                               AccessGuard accessGuard) {
+                               BillMapper billMapper,
+                               BillLineMapper billLineMapper,
+                               AccessGuard accessGuard,
+                               AuditLogService auditLogService) {
         this.waterMeterMapper = waterMeterMapper;
         this.waterReadingMapper = waterReadingMapper;
         this.roomMapper = roomMapper;
         this.feeRuleService = feeRuleService;
         this.waterBillGenerateService = waterBillGenerateService;
+        this.billMapper = billMapper;
+        this.billLineMapper = billLineMapper;
         this.accessGuard = accessGuard;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
@@ -125,5 +138,41 @@ public class WaterReadingService {
         result.put("billNo", generatedBill.getBillNo());
         result.put("generatedBill", generatedBill);
         return result;
+    }
+
+    @Transactional
+    public void deleteReading(LoginUser loginUser, Long readingId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        WaterMeterReading reading = waterReadingMapper.findById(readingId);
+        if (reading == null) {
+            throw new BusinessException("NOT_FOUND", "抄表记录不存在", HttpStatus.NOT_FOUND);
+        }
+        if (!"NORMAL".equals(reading.getStatus()) && !"ABNORMAL".equals(reading.getStatus())) {
+            throw new BusinessException("CONFLICT", "抄表记录已删除或状态不可删除", HttpStatus.CONFLICT);
+        }
+        Bill waterBill = billMapper.findAnyByUniqueKey(reading.getRoomId(), "WATER", reading.getPeriodYear(), reading.getPeriodMonth());
+        if (waterBill != null) {
+            if ("PAID".equals(waterBill.getStatus())) {
+                throw new BusinessException("CONFLICT", "该账期水费账单已支付，不能删除抄表记录", HttpStatus.CONFLICT);
+            }
+            if ("ISSUED".equals(waterBill.getStatus())) {
+                int affectedBill = billMapper.deleteById(waterBill.getId());
+                if (affectedBill == 0) {
+                    throw new BusinessException("CONFLICT", "关联水费账单状态已变化，无法删除抄表记录", HttpStatus.CONFLICT);
+                }
+                billLineMapper.deleteByBillId(waterBill.getId());
+            }
+        }
+        int affected = waterReadingMapper.deleteById(readingId);
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "抄表记录已删除或状态不可删除", HttpStatus.CONFLICT);
+        }
+        auditLogService.record(loginUser, "BILL", String.valueOf(readingId), "DISABLE", Map.of(
+                "readingId", readingId,
+                "roomId", reading.getRoomId(),
+                "periodYear", reading.getPeriodYear(),
+                "periodMonth", reading.getPeriodMonth(),
+                "status", "DELETED"
+        ));
     }
 }

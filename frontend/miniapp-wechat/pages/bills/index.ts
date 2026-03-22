@@ -105,5 +105,14 @@ Page({
   openBillDetail(event: WechatMiniprogram.BaseEvent) {
     const { billId } = event.currentTarget.dataset
     wx.navigateTo({ url: `/pages/bill-detail/index?billId=${billId}` })
+  },
+
+  openAgentForBill(event: WechatMiniprogram.BaseEvent) {
+    const roomLabel = String(event.currentTarget.dataset.roomLabel || '')
+    const feeTypeLabel = String(event.currentTarget.dataset.feeTypeLabel || '')
+    const period = String(event.currentTarget.dataset.period || '')
+    const app = getApp<IAppOption>()
+    app.globalData.agentContextPrompt = `我正在看 ${roomLabel} 的${feeTypeLabel}账单（${period}），请帮我解释一下这笔账单。`
+    wx.switchTab({ url: '/pages/agent/index' })
   }
 })

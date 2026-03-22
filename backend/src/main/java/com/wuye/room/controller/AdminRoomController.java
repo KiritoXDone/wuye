@@ -54,15 +54,17 @@ public class AdminRoomController {
     }
 
     @DeleteMapping("/{roomId}")
-    public ApiResponse<AdminRoomVO> disable(@CurrentUser LoginUser loginUser,
-                                            @PathVariable Long roomId) {
-        return ApiResponse.success(adminRoomService.disable(loginUser, roomId));
+    public ApiResponse<Void> delete(@CurrentUser LoginUser loginUser,
+                                    @PathVariable Long roomId) {
+        adminRoomService.hardDelete(loginUser, roomId);
+        return ApiResponse.success();
     }
 
-    @PostMapping("/{roomId}/enable")
-    public ApiResponse<AdminRoomVO> enable(@CurrentUser LoginUser loginUser,
-                                           @PathVariable Long roomId) {
-        return ApiResponse.success(adminRoomService.enable(loginUser, roomId));
+    @DeleteMapping("/{roomId}/hard-delete")
+    public ApiResponse<Void> hardDelete(@CurrentUser LoginUser loginUser,
+                                        @PathVariable Long roomId) {
+        adminRoomService.hardDelete(loginUser, roomId);
+        return ApiResponse.success();
     }
 
     @PostMapping("/batch-create")

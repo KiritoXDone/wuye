@@ -254,7 +254,7 @@ public class ImportExportService {
 
     private List<List<String>> buildExportRows(BillExportCreateDTO dto) {
         List<List<String>> rows = new ArrayList<>();
-        List<com.wuye.bill.vo.BillListItemVO> bills = billMapper.listAdminBills(dto.getPeriodYear(), dto.getPeriodMonth(), dto.getFeeType(), dto.getStatus(), 0, 1000);
+        List<com.wuye.bill.vo.BillListItemVO> bills = billMapper.listAdminBills(dto.getPeriodYear(), dto.getPeriodMonth(), dto.getFeeType(), dto.getStatus(), null, 0, 1000);
         for (com.wuye.bill.vo.BillListItemVO bill : bills) {
             rows.add(List.of(
                     String.valueOf(bill.getBillId()),

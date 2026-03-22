@@ -1,6 +1,7 @@
 package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.WaterMeter;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -31,4 +32,10 @@ public interface WaterMeterMapper {
             WHERE id = #{id}
             """)
     int update(WaterMeter waterMeter);
+
+    @Delete("""
+            DELETE FROM water_meter
+            WHERE room_id = #{roomId}
+            """)
+    int deleteByRoomId(@Param("roomId") Long roomId);
 }

@@ -6,6 +6,7 @@ public class AdminBillListQuery {
     private Integer periodMonth;
     private String feeType;
     private String status;
+    private Long roomId;
     private Integer pageNo = 1;
     private Integer pageSize = 20;
 
@@ -39,6 +40,14 @@ public class AdminBillListQuery {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Long roomId) {
+        this.roomId = roomId;
     }
 
     public Integer getPageNo() {

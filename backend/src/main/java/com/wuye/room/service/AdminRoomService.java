@@ -95,21 +95,17 @@ public class AdminRoomService {
     }
 
     @Transactional
-    public AdminRoomVO disable(LoginUser loginUser, Long roomId) {
+    public void hardDelete(LoginUser loginUser, Long roomId) {
         accessGuard.requireRole(loginUser, "ADMIN");
+        if (hasHistory(roomId)) {
+            throw new BusinessException("ROOM_DELETE_BLOCKED", "房间仍存在有效绑定、账单或抄表数据，禁止删除", HttpStatus.CONFLICT);
+        }
         Room room = requireRoom(roomId);
-        room.setStatus(0);
-        roomMapper.updateAdminRoom(room);
-        return toAdminVO(requireRoom(roomId));
-    }
-
-    @Transactional
-    public AdminRoomVO enable(LoginUser loginUser, Long roomId) {
-        accessGuard.requireRole(loginUser, "ADMIN");
-        Room room = requireRoom(roomId);
-        room.setStatus(1);
-        roomMapper.updateAdminRoom(room);
-        return toAdminVO(requireRoom(roomId));
+        waterMeterMapper.deleteByRoomId(room.getId());
+        int affected = roomMapper.deleteById(room.getId());
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "房间已停用", HttpStatus.CONFLICT);
+        }
     }
 
     @Transactional
@@ -142,7 +138,6 @@ public class AdminRoomService {
             room.setRoomNo(roomNo);
             room.setRoomTypeId(dto.getRoomTypeId());
             room.setAreaM2(normalizeArea(dto.getAreaM2()));
-            room.setStatus(1);
             roomMapper.insert(room);
             ensureWaterMeter(room.getId());
             result.setSuccessCount(result.getSuccessCount() + 1);
@@ -184,22 +179,23 @@ public class AdminRoomService {
         requireCommunity(dto.getCommunityId());
         List<Room> rooms = resolveTargetRooms(buildQuery(dto), dto.getSelectionRoomIds(), dto.getApplyToFiltered());
         if (rooms.isEmpty()) {
-            throw new BusinessException("INVALID_REQUEST", "没有匹配到可停用的房间", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("INVALID_REQUEST", "没有匹配到可删除的房间", HttpStatus.BAD_REQUEST);
         }
         BatchOperationResultVO result = new BatchOperationResultVO();
         result.setRequestedCount(rooms.size());
         List<String> skippedReasons = new ArrayList<>();
         for (Room room : rooms) {
-            if (Integer.valueOf(0).equals(room.getStatus())) {
-                skippedReasons.add(formatRoomLabel(room) + " 已是停用状态");
+            if (hasHistory(room.getId())) {
+                skippedReasons.add(formatRoomLabel(room) + " 仍存在有效绑定、账单或抄表数据，无法删除");
                 continue;
             }
-            room.setStatus(0);
-            roomMapper.updateAdminRoom(room);
-            result.setSuccessCount(result.getSuccessCount() + 1);
-            if (hasHistory(room.getId())) {
-                skippedReasons.add(formatRoomLabel(room) + " 已存在历史绑定/账单/水表/抄表数据，本次按停用处理");
+            waterMeterMapper.deleteByRoomId(room.getId());
+            int affected = roomMapper.deleteById(room.getId());
+            if (affected == 0) {
+                skippedReasons.add(formatRoomLabel(room) + " 已停用，无法重复删除");
+                continue;
             }
+            result.setSuccessCount(result.getSuccessCount() + 1);
         }
         result.setSkippedReasons(skippedReasons);
         result.setSkippedCount(skippedReasons.size());
@@ -228,7 +224,6 @@ public class AdminRoomService {
         query.setRoomNoKeyword(dto.getRoomNoKeyword());
         query.setRoomSuffix(dto.getRoomSuffix());
         query.setRoomTypeId(dto.getRoomTypeId());
-        query.setStatus(dto.getStatus());
         return normalizeQuery(query);
     }
 
@@ -240,7 +235,6 @@ public class AdminRoomService {
         query.setRoomNoKeyword(dto.getRoomNoKeyword());
         query.setRoomSuffix(dto.getRoomSuffix());
         query.setRoomTypeId(dto.getRoomTypeId());
-        query.setStatus(dto.getStatus());
         return normalizeQuery(query);
     }
 
@@ -296,7 +290,6 @@ public class AdminRoomService {
     private boolean hasHistory(Long roomId) {
         return accountRoomMapper.countByRoomId(roomId) > 0
                 || billMapper.countByRoomId(roomId) > 0
-                || roomMapper.countWaterMeters(roomId) > 0
                 || waterReadingMapper.countByRoomId(roomId) > 0;
     }
 
@@ -351,7 +344,6 @@ public class AdminRoomService {
         vo.setRoomNo(room.getRoomNo());
         vo.setRoomTypeId(room.getRoomTypeId());
         vo.setAreaM2(room.getAreaM2());
-        vo.setStatus(room.getStatus());
         if (room.getRoomTypeId() != null) {
             RoomType roomType = roomTypeMapper.findById(room.getRoomTypeId());
             vo.setRoomTypeName(roomType == null ? null : roomType.getTypeName());

@@ -64,10 +64,22 @@ public interface AccountRoomMapper {
                      @Param("status") String status,
                      @Param("confirmedAt") LocalDateTime confirmedAt);
 
+    @Update("""
+            UPDATE account_room
+            SET status = #{status},
+                confirmed_at = #{confirmedAt},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateStatusById(@Param("id") Long id,
+                         @Param("status") String status,
+                         @Param("confirmedAt") LocalDateTime confirmedAt);
+
     @Select("""
             SELECT COUNT(1)
             FROM account_room
             WHERE room_id = #{roomId}
+              AND status = 'ACTIVE'
             """)
     long countByRoomId(@Param("roomId") Long roomId);
 }

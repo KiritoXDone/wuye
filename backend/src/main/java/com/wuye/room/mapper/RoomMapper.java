@@ -80,11 +80,15 @@ public interface RoomMapper {
             SELECT id, community_id, building_no, unit_no, room_no, room_type_id, area_m2, status
             FROM room
             WHERE community_id = #{communityId}
+              AND status = 1
               <if test='buildingNo != null and buildingNo != ""'>
                 AND building_no = #{buildingNo}
               </if>
               <if test='unitNo != null and unitNo != ""'>
                 AND unit_no = #{unitNo}
+              </if>
+              <if test='roomNo != null and roomNo != ""'>
+                AND room_no = #{roomNo}
               </if>
               <if test='roomNoKeyword != null and roomNoKeyword != ""'>
                 AND room_no LIKE CONCAT('%', #{roomNoKeyword}, '%')
@@ -94,9 +98,6 @@ public interface RoomMapper {
               </if>
               <if test='roomTypeId != null'>
                 AND room_type_id = #{roomTypeId}
-              </if>
-              <if test='status != null'>
-                AND status = #{status}
               </if>
             ORDER BY building_no ASC, unit_no ASC, room_no ASC, id ASC
             </script>
@@ -108,6 +109,7 @@ public interface RoomMapper {
             SELECT id, community_id, building_no, unit_no, room_no, room_type_id, area_m2, status
             FROM room
             WHERE community_id = #{communityId}
+              AND status = 1
               AND id IN
               <foreach collection='roomIds' item='roomId' open='(' separator=',' close=')'>
                 #{roomId}
@@ -137,11 +139,19 @@ public interface RoomMapper {
             UPDATE room
             SET room_type_id = #{roomTypeId},
                 area_m2 = #{areaM2},
-                status = #{status},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
     int updateAdminRoom(Room room);
+
+    @Update("""
+            UPDATE room
+            SET status = 0,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{roomId}
+              AND status = 1
+            """)
+    int deleteById(@Param("roomId") Long roomId);
 
     @Select("""
             SELECT COUNT(1)

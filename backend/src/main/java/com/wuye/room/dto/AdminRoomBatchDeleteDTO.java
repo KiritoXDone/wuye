@@ -18,7 +18,6 @@ public class AdminRoomBatchDeleteDTO {
     private String roomNoKeyword;
     private String roomSuffix;
     private Long roomTypeId;
-    private Integer status;
 
     public Long getCommunityId() {
         return communityId;
@@ -82,13 +81,5 @@ public class AdminRoomBatchDeleteDTO {
 
     public void setRoomTypeId(Long roomTypeId) {
         this.roomTypeId = roomTypeId;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
     }
 }

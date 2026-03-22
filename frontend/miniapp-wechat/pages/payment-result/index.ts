@@ -150,5 +150,11 @@ Page({
 
   backToRooms() {
     wx.switchTab({ url: '/pages/rooms/index' })
+  },
+
+  openAgent() {
+    const app = getApp<IAppOption>()
+    app.globalData.agentContextPrompt = `我正在看支付单 ${this.data.payOrderNo} 的结果页，请帮我解释当前支付状态和下一步建议。`
+    wx.switchTab({ url: '/pages/agent/index' })
   }
 })

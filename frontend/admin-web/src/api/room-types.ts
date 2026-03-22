@@ -13,6 +13,6 @@ export function updateRoomType(roomTypeId: number, payload: RoomTypeUpsertPayloa
   return request.put<RoomTypeUpsertPayload, RoomType>(`/admin/room-types/${roomTypeId}`, payload)
 }
 
-export function disableRoomType(roomTypeId: number, payload: RoomTypeUpsertPayload) {
-  return updateRoomType(roomTypeId, { ...payload, status: 0 })
+export function deleteRoomType(roomTypeId: number) {
+  return request.delete<void>(`/admin/room-types/${roomTypeId}`)
 }

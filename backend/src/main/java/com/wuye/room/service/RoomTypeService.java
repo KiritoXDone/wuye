@@ -37,7 +37,7 @@ public class RoomTypeService {
         roomType.setTypeCode(dto.getTypeCode().trim());
         roomType.setTypeName(dto.getTypeName().trim());
         roomType.setAreaM2(dto.getAreaM2());
-        roomType.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
+        roomType.setStatus(1);
         roomTypeMapper.insert(roomType);
         return requireOne(roomType.getId());
     }
@@ -53,9 +53,21 @@ public class RoomTypeService {
         existed.setTypeCode(dto.getTypeCode().trim());
         existed.setTypeName(dto.getTypeName().trim());
         existed.setAreaM2(dto.getAreaM2());
-        existed.setStatus(dto.getStatus() == null ? existed.getStatus() : dto.getStatus());
         roomTypeMapper.update(existed);
         return requireOne(roomTypeId);
+    }
+
+    @Transactional
+    public void hardDelete(LoginUser loginUser, Long roomTypeId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        RoomType existed = roomTypeMapper.findById(roomTypeId);
+        if (existed == null) {
+            throw new BusinessException("NOT_FOUND", "户型不存在", HttpStatus.NOT_FOUND);
+        }
+        int affected = roomTypeMapper.deleteById(roomTypeId);
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "户型已停用", HttpStatus.CONFLICT);
+        }
     }
 
     private RoomTypeVO requireOne(Long roomTypeId) {
@@ -69,7 +81,6 @@ public class RoomTypeService {
         vo.setTypeCode(roomType.getTypeCode());
         vo.setTypeName(roomType.getTypeName());
         vo.setAreaM2(roomType.getAreaM2());
-        vo.setStatus(roomType.getStatus());
         return vo;
     }
 }

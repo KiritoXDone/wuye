@@ -22,12 +22,8 @@ export function updateAdminRoom(roomId: number, payload: AdminRoomUpdatePayload)
   return request.put<AdminRoomUpdatePayload, AdminRoom>(`/admin/rooms/${roomId}`, payload)
 }
 
-export function disableAdminRoom(roomId: number) {
-  return request.delete<AdminRoom>(`/admin/rooms/${roomId}`)
-}
-
-export function enableAdminRoom(roomId: number) {
-  return request.post<undefined, AdminRoom>(`/admin/rooms/${roomId}/enable`)
+export function deleteAdminRoom(roomId: number) {
+  return request.delete<void>(`/admin/rooms/${roomId}`)
 }
 
 export function batchCreateAdminRooms(payload: AdminRoomBatchCreatePayload) {

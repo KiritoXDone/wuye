@@ -146,6 +146,14 @@ Page({
     }
   },
 
+  openRewards() {
+    wx.navigateTo({ url: '/pages/rewards/index' })
+  },
+
+  openAgent() {
+    wx.navigateTo({ url: '/pages/agent/index' })
+  },
+
   handleLogout() {
     clearAuthSession()
     wx.reLaunch({ url: '/pages/login/index' })

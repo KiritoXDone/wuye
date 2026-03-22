@@ -19,6 +19,7 @@ import com.wuye.common.api.PageResponse;
 import com.wuye.common.security.CurrentUser;
 import com.wuye.common.security.LoginUser;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -94,5 +95,17 @@ public class AdminBillController {
     public ApiResponse<Map<String, Object>> generateWater(@CurrentUser LoginUser loginUser,
                                                           @Valid @RequestBody WaterBillGenerateDTO dto) {
         return ApiResponse.success(Map.of("generatedCount", waterBillGenerateService.generate(loginUser, dto)));
+    }
+
+    @DeleteMapping("/bills/{billId}")
+    public ApiResponse<Void> deleteBill(@CurrentUser LoginUser loginUser, @PathVariable Long billId) {
+        billQueryService.deleteBill(loginUser, billId);
+        return ApiResponse.success(null);
+    }
+
+    @DeleteMapping("/water-readings/{readingId}")
+    public ApiResponse<Void> deleteWaterReading(@CurrentUser LoginUser loginUser, @PathVariable Long readingId) {
+        waterReadingService.deleteReading(loginUser, readingId);
+        return ApiResponse.success(null);
     }
 }

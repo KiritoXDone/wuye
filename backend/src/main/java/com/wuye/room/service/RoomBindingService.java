@@ -43,7 +43,7 @@ public class RoomBindingService {
     public RoomVO applyBinding(LoginUser loginUser, RoomBindApplyDTO dto) {
         accessGuard.requireRole(loginUser, "RESIDENT");
         Room room = roomMapper.findById(dto.getRoomId());
-        if (room == null || room.getStatus() == null || room.getStatus() != 1) {
+        if (room == null) {
             throw new BusinessException("NOT_FOUND", "房间不存在", HttpStatus.NOT_FOUND);
         }
         AccountRoom existed = accountRoomMapper.findByAccountAndRoom(loginUser.accountId(), room.getId());

@@ -2,6 +2,7 @@ package com.wuye.bill.mapper;
 
 import com.wuye.bill.entity.BillLine;
 import com.wuye.bill.vo.BillLineVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,4 +26,10 @@ public interface BillLineMapper {
             ORDER BY line_no
             """)
     List<BillLineVO> findByBillId(@Param("billId") Long billId);
+
+    @Delete("""
+            DELETE FROM bill_line
+            WHERE bill_id = #{billId}
+            """)
+    int deleteByBillId(@Param("billId") Long billId);
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.bill.dto.BillListQuery;
 import com.wuye.bill.dto.AdminBillListQuery;
 import com.wuye.bill.entity.Bill;
+import com.wuye.audit.service.AuditLogService;
 import com.wuye.bill.mapper.BillLineMapper;
 import com.wuye.bill.mapper.BillMapper;
 import com.wuye.bill.mapper.WaterReadingMapper;
@@ -36,6 +37,7 @@ public class BillQueryService {
     private final AccessGuard accessGuard;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
+    private final AuditLogService auditLogService;
 
     public BillQueryService(BillMapper billMapper,
                             BillLineMapper billLineMapper,
@@ -43,7 +45,8 @@ public class BillQueryService {
                              RoomBindingService roomBindingService,
                              AccessGuard accessGuard,
                              ObjectMapper objectMapper,
-                             CouponService couponService) {
+                             CouponService couponService,
+                             AuditLogService auditLogService) {
         this.billMapper = billMapper;
         this.billLineMapper = billLineMapper;
         this.waterReadingMapper = waterReadingMapper;
@@ -51,6 +54,7 @@ public class BillQueryService {
         this.accessGuard = accessGuard;
         this.objectMapper = objectMapper;
         this.couponService = couponService;
+        this.auditLogService = auditLogService;
     }
 
     public PageResponse<BillListItemVO> listMyBills(LoginUser loginUser, BillListQuery query) {
@@ -64,9 +68,13 @@ public class BillQueryService {
     }
 
     public PageResponse<BillListItemVO> listRoomBills(LoginUser loginUser, Long roomId) {
+        return listRoomBills(loginUser, roomId, null);
+    }
+
+    public PageResponse<BillListItemVO> listRoomBills(LoginUser loginUser, Long roomId, String status) {
         accessGuard.requireRole(loginUser, "RESIDENT");
         roomBindingService.myRoom(loginUser, roomId);
-        List<BillListItemVO> list = billMapper.listByAccountIdAndRoom(loginUser.accountId(), roomId);
+        List<BillListItemVO> list = billMapper.listByAccountIdAndRoom(loginUser.accountId(), roomId, status);
         return new PageResponse<>(list, 1, list.size() == 0 ? 20 : list.size(), list.size());
     }
 
@@ -78,6 +86,9 @@ public class BillQueryService {
         if (!loginUser.hasRole("ADMIN")) {
             accessGuard.requireRole(loginUser, "RESIDENT");
             accessGuard.requireSelfRoom(loginUser, roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
+            if ("CANCELLED".equals(bill.getStatus())) {
+                throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
+            }
         }
         BillDetailVO detail = billMapper.findDetailById(billId);
         if (detail == null) {
@@ -99,14 +110,36 @@ public class BillQueryService {
         int pageNo = query.getPageNo() == null || query.getPageNo() < 1 ? 1 : query.getPageNo();
         int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
         int offset = (pageNo - 1) * pageSize;
-        List<BillListItemVO> list = billMapper.listAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus(), offset, pageSize);
-        long total = billMapper.countAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus());
+        List<BillListItemVO> list = billMapper.listAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus(), query.getRoomId(), offset, pageSize);
+        long total = billMapper.countAdminBills(query.getPeriodYear(), query.getPeriodMonth(), query.getFeeType(), query.getStatus(), query.getRoomId());
         return new PageResponse<>(list, pageNo, pageSize, total);
     }
 
     public List<AdminWaterReadingVO> listAdminWaterReadings(LoginUser loginUser, Integer periodYear, Integer periodMonth) {
         accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
         return waterReadingMapper.listAdminReadings(periodYear, periodMonth);
+    }
+
+    public void deleteBill(LoginUser loginUser, Long billId) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        Bill bill = billMapper.findById(billId);
+        if (bill == null) {
+            throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
+        }
+        if (!"ISSUED".equals(bill.getStatus())) {
+            throw new BusinessException("CONFLICT", "仅未支付账单可作废", HttpStatus.CONFLICT);
+        }
+        int affected = billMapper.deleteById(billId);
+        if (affected == 0) {
+            throw new BusinessException("CONFLICT", "账单状态已变化，无法作废", HttpStatus.CONFLICT);
+        }
+        auditLogService.record(loginUser, "BILL", String.valueOf(billId), "CANCEL", Map.of(
+                "billId", billId,
+                "billNo", bill.getBillNo(),
+                "roomId", bill.getRoomId(),
+                "feeType", bill.getFeeType(),
+                "status", "CANCELLED"
+        ));
     }
 
     private Map<String, Object> parseExt(BillLineVO line) {

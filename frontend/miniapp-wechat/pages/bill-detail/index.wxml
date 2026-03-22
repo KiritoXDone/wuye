@@ -93,6 +93,7 @@
       <view class="section-heading">
         <view class="section-title">账单信息</view>
       </view>
+      <button class="button-secondary" bindtap="openAgent">咨询助手</button>
       <view class="metric-grid">
         <view class="metric-card">
           <view class="metric-label">账单编号</view>

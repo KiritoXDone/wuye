@@ -1,6 +1,7 @@
 package com.wuye.auth.mapper;
 
 import com.wuye.auth.entity.Account;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -64,4 +65,7 @@ public interface AccountMapper {
 
     @Update("UPDATE account SET last_login_at = #{lastLoginAt}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updateLastLoginAt(@Param("id") Long id, @Param("lastLoginAt") LocalDateTime lastLoginAt);
+
+    @Update("UPDATE account SET status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
+    int deleteById(@Param("id") Long id);
 }

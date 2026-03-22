@@ -20,7 +20,6 @@ public class AdminRoomBatchUpdateDTO {
     private String roomNoKeyword;
     private String roomSuffix;
     private Long roomTypeId;
-    private Integer status;
 
     @Min(1)
     private Long targetRoomTypeId;
@@ -90,14 +89,6 @@ public class AdminRoomBatchUpdateDTO {
 
     public void setRoomTypeId(Long roomTypeId) {
         this.roomTypeId = roomTypeId;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
     }
 
     public Long getTargetRoomTypeId() {

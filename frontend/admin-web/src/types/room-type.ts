@@ -4,7 +4,6 @@ export interface RoomType {
   typeCode: string
   typeName: string
   areaM2: number | string
-  status: number
 }
 
 export interface RoomTypeUpsertPayload {
@@ -12,5 +11,4 @@ export interface RoomTypeUpsertPayload {
   typeCode: string
   typeName: string
   areaM2: number
-  status?: number
 }

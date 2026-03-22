@@ -26,11 +26,19 @@ public interface RoomTypeMapper {
             SET type_code = #{typeCode},
                 type_name = #{typeName},
                 area_m2 = #{areaM2},
-                status = #{status},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
     int update(RoomType roomType);
+
+    @Update("""
+            UPDATE room_type
+            SET status = 0,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{roomTypeId}
+              AND status = 1
+            """)
+    int deleteById(@Param("roomTypeId") Long roomTypeId);
 
     @Select("""
             SELECT id, community_id, type_code, type_name, area_m2, status
@@ -43,7 +51,8 @@ public interface RoomTypeMapper {
             SELECT id, community_id, type_code, type_name, area_m2, status
             FROM room_type
             WHERE community_id = #{communityId}
-            ORDER BY status DESC, id ASC
+              AND status = 1
+            ORDER BY id ASC
             """)
     List<RoomTypeVO> listByCommunityId(@Param("communityId") Long communityId);
 }

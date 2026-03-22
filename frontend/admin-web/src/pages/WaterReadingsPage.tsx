@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { RefreshCcw } from 'lucide-react'
+import { RefreshCcw, Trash2 } from 'lucide-react'
 
 import { getCommunities } from '@/api/communities'
 import { getAdminRooms } from '@/api/rooms'
-import { createWaterReading, getWaterReadings } from '@/api/water'
+import { createWaterReading, deleteWaterReading, getWaterReadings } from '@/api/water'
 import AsyncState from '@/components/ui/AsyncState'
 import PageSection from '@/components/ui/PageSection'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -39,6 +39,7 @@ export default function WaterReadingsPage() {
   const [list, setList] = useState<WaterReading[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [roomLoading, setRoomLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -110,7 +111,7 @@ export default function WaterReadingsPage() {
 
     setRoomLoading(true)
     setError('')
-    void getAdminRooms({ communityId: selectedCommunityId, buildingNo, unitNo, roomNoKeyword, status: 1 })
+    void getAdminRooms({ communityId: selectedCommunityId, buildingNo, unitNo, roomNoKeyword })
       .then((roomList) => {
         setRooms(roomList)
       })
@@ -178,6 +179,28 @@ export default function WaterReadingsPage() {
     }
   }
 
+  async function handleDelete(item: WaterReading) {
+    if (item.status !== 'NORMAL' && item.status !== 'ABNORMAL') {
+      setError('当前抄表记录状态不可删除。')
+      return
+    }
+    if (!window.confirm(`确认删除 ${item.roomLabel} 的 ${formatPeriod(item.periodYear, item.periodMonth)} 抄表记录吗？未支付关联水费账单会一并作废。`)) {
+      return
+    }
+    setDeletingId(item.id)
+    setError('')
+    setSubmitResult('')
+    try {
+      await deleteWaterReading(item.id)
+      setSubmitResult('抄表记录已删除，未支付关联水费账单已一并作废。')
+      await loadData(filters)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '删除抄表记录失败')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div className="space-y-6 pb-2">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -194,162 +217,172 @@ export default function WaterReadingsPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
-        <PageSection title="录入抄表" description="先定位唯一房间，再填读数。">
-          <form className="grid gap-4" onSubmit={handleSubmit}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-medium text-slate-700">所属小区</span>
-                <select
-                  className="input"
-                  value={selectedCommunityId || ''}
-                  onChange={(event) => {
-                    const nextCommunityId = event.target.value ? Number(event.target.value) : undefined
-                    setSelectedCommunityId(nextCommunityId)
-                    setRoomFilters(initialRoomFilters)
-                    setRooms([])
-                  }}
-                  disabled={roomLoading}
-                >
-                  <option value="">请选择小区</option>
-                  {communities.map((community) => (
-                    <option key={community.id} value={community.id}>{community.name}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">楼号</span>
-                <input className="input" value={roomFilters.buildingNo} onChange={(event) => setRoomFilters((current) => ({ ...current, buildingNo: event.target.value }))} placeholder="例如 1 栋" disabled={!selectedCommunityId || roomLoading} />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">单元号</span>
-                <input className="input" value={roomFilters.unitNo} onChange={(event) => setRoomFilters((current) => ({ ...current, unitNo: event.target.value }))} placeholder="例如 2 单元" disabled={!selectedCommunityId || roomLoading} />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-medium text-slate-700">户号</span>
-                <input className="input" value={roomFilters.roomNoKeyword} onChange={(event) => setRoomFilters((current) => ({ ...current, roomNoKeyword: event.target.value }))} placeholder="手填具体户号，例如 1201" disabled={!selectedCommunityId || roomLoading} />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">年份</span>
-                <input className="input" type="number" min={2020} max={2100} value={form.year} onChange={(event) => setForm((current) => ({ ...current, year: Number(event.target.value) }))} />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">月份</span>
-                <select className="input" value={form.month} onChange={(event) => setForm((current) => ({ ...current, month: Number(event.target.value) }))}>
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                    <option key={month} value={month}>{month} 月</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">上次读数</span>
-                <input className="input" type="number" step="0.001" value={form.prevReading} onChange={(event) => setForm((current) => ({ ...current, prevReading: Number(event.target.value) }))} />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">本次读数</span>
-                <input className="input" type="number" step="0.001" value={form.currReading} onChange={(event) => setForm((current) => ({ ...current, currReading: Number(event.target.value) }))} />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-medium text-slate-700">抄表时间</span>
-                <input className="input" type="datetime-local" value={form.readAt} onChange={(event) => setForm((current) => ({ ...current, readAt: event.target.value }))} />
-              </label>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium text-slate-500">当前房间</div>
-                  <div className="mt-1 text-base font-semibold text-slate-950">
-                    {selectedRoom
-                      ? `${selectedRoom.buildingNo}-${selectedRoom.unitNo}-${selectedRoom.roomNo}`
-                      : !roomFiltersReady
-                        ? '请先补全楼号、单元号和户号'
-                        : matchedRooms.length === 0
-                          ? '未找到匹配房间'
-                          : uniqueMatchedRoom
-                            ? `${uniqueMatchedRoom.buildingNo}-${uniqueMatchedRoom.unitNo}-${uniqueMatchedRoom.roomNo}（待确认）`
-                            : `匹配到 ${matchedRooms.length} 个房间，请继续收窄条件`}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-slate-500">用量预览</div>
-                  <div className="mt-1 text-3xl font-semibold text-slate-950">{formatQuantity(usagePreview)}</div>
-                </div>
-              </div>
-              {uniqueMatchedRoom && !selectedRoom ? (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    className="btn-secondary whitespace-nowrap"
-                    onClick={() => setForm((current) => ({ ...current, roomId: uniqueMatchedRoom.id }))}
-                  >
-                    确认使用该房间
-                  </button>
-                </div>
-              ) : null}
-            </div>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">备注</span>
-              <textarea className="textarea" rows={4} value={form.remark} onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))} placeholder="可填写现场异常说明、表具状态等。" />
+      <PageSection title="录入抄表" description="新增抄表后会出现在下方列表中。">
+        <form className="grid gap-4" onSubmit={handleSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700">所属小区</span>
+              <select
+                className="input"
+                value={selectedCommunityId || ''}
+                onChange={(event) => {
+                  const nextCommunityId = event.target.value ? Number(event.target.value) : undefined
+                  setSelectedCommunityId(nextCommunityId)
+                  setRoomFilters(initialRoomFilters)
+                  setRooms([])
+                }}
+                disabled={roomLoading}
+              >
+                <option value="">请选择小区</option>
+                {communities.map((community) => (
+                  <option key={community.id} value={community.id}>{community.name}</option>
+                ))}
+              </select>
             </label>
-
-            {submitError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{submitError}</div> : null}
-            {submitResult ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{submitResult}</div> : null}
-
-            <button type="submit" className="btn-primary w-full whitespace-nowrap" disabled={submitting || roomLoading}>
-              {submitting ? '提交中...' : '录入抄表并触发出账'}
-            </button>
-          </form>
-        </PageSection>
-
-        <PageSection
-          title="当期抄表记录"
-          description="按账期查看。"
-          action={
-            <div className="flex flex-wrap gap-2">
-              <input className="input w-28" type="number" min={2020} max={2100} value={filters.periodYear} onChange={(event) => setFilters((current) => ({ ...current, periodYear: Number(event.target.value) }))} />
-              <select className="input w-24" value={filters.periodMonth} onChange={(event) => setFilters((current) => ({ ...current, periodMonth: Number(event.target.value) }))}>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">楼号</span>
+              <input className="input" value={roomFilters.buildingNo} onChange={(event) => setRoomFilters((current) => ({ ...current, buildingNo: event.target.value }))} placeholder="例如 1 栋" disabled={!selectedCommunityId || roomLoading} />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">单元号</span>
+              <input className="input" value={roomFilters.unitNo} onChange={(event) => setRoomFilters((current) => ({ ...current, unitNo: event.target.value }))} placeholder="例如 2 单元" disabled={!selectedCommunityId || roomLoading} />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700">户号</span>
+              <input className="input" value={roomFilters.roomNoKeyword} onChange={(event) => setRoomFilters((current) => ({ ...current, roomNoKeyword: event.target.value }))} placeholder="手填具体户号，例如 1201" disabled={!selectedCommunityId || roomLoading} />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">年份</span>
+              <input className="input" type="number" min={2020} max={2100} value={form.year} onChange={(event) => setForm((current) => ({ ...current, year: Number(event.target.value) }))} />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">月份</span>
+              <select className="input" value={form.month} onChange={(event) => setForm((current) => ({ ...current, month: Number(event.target.value) }))}>
                 {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                   <option key={month} value={month}>{month} 月</option>
                 ))}
               </select>
-              <button type="button" className="btn-secondary whitespace-nowrap" onClick={() => void loadData(filters)} disabled={loading}>查询</button>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">上次读数</span>
+              <input className="input" type="number" step="0.001" value={form.prevReading} onChange={(event) => setForm((current) => ({ ...current, prevReading: Number(event.target.value) }))} />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">本次读数</span>
+              <input className="input" type="number" step="0.001" value={form.currReading} onChange={(event) => setForm((current) => ({ ...current, currReading: Number(event.target.value) }))} />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700">抄表时间</span>
+              <input className="input" type="datetime-local" value={form.readAt} onChange={(event) => setForm((current) => ({ ...current, readAt: event.target.value }))} />
+            </label>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium text-slate-500">当前房间</div>
+                <div className="mt-1 text-base font-semibold text-slate-950">
+                  {selectedRoom
+                    ? `${selectedRoom.buildingNo}-${selectedRoom.unitNo}-${selectedRoom.roomNo}`
+                    : !roomFiltersReady
+                      ? '请先补全楼号、单元号和户号'
+                      : matchedRooms.length === 0
+                        ? '未找到匹配房间'
+                        : uniqueMatchedRoom
+                          ? `${uniqueMatchedRoom.buildingNo}-${uniqueMatchedRoom.unitNo}-${uniqueMatchedRoom.roomNo}（待确认）`
+                          : `匹配到 ${matchedRooms.length} 个房间，请继续收窄条件`}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-medium text-slate-500">用量预览</div>
+                <div className="mt-1 text-3xl font-semibold text-slate-950">{formatQuantity(usagePreview)}</div>
+              </div>
             </div>
-          }
-        >
-          <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="当前账期暂无抄表记录。">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">房间</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">账期</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">上次读数</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">本次读数</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">用量</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">抄表时间</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+            {uniqueMatchedRoom && !selectedRoom ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className="btn-secondary whitespace-nowrap"
+                  onClick={() => setForm((current) => ({ ...current, roomId: uniqueMatchedRoom.id }))}
+                >
+                  确认使用该房间
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">备注</span>
+            <textarea className="textarea" rows={4} value={form.remark} onChange={(event) => setForm((current) => ({ ...current, remark: event.target.value }))} placeholder="可填写现场异常说明、表具状态等。" />
+          </label>
+
+          {submitError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{submitError}</div> : null}
+          {submitResult ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{submitResult}</div> : null}
+
+          <button type="submit" className="btn-primary w-full whitespace-nowrap sm:w-auto" disabled={submitting || roomLoading}>
+            {submitting ? '提交中...' : '录入抄表并触发出账'}
+          </button>
+        </form>
+      </PageSection>
+
+      <PageSection
+        title="当期抄表记录"
+        description="按账期查看。"
+        action={
+          <div className="flex flex-wrap gap-2">
+            <input className="input w-28" type="number" min={2020} max={2100} value={filters.periodYear} onChange={(event) => setFilters((current) => ({ ...current, periodYear: Number(event.target.value) }))} />
+            <select className="input w-24" value={filters.periodMonth} onChange={(event) => setFilters((current) => ({ ...current, periodMonth: Number(event.target.value) }))}>
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={month}>{month} 月</option>
+              ))}
+            </select>
+            <button type="button" className="btn-secondary whitespace-nowrap" onClick={() => void loadData(filters)} disabled={loading}>查询</button>
+          </div>
+        }
+      >
+        <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="当前账期暂无抄表记录。">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500">
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">房间</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">账期</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">上次读数</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">本次读数</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">用量</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">抄表时间</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-medium text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((item) => (
+                  <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-white/50">
+                    <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">{item.roomLabel}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatPeriod(item.periodYear, item.periodMonth)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatQuantity(item.prevReading)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatQuantity(item.currReading)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-900">{formatQuantity(item.usageAmount)}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatDateTime(item.readAt)}</td>
+                    <td className="whitespace-nowrap px-4 py-4"><StatusBadge value={item.status} /></td>
+                    <td className="whitespace-nowrap px-4 py-4 text-right">
+                      <button
+                        type="button"
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => void handleDelete(item)}
+                        disabled={deletingId === item.id}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        {deletingId === item.id ? '删除中' : '删除'}
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {list.map((item) => (
-                    <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-white/50">
-                      <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">{item.roomLabel}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatPeriod(item.periodYear, item.periodMonth)}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatQuantity(item.prevReading)}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatQuantity(item.currReading)}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-900">{formatQuantity(item.usageAmount)}</td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600">{formatDateTime(item.readAt)}</td>
-                      <td className="whitespace-nowrap px-4 py-4"><StatusBadge value={item.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </AsyncState>
-        </PageSection>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AsyncState>
+      </PageSection>
     </div>
   )
 }

@@ -303,5 +303,14 @@ Page({
     wx.navigateTo({
       url: `/pages/voucher/index?payOrderNo=${payOrderNo}`
     })
+  },
+
+  openAgent() {
+    if (!this.data.billDetail) {
+      return
+    }
+    const app = getApp<IAppOption>()
+    app.globalData.agentContextPrompt = `我正在看账单 ${this.data.billDetail.billNo}，房间 ${this.data.billDetail.roomLabel}，请帮我解释费用构成和当前支付状态。`
+    wx.switchTab({ url: '/pages/agent/index' })
   }
 })

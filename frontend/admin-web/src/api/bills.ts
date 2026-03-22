@@ -8,3 +8,7 @@ export function getAdminBills(params: Partial<BillListQuery>) {
 export function getBillDetail(billId: number) {
   return request.get<BillDetail>(`/admin/bills/${billId}`)
 }
+
+export function deleteBill(billId: number) {
+  return request.delete(`/admin/bills/${billId}`)
+}

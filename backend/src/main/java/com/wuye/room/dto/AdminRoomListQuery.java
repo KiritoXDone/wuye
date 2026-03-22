@@ -6,9 +6,9 @@ public class AdminRoomListQuery {
     private String buildingNo;
     private String unitNo;
     private String roomNoKeyword;
+    private String roomNo;
     private String roomSuffix;
     private Long roomTypeId;
-    private Integer status;
 
     public Long getCommunityId() {
         return communityId;
@@ -42,6 +42,14 @@ public class AdminRoomListQuery {
         this.roomNoKeyword = roomNoKeyword;
     }
 
+    public String getRoomNo() {
+        return roomNo;
+    }
+
+    public void setRoomNo(String roomNo) {
+        this.roomNo = roomNo;
+    }
+
     public String getRoomSuffix() {
         return roomSuffix;
     }
@@ -56,13 +64,5 @@ public class AdminRoomListQuery {
 
     public void setRoomTypeId(Long roomTypeId) {
         this.roomTypeId = roomTypeId;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
     }
 }
