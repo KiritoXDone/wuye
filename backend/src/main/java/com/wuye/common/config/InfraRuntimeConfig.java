@@ -1,6 +1,8 @@
 package com.wuye.common.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wuye.ai.service.AgentConversationCacheService;
+import com.wuye.ai.service.NoopAgentConversationCacheService;
 import com.wuye.common.infra.mq.NoopPaymentEventPublisher;
 import com.wuye.common.infra.mq.PaymentEventPublisher;
 import com.wuye.common.infra.mq.RabbitPaymentEventPublisher;
@@ -38,6 +40,12 @@ public class InfraRuntimeConfig {
     @ConditionalOnMissingBean(RedisCallbackLock.class)
     public RedisCallbackLock noopRedisCallbackLock() {
         return new NoopRedisCallbackLock();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AgentConversationCacheService.class)
+    public AgentConversationCacheService noopAgentConversationCacheService() {
+        return new NoopAgentConversationCacheService();
     }
 
     @Bean

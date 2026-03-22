@@ -1,0 +1,84 @@
+<view class="agent-im-page safe-bottom">
+  <view class="agent-chat-header">
+    <view>
+      <view class="agent-chat-title">物业助手</view>
+      <view class="agent-chat-status">{{streaming ? '正在回复' : sessionId ? '会话中' : '新对话'}}</view>
+    </view>
+    <button class="button-inline" bindtap="resetConversation">新会话</button>
+  </view>
+
+  <scroll-view wx:if="{{recentSessions.length}}" class="agent-session-strip" scroll-x="true" show-scrollbar="false">
+    <view class="agent-session-strip__inner">
+      <view wx:for="{{recentSessions}}" wx:key="sessionId" class="agent-session-chip {{item.sessionId === sessionId ? 'agent-session-chip--active' : ''}}" data-session-id="{{item.sessionId}}" bindtap="openConversation">
+        <view class="agent-session-chip__title">{{item.title || '未命名会话'}}</view>
+        <view class="agent-session-chip__desc">{{item.lastMessagePreview || '暂无摘要'}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{errorMessage}}" class="agent-system-note agent-system-note--danger">{{errorMessage}}</view>
+  <view wx:if="{{successMessage}}" class="agent-system-note agent-system-note--success">{{successMessage}}</view>
+
+  <scroll-view class="agent-message-list" scroll-y="true" scroll-into-view="{{scrollIntoView}}" enhanced="true" show-scrollbar="false">
+    <view wx:if="{{!messages.length}}" class="agent-empty-state">
+      <view class="agent-empty-title">开始对话</view>
+      <view class="agent-empty-desc">可直接提问，或让助手帮你解释账单与支付问题。</view>
+    </view>
+
+    <view wx:for="{{messages}}" wx:key="id" id="message-{{index}}" class="agent-message-row {{item.role === 'user' ? 'agent-message-row--user' : 'agent-message-row--assistant'}}">
+      <view class="agent-message-bubble {{item.role === 'user' ? 'agent-message-bubble--user' : 'agent-message-bubble--assistant'}}">
+        <view class="agent-message-text">{{item.content}}</view>
+        <view wx:if="{{item.streaming}}" class="agent-streaming-dot"></view>
+        <view wx:if="{{item.metaText && item.role !== 'user'}}" class="agent-message-meta">{{item.metaText}}</view>
+
+        <view wx:if="{{item.summaryText && item.role !== 'user'}}" class="agent-card agent-card--muted">
+          <view class="agent-card-text">{{item.summaryText}}</view>
+        </view>
+
+        <view wx:if="{{item.warningList.length}}" class="agent-card agent-card--warn">
+          <view wx:for="{{item.warningList}}" wx:key="*this" class="agent-card-text">{{item}}</view>
+        </view>
+
+        <view wx:if="{{item.parsedArgumentEntries.length}}" class="agent-card">
+          <view class="agent-card-title">识别参数</view>
+          <view class="info-list compact-info-list">
+            <view wx:for="{{item.parsedArgumentEntries}}" wx:key="label" class="info-row">
+              <view class="info-key">{{item.label}}</view>
+              <view class="info-value">{{item.value}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{item.resolvedContextEntries.length}}" class="agent-card">
+          <view class="agent-card-title">当前上下文</view>
+          <view class="info-list compact-info-list">
+            <view wx:for="{{item.resolvedContextEntries}}" wx:key="label" class="info-row">
+              <view class="info-key">{{item.label}}</view>
+              <view class="info-value">{{item.value}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{item.resultEntries.length}}" class="agent-card agent-card--success">
+          <view class="agent-card-title">执行结果</view>
+          <view class="info-list compact-info-list">
+            <view wx:for="{{item.resultEntries}}" wx:key="label" class="info-row">
+              <view class="info-key">{{item.label}}</view>
+              <view class="info-value">{{item.value}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{item.confirmationRequired && item.confirmationToken}}" class="agent-confirm-card">
+          <view class="agent-confirm-title">请确认后执行</view>
+          <button class="button-inline agent-confirm-button" data-token="{{item.confirmationToken}}" bindtap="handleConfirm" loading="{{loading}}" disabled="{{loading}}">确认</button>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="agent-composer fixed-action-bar">
+    <textarea class="input textarea-input agent-composer__input" maxlength="500" auto-height="true" placeholder="输入消息" value="{{inputMessage}}" bindinput="handleInput" />
+    <button class="button-primary agent-composer__send" bindtap="handleSend" loading="{{loading && !streaming}}" disabled="{{streaming}}">发送</button>
+  </view>
+</view>

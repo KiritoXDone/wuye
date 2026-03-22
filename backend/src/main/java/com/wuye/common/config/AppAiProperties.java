@@ -14,6 +14,7 @@ public class AppAiProperties {
     public static class Runtime {
         private boolean enabled;
         private String apiBaseUrl = "https://api.openai.com/v1";
+        private String backendBaseUrl = "http://127.0.0.1:8081";
         private String provider = "openai";
         private String model = "gpt-4o-mini";
         private String apiKey = "";
@@ -35,6 +36,14 @@ public class AppAiProperties {
 
         public void setApiBaseUrl(String apiBaseUrl) {
             this.apiBaseUrl = apiBaseUrl;
+        }
+
+        public String getBackendBaseUrl() {
+            return backendBaseUrl;
+        }
+
+        public void setBackendBaseUrl(String backendBaseUrl) {
+            this.backendBaseUrl = backendBaseUrl;
         }
 
         public String getProvider() {

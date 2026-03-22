@@ -3,6 +3,7 @@ package com.wuye.common.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.common.api.ApiResponse;
 import com.wuye.auth.service.JwtService;
+import com.wuye.ai.service.RequestAuthHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -50,11 +51,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         try {
             LoginUser loginUser = jwtService.parseAccessToken(authorization.substring(7));
             request.setAttribute(LOGIN_USER_ATTR, loginUser);
+            RequestAuthHolder.setAuthorization(authorization);
             return true;
         } catch (Exception ex) {
             writeUnauthorized(response, "UNAUTHORIZED", "Token 无效或已过期");
             return false;
         }
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        RequestAuthHolder.clear();
     }
 
     private void writeUnauthorized(HttpServletResponse response, String code, String message) throws Exception {

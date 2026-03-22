@@ -3,6 +3,8 @@ interface IAppOption {
     accessToken: string
     refreshToken: string
     currentRoomId: number
+    selectedBillRoomId?: number
+    agentContextPrompt?: string
     appName?: string
   }
 }
