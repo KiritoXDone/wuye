@@ -6,6 +6,7 @@ public class CouponIssueRule {
 
     private Long id;
     private String ruleName;
+    private String triggerType;
     private String feeType;
     private Long templateId;
     private BigDecimal minPayAmount;
@@ -16,6 +17,8 @@ public class CouponIssueRule {
     public void setId(Long id) { this.id = id; }
     public String getRuleName() { return ruleName; }
     public void setRuleName(String ruleName) { this.ruleName = ruleName; }
+    public String getTriggerType() { return triggerType; }
+    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
     public String getFeeType() { return feeType; }
     public void setFeeType(String feeType) { this.feeType = feeType; }
     public Long getTemplateId() { return templateId; }

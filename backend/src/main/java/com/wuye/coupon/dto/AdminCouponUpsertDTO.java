@@ -1,26 +1,41 @@
-package com.wuye.coupon.entity;
+package com.wuye.coupon.dto;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class CouponTemplate {
-
+public class AdminCouponUpsertDTO {
     private Long id;
+    @NotBlank(message = "templateCode 不能为空")
     private String templateCode;
+    @NotBlank(message = "type 不能为空")
     private String type;
     private String feeType;
+    @NotBlank(message = "name 不能为空")
     private String name;
+    @NotBlank(message = "discountMode 不能为空")
     private String discountMode;
-    private String goodsName;
-    private String goodsSpec;
-    private String fulfillmentType;
-    private String redeemInstruction;
+    @NotNull(message = "valueAmount 不能为空")
     private BigDecimal valueAmount;
+    @NotNull(message = "thresholdAmount 不能为空")
     private BigDecimal thresholdAmount;
+    @NotNull(message = "validFrom 不能为空")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime validFrom;
+    @NotNull(message = "validTo 不能为空")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime validTo;
-    private Integer stackable;
     private Integer status;
+    private String triggerType;
+    @Min(value = 0, message = "minPayAmount 不能小于 0")
+    private BigDecimal minPayAmount;
+    @Min(value = 1, message = "rewardCount 至少为 1")
+    private Integer rewardCount;
+    private Integer ruleStatus;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -34,14 +49,6 @@ public class CouponTemplate {
     public void setName(String name) { this.name = name; }
     public String getDiscountMode() { return discountMode; }
     public void setDiscountMode(String discountMode) { this.discountMode = discountMode; }
-    public String getGoodsName() { return goodsName; }
-    public void setGoodsName(String goodsName) { this.goodsName = goodsName; }
-    public String getGoodsSpec() { return goodsSpec; }
-    public void setGoodsSpec(String goodsSpec) { this.goodsSpec = goodsSpec; }
-    public String getFulfillmentType() { return fulfillmentType; }
-    public void setFulfillmentType(String fulfillmentType) { this.fulfillmentType = fulfillmentType; }
-    public String getRedeemInstruction() { return redeemInstruction; }
-    public void setRedeemInstruction(String redeemInstruction) { this.redeemInstruction = redeemInstruction; }
     public BigDecimal getValueAmount() { return valueAmount; }
     public void setValueAmount(BigDecimal valueAmount) { this.valueAmount = valueAmount; }
     public BigDecimal getThresholdAmount() { return thresholdAmount; }
@@ -50,8 +57,14 @@ public class CouponTemplate {
     public void setValidFrom(LocalDateTime validFrom) { this.validFrom = validFrom; }
     public LocalDateTime getValidTo() { return validTo; }
     public void setValidTo(LocalDateTime validTo) { this.validTo = validTo; }
-    public Integer getStackable() { return stackable; }
-    public void setStackable(Integer stackable) { this.stackable = stackable; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public String getTriggerType() { return triggerType; }
+    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
+    public BigDecimal getMinPayAmount() { return minPayAmount; }
+    public void setMinPayAmount(BigDecimal minPayAmount) { this.minPayAmount = minPayAmount; }
+    public Integer getRewardCount() { return rewardCount; }
+    public void setRewardCount(Integer rewardCount) { this.rewardCount = rewardCount; }
+    public Integer getRuleStatus() { return ruleStatus; }
+    public void setRuleStatus(Integer ruleStatus) { this.ruleStatus = ruleStatus; }
 }

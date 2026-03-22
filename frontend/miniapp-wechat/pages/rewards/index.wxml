@@ -1,0 +1,61 @@
+<view class="page-shell safe-bottom">
+  <view class="page-hero">
+    <view class="page-eyebrow">奖励权益</view>
+    <view class="page-title">我的奖励券</view>
+    <view class="page-subtitle">查看支付后奖励券，并支持线下自提兑换米面油等福利。</view>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="panel state-card">
+    <view class="state-title text-danger">加载失败</view>
+    <view class="state-desc">{{errorMessage}}</view>
+  </view>
+
+  <view wx:if="{{successMessage}}" class="panel state-card state-card--success">
+    <view class="state-title text-success">提交成功</view>
+    <view class="state-desc">{{successMessage}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="panel state-card">
+    <view class="state-title">正在加载奖励券</view>
+  </view>
+
+  <view wx:elif="{{!vouchers.length}}" class="panel state-card">
+    <view class="state-title">暂无奖励券</view>
+    <view class="state-desc">完成缴费后获得的兑换券会显示在这里。</view>
+  </view>
+
+  <view wx:else class="list-stack">
+    <view wx:for="{{vouchers}}" wx:key="couponInstanceId" class="panel card-stack">
+      <view class="section-heading">
+        <view>
+          <view class="card-kicker">{{item.templateCode}}</view>
+          <view class="section-title">{{item.goodsName || item.name}}</view>
+          <view class="section-subtitle">{{item.goodsSpec || '线下自提兑换'}}</view>
+        </view>
+        <view class="status-chip status-chip--{{item.exchangeStatus || item.status}}">{{item.exchangeStatus ? item.exchangeStatusText : item.statusText}}</view>
+      </view>
+
+      <view class="info-list">
+        <view class="info-row">
+          <view class="info-key">领取方式</view>
+          <view class="info-value">线下自提</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">领取说明</view>
+          <view class="info-value">{{item.pickupSite || item.redeemInstruction || '请前往物业服务中心领取'}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">发放时间</view>
+          <view class="info-value">{{item.issuedAtText}}</view>
+        </view>
+        <view class="info-row">
+          <view class="info-key">过期时间</view>
+          <view class="info-value">{{item.expiresAtText}}</view>
+        </view>
+      </view>
+
+      <button wx:if="{{item.canExchange}}" class="button-primary" data-coupon-instance-id="{{item.couponInstanceId}}" bindtap="handleExchange" loading="{{exchangingId === item.couponInstanceId}}" disabled="{{exchangingId === item.couponInstanceId}}">立即兑换</button>
+      <view wx:else class="surface-note">该奖励券已提交兑换或不可再使用。</view>
+    </view>
+  </view>
+</view>

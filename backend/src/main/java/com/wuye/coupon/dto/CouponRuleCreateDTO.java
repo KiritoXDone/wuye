@@ -8,7 +8,8 @@ import java.math.BigDecimal;
 public class CouponRuleCreateDTO {
     @NotBlank(message = "name 不能为空")
     private String name;
-    @NotBlank(message = "feeType 不能为空")
+    @NotBlank(message = "triggerType 不能为空")
+    private String triggerType;
     private String feeType;
     @NotBlank(message = "templateCode 不能为空")
     private String templateCode;
@@ -19,6 +20,8 @@ public class CouponRuleCreateDTO {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getTriggerType() { return triggerType; }
+    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
     public String getFeeType() { return feeType; }
     public void setFeeType(String feeType) { this.feeType = feeType; }
     public String getTemplateCode() { return templateCode; }

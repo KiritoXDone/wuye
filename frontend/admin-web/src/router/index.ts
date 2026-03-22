@@ -82,16 +82,10 @@ export const coreRoutes: AppRouteMeta[] = [
     icon: BellRing,
   },
   {
-    path: '/coupon-templates',
-    label: '券模板',
-    description: '维护支付前抵扣券与支付后奖励券模板。',
+    path: '/coupons',
+    label: '优惠券',
+    description: '统一维护优惠券、发放规则和发放结果。',
     icon: TicketPercent,
-  },
-  {
-    path: '/coupon-rules',
-    label: '发券规则',
-    description: '配置支付成功后的奖励券发放规则。',
-    icon: Gift,
   },
   {
     path: '/invoice-applications',

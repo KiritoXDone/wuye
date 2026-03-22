@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Plus, Trash2, X } from 'lucide-react'
 
-import { createCouponTemplate, getCouponTemplates } from '@/api/coupons'
+import { createCouponTemplate, deleteCouponTemplate, getCouponTemplates } from '@/api/coupons'
 import AsyncState from '@/components/ui/AsyncState'
 import PageSection from '@/components/ui/PageSection'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -12,6 +13,8 @@ export default function CouponTemplatesPage() {
   const [list, setList] = useState<CouponTemplate[]>([])
   const [loading, setLoading] = useState(false)
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [form, setForm] = useState<CouponTemplateCreatePayload>({
@@ -53,6 +56,7 @@ export default function CouponTemplatesPage() {
     try {
       await createCouponTemplate({ ...form, feeType: form.feeType || undefined })
       setMessage('券模板创建成功。')
+      setShowCreate(false)
       await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : '券模板创建失败')
@@ -61,20 +65,38 @@ export default function CouponTemplatesPage() {
     }
   }
 
+  async function handleDelete(item: CouponTemplate) {
+    if (!window.confirm(`确认停用券模板“${item.name}”吗？停用后不再允许新发放和新使用，但会保留历史券实例。`)) {
+      return
+    }
+    setDeletingId(item.id)
+    setError('')
+    setMessage('')
+    try {
+      await deleteCouponTemplate(item.id)
+      setMessage('券模板已停用。')
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '停用券模板失败')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
-    <div className="space-y-6 pb-2">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div>
-          <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">券体系</div>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-950">券模板</h1>
-        </div>
-      </section>
+    <>
+      <div className="space-y-6 pb-2">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">券体系</div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-950">券模板</h1>
+          </div>
+        </section>
 
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</div> : null}
-      {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
+        {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">{error}</div> : null}
+        {message ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <PageSection title="模板列表" description="查看当前模板。">
+        <PageSection title="模板列表" description="查看当前模板。" action={<button type="button" className="btn-primary gap-2" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4" />新增模板</button>}>
           <AsyncState loading={loading} error={error} empty={!list.length} emptyDescription="暂无券模板。">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
@@ -88,7 +110,7 @@ export default function CouponTemplatesPage() {
                     <th className="whitespace-nowrap px-4 py-3 font-medium">抵扣值</th>
                     <th className="whitespace-nowrap px-4 py-3 font-medium">门槛</th>
                     <th className="whitespace-nowrap px-4 py-3 font-medium">有效期</th>
-                    <th className="whitespace-nowrap px-4 py-3 font-medium">状态</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-medium text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -102,7 +124,12 @@ export default function CouponTemplatesPage() {
                       <td className="px-4 py-4 text-right text-slate-900">{formatMoney(item.valueAmount)}</td>
                       <td className="px-4 py-4 text-right text-slate-600">{formatMoney(item.thresholdAmount)}</td>
                       <td className="px-4 py-4 text-slate-600">{formatDateTime(item.validFrom)} ~ {formatDateTime(item.validTo)}</td>
-                      <td className="px-4 py-4"><StatusBadge value={String(item.status)} /></td>
+                      <td className="px-4 py-4 text-right">
+                        <button type="button" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60" onClick={() => void handleDelete(item)} disabled={deletingId === item.id}>
+                          <Trash2 className="h-4 w-4" />
+                          {deletingId === item.id ? '停用中' : '停用'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -110,58 +137,71 @@ export default function CouponTemplatesPage() {
             </div>
           </AsyncState>
         </PageSection>
-
-        <PageSection title="新增模板" description="保留最小新增表单，不擅自扩展模板编辑或启停能力。">
-          <div className="grid gap-4">
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">模板编码</span>
-              <input className="input" value={form.templateCode} onChange={(event) => setForm((current) => ({ ...current, templateCode: event.target.value }))} />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">券类型</span>
-              <select className="input" value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}>
-                {couponTemplateTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">适用费种</span>
-              <select className="input" value={form.feeType || ''} onChange={(event) => setForm((current) => ({ ...current, feeType: event.target.value || undefined }))}>
-                <option value="">不限定</option>
-                {feeTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">券名称</span>
-              <input className="input" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">抵扣模式</span>
-              <select className="input min-w-[140px]" value={form.discountMode} onChange={(event) => setForm((current) => ({ ...current, discountMode: event.target.value }))}>
-                {discountModeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">抵扣值</span>
-              <input className="input" type="number" min={0} step={0.01} value={form.valueAmount} onChange={(event) => setForm((current) => ({ ...current, valueAmount: Number(event.target.value) }))} />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">使用门槛</span>
-              <input className="input" type="number" min={0} step={0.01} value={form.thresholdAmount} onChange={(event) => setForm((current) => ({ ...current, thresholdAmount: Number(event.target.value) }))} />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">开始时间</span>
-              <input className="input" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} placeholder="YYYY-MM-DD HH:mm:ss" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">结束时间</span>
-              <input className="input" value={form.validTo} onChange={(event) => setForm((current) => ({ ...current, validTo: event.target.value }))} placeholder="YYYY-MM-DD HH:mm:ss" />
-            </label>
-            <button type="button" className="btn-primary w-full" onClick={() => void handleCreate()} disabled={submitLoading}>
-              {submitLoading ? '保存中...' : '保存模板'}
-            </button>
-          </div>
-        </PageSection>
       </div>
-    </div>
+
+      {showCreate ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-lg font-semibold text-slate-950">新增模板</div>
+                <div className="mt-1 text-sm text-slate-500">新模板会出现在列表中。</div>
+              </div>
+              <button type="button" className="btn-secondary min-h-10 px-3 py-2" onClick={() => setShowCreate(false)}><X className="h-4 w-4" /></button>
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">模板编码</span>
+                <input className="input" value={form.templateCode} onChange={(event) => setForm((current) => ({ ...current, templateCode: event.target.value }))} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">券类型</span>
+                <select className="input" value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}>
+                  {couponTemplateTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">适用费种</span>
+                <select className="input" value={form.feeType || ''} onChange={(event) => setForm((current) => ({ ...current, feeType: event.target.value || undefined }))}>
+                  <option value="">不限定</option>
+                  {feeTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">券名称</span>
+                <input className="input" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">抵扣模式</span>
+                <select className="input min-w-[140px]" value={form.discountMode} onChange={(event) => setForm((current) => ({ ...current, discountMode: event.target.value }))}>
+                  {discountModeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">抵扣值</span>
+                <input className="input" type="number" min={0} step={0.01} value={form.valueAmount} onChange={(event) => setForm((current) => ({ ...current, valueAmount: Number(event.target.value) }))} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">使用门槛</span>
+                <input className="input" type="number" min={0} step={0.01} value={form.thresholdAmount} onChange={(event) => setForm((current) => ({ ...current, thresholdAmount: Number(event.target.value) }))} />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">开始时间</span>
+                <input className="input" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} placeholder="YYYY-MM-DD HH:mm:ss" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">结束时间</span>
+                <input className="input" value={form.validTo} onChange={(event) => setForm((current) => ({ ...current, validTo: event.target.value }))} placeholder="YYYY-MM-DD HH:mm:ss" />
+              </label>
+            </div>
+            <div className="mt-5 flex justify-end">
+              <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => void handleCreate()} disabled={submitLoading}>
+                {submitLoading ? '保存中...' : '保存模板'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }

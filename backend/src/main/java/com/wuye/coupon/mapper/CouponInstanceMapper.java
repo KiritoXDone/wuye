@@ -1,6 +1,8 @@
 package com.wuye.coupon.mapper;
 
+import com.wuye.coupon.dto.AdminCouponInstanceQuery;
 import com.wuye.coupon.entity.CouponInstance;
+import com.wuye.coupon.vo.AdminCouponInstanceVO;
 import com.wuye.coupon.vo.AvailableCouponVO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -76,4 +78,52 @@ public interface CouponInstanceMapper {
               AND source_ref_no LIKE CONCAT(#{payOrderNo}, '-%')
             """)
     int countRewardIssuedByPayOrderNo(@Param("payOrderNo") String payOrderNo);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM coupon_instance
+            WHERE template_id = #{templateId}
+              AND status IN ('NEW', 'LOCKED')
+            """)
+    int countByTemplateId(@Param("templateId") Long templateId);
+
+    @Select("""
+            <script>
+            SELECT ci.id AS coupon_instance_id,
+                   ct.id AS template_id,
+                   ct.template_code,
+                   ct.name AS template_name,
+                   ct.type AS template_type,
+                   ci.owner_account_id,
+                   COALESCE(a.real_name, a.username, a.account_no) AS owner_account_name,
+                   ci.source_type,
+                   ci.source_ref_no,
+                   ci.status,
+                   ci.issued_at,
+                   ci.expires_at
+            FROM coupon_instance ci
+            JOIN coupon_template ct ON ct.id = ci.template_id
+            LEFT JOIN account a ON a.id = ci.owner_account_id
+            <where>
+                <if test='query.templateId != null'>
+                    AND ct.id = #{query.templateId}
+                </if>
+                <if test='query.templateKeyword != null and query.templateKeyword != ""'>
+                    AND (ct.template_code LIKE CONCAT('%', #{query.templateKeyword}, '%')
+                      OR ct.name LIKE CONCAT('%', #{query.templateKeyword}, '%'))
+                </if>
+                <if test='query.status != null and query.status != ""'>
+                    AND ci.status = #{query.status}
+                </if>
+                <if test='query.sourceType != null and query.sourceType != ""'>
+                    AND ci.source_type = #{query.sourceType}
+                </if>
+                <if test='query.ownerAccountId != null'>
+                    AND ci.owner_account_id = #{query.ownerAccountId}
+                </if>
+            </where>
+            ORDER BY ci.issued_at DESC, ci.id DESC
+            </script>
+            """)
+    List<AdminCouponInstanceVO> listAdminInstances(@Param("query") AdminCouponInstanceQuery query);
 }

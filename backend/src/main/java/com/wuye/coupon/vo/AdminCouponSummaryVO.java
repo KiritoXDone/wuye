@@ -1,26 +1,27 @@
-package com.wuye.coupon.entity;
+package com.wuye.coupon.vo;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class CouponTemplate {
-
+public class AdminCouponSummaryVO {
     private Long id;
     private String templateCode;
     private String type;
     private String feeType;
     private String name;
     private String discountMode;
-    private String goodsName;
-    private String goodsSpec;
-    private String fulfillmentType;
-    private String redeemInstruction;
     private BigDecimal valueAmount;
     private BigDecimal thresholdAmount;
     private LocalDateTime validFrom;
     private LocalDateTime validTo;
-    private Integer stackable;
     private Integer status;
+    private Long ruleId;
+    private String ruleName;
+    private String triggerType;
+    private BigDecimal minPayAmount;
+    private Integer rewardCount;
+    private Integer ruleStatus;
+    private Integer issuedCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -34,14 +35,6 @@ public class CouponTemplate {
     public void setName(String name) { this.name = name; }
     public String getDiscountMode() { return discountMode; }
     public void setDiscountMode(String discountMode) { this.discountMode = discountMode; }
-    public String getGoodsName() { return goodsName; }
-    public void setGoodsName(String goodsName) { this.goodsName = goodsName; }
-    public String getGoodsSpec() { return goodsSpec; }
-    public void setGoodsSpec(String goodsSpec) { this.goodsSpec = goodsSpec; }
-    public String getFulfillmentType() { return fulfillmentType; }
-    public void setFulfillmentType(String fulfillmentType) { this.fulfillmentType = fulfillmentType; }
-    public String getRedeemInstruction() { return redeemInstruction; }
-    public void setRedeemInstruction(String redeemInstruction) { this.redeemInstruction = redeemInstruction; }
     public BigDecimal getValueAmount() { return valueAmount; }
     public void setValueAmount(BigDecimal valueAmount) { this.valueAmount = valueAmount; }
     public BigDecimal getThresholdAmount() { return thresholdAmount; }
@@ -50,8 +43,20 @@ public class CouponTemplate {
     public void setValidFrom(LocalDateTime validFrom) { this.validFrom = validFrom; }
     public LocalDateTime getValidTo() { return validTo; }
     public void setValidTo(LocalDateTime validTo) { this.validTo = validTo; }
-    public Integer getStackable() { return stackable; }
-    public void setStackable(Integer stackable) { this.stackable = stackable; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public Long getRuleId() { return ruleId; }
+    public void setRuleId(Long ruleId) { this.ruleId = ruleId; }
+    public String getRuleName() { return ruleName; }
+    public void setRuleName(String ruleName) { this.ruleName = ruleName; }
+    public String getTriggerType() { return triggerType; }
+    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
+    public BigDecimal getMinPayAmount() { return minPayAmount; }
+    public void setMinPayAmount(BigDecimal minPayAmount) { this.minPayAmount = minPayAmount; }
+    public Integer getRewardCount() { return rewardCount; }
+    public void setRewardCount(Integer rewardCount) { this.rewardCount = rewardCount; }
+    public Integer getRuleStatus() { return ruleStatus; }
+    public void setRuleStatus(Integer ruleStatus) { this.ruleStatus = ruleStatus; }
+    public Integer getIssuedCount() { return issuedCount; }
+    public void setIssuedCount(Integer issuedCount) { this.issuedCount = issuedCount; }
 }

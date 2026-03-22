@@ -7,8 +7,7 @@ import BillingGeneratePage from '@/pages/BillingGeneratePage'
 import AiRuntimeConfigPage from '@/pages/AiRuntimeConfigPage'
 import BuiltInAgentPage from '@/pages/BuiltInAgentPage'
 import AuditLogsPage from '@/pages/AuditLogsPage'
-import CouponRulesPage from '@/pages/CouponRulesPage'
-import CouponTemplatesPage from '@/pages/CouponTemplatesPage'
+import CouponsPage from '@/pages/CouponsPage'
 import DashboardPage from '@/pages/DashboardPage'
 import DunningPage from '@/pages/DunningPage'
 import FeeRulesPage from '@/pages/FeeRulesPage'
@@ -98,8 +97,10 @@ export default function App() {
             <Route path="/built-in-agent" element={<BuiltInAgentPage />} />
             <Route path="/ai-runtime-config" element={<AiRuntimeConfigPage />} />
             <Route path="/dunning" element={<DunningPage />} />
-            <Route path="/coupon-templates" element={<CouponTemplatesPage />} />
-            <Route path="/coupon-rules" element={<CouponRulesPage />} />
+            <Route path="/coupons" element={<CouponsPage />} />
+            <Route path="/coupon-templates" element={<CouponsPage />} />
+            <Route path="/coupon-rules" element={<CouponsPage />} />
+            <Route path="/coupon-instances" element={<CouponsPage />} />
             <Route path="/invoice-applications" element={<InvoiceApplicationsPage />} />
             <Route path="/bills" element={<BillsPage />} />
           </Route>

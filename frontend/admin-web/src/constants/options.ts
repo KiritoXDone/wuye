@@ -33,6 +33,13 @@ export const couponTemplateTypeOptions = [
   { label: '支付后奖励券', value: 'VOUCHER' },
 ]
 
+export const couponTriggerTypeOptions = [
+  { label: '不自动发放', value: '' },
+  { label: '支付完物业费发放', value: 'PROPERTY_PAYMENT' },
+  { label: '支付完水费发放', value: 'WATER_PAYMENT' },
+  { label: '登录赠送', value: 'LOGIN' },
+]
+
 export const discountModeOptions = [
   { label: '固定金额', value: 'FIXED' },
   { label: '比例折扣', value: 'PERCENT' },
