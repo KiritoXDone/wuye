@@ -73,6 +73,7 @@ public class AdminAccountService {
             throw new BusinessException("CONFLICT", "不能停用当前登录账户", HttpStatus.CONFLICT);
         }
         accountMapper.updateStatus(account.getId(), dto.getStatusValue());
+        accountMapper.updateTokenInvalidBefore(account.getId(), LocalDateTime.now());
     }
 
     @Transactional
@@ -80,6 +81,7 @@ public class AdminAccountService {
         accessGuard.requireRole(loginUser, "ADMIN");
         Account account = requireAdminAccount(accountId);
         accountMapper.updatePasswordHash(account.getId(), passwordEncoder.encode(dto.getNewPassword()));
+        accountMapper.updateTokenInvalidBefore(account.getId(), LocalDateTime.now());
     }
 
     @Transactional
@@ -96,6 +98,7 @@ public class AdminAccountService {
             return;
         }
         accountMapper.updateStatus(accountId, 0);
+        accountMapper.updateTokenInvalidBefore(accountId, LocalDateTime.now());
     }
 
     public List<RoomVO> listAccountRooms(LoginUser loginUser, Long accountId) {

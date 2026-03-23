@@ -1,6 +1,10 @@
 $ErrorActionPreference = 'Stop'
 
 $apiBaseUrl = if ($env:API_BASE_URL) { $env:API_BASE_URL.TrimEnd('/') } else { 'http://localhost:8080' }
+$adminPassword = if ($env:APP_BOOTSTRAP_ADMIN_PASSWORD) { $env:APP_BOOTSTRAP_ADMIN_PASSWORD } else { throw 'APP_BOOTSTRAP_ADMIN_PASSWORD is required' }
+$alipayMerchantId = if ($env:APP_PAYMENT_ALIPAY_MERCHANT_ID) { $env:APP_PAYMENT_ALIPAY_MERCHANT_ID } else { throw 'APP_PAYMENT_ALIPAY_MERCHANT_ID is required' }
+$alipaySecret = if ($env:APP_PAYMENT_ALIPAY_CALLBACK_SECRET) { $env:APP_PAYMENT_ALIPAY_CALLBACK_SECRET } else { throw 'APP_PAYMENT_ALIPAY_CALLBACK_SECRET is required' }
+$importRootDir = if ($env:APP_IMPORT_EXPORT_IMPORT_DIR) { $env:APP_IMPORT_EXPORT_IMPORT_DIR } else { 'imports/bills' }
 
 function Resolve-ApiUri {
     param([string]$Path)
@@ -91,7 +95,7 @@ function Get-NextPeriod {
 
 $adminLogin = Invoke-JsonPost -Uri (Resolve-ApiUri '/api/v1/admin/auth/login/password') -Body @{
     username = 'admin'
-    password = '123456'
+    password = $adminPassword
 }
 
 $residentLogin = Invoke-JsonPost -Uri (Resolve-ApiUri '/api/v1/auth/login/wechat') -Body @{
@@ -116,9 +120,6 @@ $effectiveTo = '{0}-12-31' -f $selectedYear
 $readAt = '{0}-{1}-28T09:00:00' -f $selectedYear, $monthText
 $idempotencyKey = 'manual-qa-{0:yyyyMMddHHmmss}' -f (Get-Date)
 $outTradeNo = 'ALI-MANUAL-{0:yyyyMMddHHmmss}' -f (Get-Date)
-$alipayMerchantId = if ($env:ALIPAY_MERCHANT_ID) { $env:ALIPAY_MERCHANT_ID } else { 'alipay-dev-mock-merchant' }
-$alipaySecret = if ($env:ALIPAY_CALLBACK_SECRET) { $env:ALIPAY_CALLBACK_SECRET } else { 'alipay-dev-callback-secret' }
-
 function Get-CallbackSign {
     param(
         [string]$PayOrderNo,
@@ -215,7 +216,10 @@ $null = Invoke-JsonPost -Uri (Resolve-ApiUri '/api/v1/callbacks/alipay') -Body @
 $paymentStatus = Invoke-JsonGet -Uri (Resolve-ApiUri ("/api/v1/payments/{0}" -f $payment.data.payOrderNo)) -Token $residentToken
 $report = Invoke-JsonGet -Uri (Resolve-ApiUri ("/api/v1/admin/reports/monthly?periodYear={0}&periodMonth={1}" -f $selectedYear, $selectedMonth)) -Token $adminToken
 
-$importFile = Join-Path $env:TEMP ("bill-import-{0}.csv" -f (Get-Date -Format 'yyyyMMddHHmmss'))
+if (-not (Test-Path $importRootDir)) {
+    New-Item -ItemType Directory -Path $importRootDir -Force | Out-Null
+}
+$importFile = Join-Path $importRootDir ("bill-import-{0}.csv" -f (Get-Date -Format 'yyyyMMddHHmmss'))
 @"
 bill_no,fee_type,period_year,period_month,community_code,building_no,unit_no,room_no,group_code,amount_due,due_date,remark
 B-MANUAL-001,PROPERTY,$importYear,$importMonth,COMM-001,1,2,302,G-COMM001-1-2,188.88,$importYear-$importMonthText-28,manual import success

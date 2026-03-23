@@ -15,14 +15,14 @@ import java.time.LocalDateTime;
 public interface AccountMapper {
 
     @Select("""
-            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at
+            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at, token_invalid_before
             FROM account
             WHERE id = #{id}
             """)
     Account findById(Long id);
 
     @Select("""
-            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at
+            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at, token_invalid_before
             FROM account
             WHERE username = #{username} AND status = 1
             """)
@@ -30,7 +30,7 @@ public interface AccountMapper {
 
     @Select("""
             <script>
-            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at
+            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at, token_invalid_before
             FROM account
             <where>
                 <if test='accountType != null and accountType != ""'>
@@ -43,7 +43,7 @@ public interface AccountMapper {
     java.util.List<Account> listByAccountType(@Param("accountType") String accountType);
 
     @Select("""
-            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at
+            SELECT id, account_no, account_type, username, password_hash, nickname, mobile, real_name, avatar_url, status, last_login_at, token_invalid_before
             FROM account
             WHERE username = #{username}
             LIMIT 1
@@ -65,6 +65,9 @@ public interface AccountMapper {
 
     @Update("UPDATE account SET last_login_at = #{lastLoginAt}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updateLastLoginAt(@Param("id") Long id, @Param("lastLoginAt") LocalDateTime lastLoginAt);
+
+    @Update("UPDATE account SET token_invalid_before = #{tokenInvalidBefore}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
+    int updateTokenInvalidBefore(@Param("id") Long id, @Param("tokenInvalidBefore") LocalDateTime tokenInvalidBefore);
 
     @Update("UPDATE account SET status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int deleteById(@Param("id") Long id);

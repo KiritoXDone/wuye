@@ -1,11 +1,15 @@
 package com.wuye.auth.service;
 
 import com.wuye.auth.entity.Account;
+import com.wuye.auth.mapper.AccountMapper;
 import com.wuye.auth.vo.LoginVO;
+import com.wuye.agent.service.AgentAuthorizationService;
+import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.LoginUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +17,6 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -24,13 +27,19 @@ public class JwtService {
     private final SecretKey secretKey;
     private final String issuer;
     private final long expireHours;
+    private final AccountMapper accountMapper;
+    private final AgentAuthorizationService agentAuthorizationService;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.issuer}") String issuer,
-                      @Value("${app.jwt.expire-hours}") long expireHours) {
+                      @Value("${app.jwt.expire-hours}") long expireHours,
+                      AccountMapper accountMapper,
+                      AgentAuthorizationService agentAuthorizationService) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.issuer = issuer;
         this.expireHours = expireHours;
+        this.accountMapper = accountMapper;
+        this.agentAuthorizationService = agentAuthorizationService;
     }
 
     public LoginVO issueLogin(Account account) {
@@ -45,8 +54,8 @@ public class JwtService {
         vo.setExpiresIn(expireHours * 3600);
         vo.setAccountId(account.getId());
         vo.setAccountType(account.getAccountType());
-        vo.setProductRole(resolveProductRole(account.getAccountType()));
-        vo.setRoles(resolveRoles(account.getAccountType()));
+        vo.setProductRole(resolveProductRole(account));
+        vo.setRoles(resolveRoles(account));
         vo.setNeedResetPassword(Boolean.FALSE);
         return vo;
     }
@@ -76,13 +85,26 @@ public class JwtService {
 
     private LoginUser toLoginUser(Claims claims) {
         Long accountId = ((Number) claims.get("accountId")).longValue();
-        String accountType = claims.get("accountType", String.class);
-        String productRole = claims.get("productRole", String.class);
-        String realName = claims.get("realName", String.class);
-        List<String> roles = readStringList(claims.get("roles"));
-        String dataScope = claims.get("dataScope", String.class);
-        List<Long> groupIds = readLongList(claims.get("groupIds"));
-        return new LoginUser(accountId, accountType, productRole, realName, roles, dataScope, groupIds);
+        Account account = accountMapper.findById(accountId);
+        if (account == null || account.getStatus() == null || account.getStatus() != 1) {
+            throw new BusinessException("UNAUTHORIZED", "账号不存在或已停用", HttpStatus.UNAUTHORIZED);
+        }
+        Date issuedAt = claims.getIssuedAt();
+        if (account.getTokenInvalidBefore() != null && issuedAt != null) {
+            Date tokenInvalidBefore = toDate(account.getTokenInvalidBefore());
+            if (!issuedAt.after(tokenInvalidBefore)) {
+                throw new BusinessException("UNAUTHORIZED", "Token 已失效", HttpStatus.UNAUTHORIZED);
+            }
+        }
+        return new LoginUser(
+                account.getId(),
+                account.getAccountType(),
+                resolveProductRole(account),
+                account.getRealName(),
+                resolveRoles(account),
+                resolveDataScope(account),
+                resolveGroupIds(account)
+        );
     }
 
     private String buildToken(Account account, LocalDateTime issuedAt, LocalDateTime expiredAt, String tokenType) {
@@ -94,57 +116,50 @@ public class JwtService {
                 .claim("tokenType", tokenType)
                 .claim("accountId", account.getId())
                 .claim("accountType", account.getAccountType())
-                .claim("productRole", resolveProductRole(account.getAccountType()))
+                .claim("productRole", resolveProductRole(account))
                 .claim("realName", account.getRealName())
-                .claim("roles", resolveRoles(account.getAccountType()))
-                .claim("dataScope", resolveDataScope(account.getAccountType()))
-                .claim("groupIds", Collections.emptyList())
+                .claim("roles", resolveRoles(account))
+                .claim("dataScope", resolveDataScope(account))
+                .claim("groupIds", resolveGroupIds(account))
                 .signWith(secretKey)
                 .compact();
     }
 
-    private String resolveProductRole(String accountType) {
+    private String resolveProductRole(Account account) {
+        String accountType = account.getAccountType();
         if ("ADMIN".equals(accountType) || "FINANCE".equals(accountType)) {
             return "ADMIN";
+        }
+        if ("AGENT".equals(accountType)) {
+            return "AGENT";
         }
         return "USER";
     }
 
-    private List<String> resolveRoles(String accountType) {
-        return List.of(resolveProductRole(accountType));
+    private List<String> resolveRoles(Account account) {
+        return List.of(resolveProductRole(account));
     }
 
-    private String resolveDataScope(String accountType) {
-        return "ADMIN".equals(resolveProductRole(accountType)) ? "ALL" : "SELF";
+    private String resolveDataScope(Account account) {
+        String productRole = resolveProductRole(account);
+        if ("ADMIN".equals(productRole)) {
+            return "ALL";
+        }
+        if ("AGENT".equals(productRole)) {
+            return "GROUP";
+        }
+        return "SELF";
+    }
+
+    private List<Long> resolveGroupIds(Account account) {
+        if (!"AGENT".equals(account.getAccountType())) {
+            return Collections.emptyList();
+        }
+        return agentAuthorizationService.loadAuthorizedGroupIds(account.getId());
     }
 
     private Date toDate(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    private List<String> readStringList(Object claim) {
-        if (!(claim instanceof List<?> values)) {
-            return Collections.emptyList();
-        }
-        List<String> result = new ArrayList<>();
-        for (Object value : values) {
-            if (value != null) {
-                result.add(String.valueOf(value));
-            }
-        }
-        return result;
-    }
-
-    private List<Long> readLongList(Object claim) {
-        if (!(claim instanceof List<?> values)) {
-            return Collections.emptyList();
-        }
-        List<Long> result = new ArrayList<>();
-        for (Object value : values) {
-            if (value instanceof Number number) {
-                result.add(number.longValue());
-            }
-        }
-        return result;
-    }
 }

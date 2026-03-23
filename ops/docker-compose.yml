@@ -5,8 +5,8 @@ services:
     image: mysql:8.0
     container_name: wuye-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: wuye_system
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wuye_system}
     ports:
       - "3306:3306"
     command:

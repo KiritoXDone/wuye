@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+
 @Service
 public class AuthService {
 
@@ -25,25 +26,28 @@ public class AuthService {
     private final AccountIdentityMapper accountIdentityMapper;
     private final JwtService jwtService;
     private final CouponService couponService;
+    private final WechatAuthClient wechatAuthClient;
     private final PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
     public AuthService(AccountMapper accountMapper,
                        AccountIdentityMapper accountIdentityMapper,
                        JwtService jwtService,
-                       CouponService couponService) {
+                       CouponService couponService,
+                       WechatAuthClient wechatAuthClient) {
         this.accountMapper = accountMapper;
         this.accountIdentityMapper = accountIdentityMapper;
         this.jwtService = jwtService;
         this.couponService = couponService;
+        this.wechatAuthClient = wechatAuthClient;
     }
 
     public LoginVO loginWechat(WechatLoginDTO dto) {
-        AccountIdentity identity = accountIdentityMapper.findWechatIdentity(dto.getCode());
+        WechatAuthClient.WechatSession wechatSession = wechatAuthClient.exchangeCode(dto.getCode());
+        AccountIdentity identity = accountIdentityMapper.findWechatIdentity(wechatSession.openId());
         if (identity == null) {
-            throw new BusinessException("UNAUTHORIZED", "微信登录 code 无效", HttpStatus.UNAUTHORIZED);
+            throw new BusinessException("UNAUTHORIZED", "微信账号未绑定本地住户", HttpStatus.UNAUTHORIZED);
         }
         Account account = loadEnabledAccount(identity.getAccountId());
-        rejectAgentAccount(account);
         accountMapper.updateLastLoginAt(account.getId(), LocalDateTime.now());
         couponService.issueLoginCoupons(account);
         return jwtService.issueLogin(account);
@@ -64,7 +68,6 @@ public class AuthService {
     public LoginVO refresh(RefreshTokenDTO dto) {
         LoginUser loginUser = jwtService.parseRefreshToken(dto.getRefreshToken());
         Account account = loadEnabledAccount(loginUser.accountId());
-        rejectAgentAccount(account);
         return jwtService.issueLogin(account);
     }
 
@@ -79,6 +82,7 @@ public class AuthService {
     }
 
     public void logout(LoginUser loginUser) {
+        accountMapper.updateTokenInvalidBefore(loginUser.accountId(), LocalDateTime.now());
     }
 
     private Account loadEnabledAccount(Long accountId) {
@@ -91,11 +95,5 @@ public class AuthService {
 
     private boolean isAdminProductRole(String accountType) {
         return "ADMIN".equals(accountType) || "FINANCE".equals(accountType);
-    }
-
-    private void rejectAgentAccount(Account account) {
-        if ("AGENT".equals(account.getAccountType())) {
-            throw new BusinessException("UNAUTHORIZED", "该账户类型已停止产品登录", HttpStatus.UNAUTHORIZED);
-        }
     }
 }

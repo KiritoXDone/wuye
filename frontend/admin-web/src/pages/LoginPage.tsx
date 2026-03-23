@@ -7,7 +7,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const login = useAuthStore((state) => state.login)
-  const [form, setForm] = useState({ username: 'admin', password: '123456' })
+  const [form, setForm] = useState({ username: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -20,7 +20,7 @@ export default function LoginPage() {
       const redirect = searchParams.get('redirect') || '/dashboard'
       navigate(redirect, { replace: true })
       if (result.needResetPassword) {
-        setError('当前账号需尽快完成密码更新，请登录后尽快处理。')
+        setError('当前账号需要尽快完成密码更新，请登录后立即处理。')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败')
@@ -36,9 +36,7 @@ export default function LoginPage() {
         <h1 className="mt-3 text-3xl font-semibold text-slate-950">登录</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">使用管理员账号进入控制台。</p>
 
-        <div className="mt-5 text-sm text-slate-500">
-          默认账号 <span className="font-medium text-slate-900">admin</span> / <span className="font-medium text-slate-900">123456</span>
-        </div>
+        <div className="mt-5 text-sm text-slate-500">请使用通过环境变量初始化的管理员账号登录。</div>
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           <label className="block">

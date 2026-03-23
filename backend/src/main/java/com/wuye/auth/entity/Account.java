@@ -15,6 +15,7 @@ public class Account {
     private String avatarUrl;
     private Integer status;
     private LocalDateTime lastLoginAt;
+    private LocalDateTime tokenInvalidBefore;
 
     public Long getId() {
         return id;
@@ -102,5 +103,13 @@ public class Account {
 
     public void setLastLoginAt(LocalDateTime lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public LocalDateTime getTokenInvalidBefore() {
+        return tokenInvalidBefore;
+    }
+
+    public void setTokenInvalidBefore(LocalDateTime tokenInvalidBefore) {
+        this.tokenInvalidBefore = tokenInvalidBefore;
     }
 }

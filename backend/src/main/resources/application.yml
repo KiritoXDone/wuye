@@ -22,6 +22,10 @@ mybatis:
     map-underscore-to-camel-case: true
 
 app:
+  bootstrap:
+    admin:
+      username: ${APP_BOOTSTRAP_ADMIN_USERNAME:admin}
+      password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
   infra:
     redis:
       enabled: ${APP_INFRA_REDIS_ENABLED:false}
@@ -43,14 +47,26 @@ app:
       timeout-ms: ${APP_AI_RUNTIME_TIMEOUT_MS:30000}
       max-tokens: ${APP_AI_RUNTIME_MAX_TOKENS:4096}
       temperature: ${APP_AI_RUNTIME_TEMPERATURE:0.2}
+  auth:
+    wechat:
+      mode: ${APP_AUTH_WECHAT_MODE:real}
+      app-id: ${APP_AUTH_WECHAT_APP_ID:}
+      app-secret: ${APP_AUTH_WECHAT_APP_SECRET:}
+      jscode2session-url: ${APP_AUTH_WECHAT_JSCODE2SESSION_URL:https://api.weixin.qq.com/sns/jscode2session}
+  import-export:
+    import-dir: ${APP_IMPORT_EXPORT_IMPORT_DIR:imports/bills}
+    export-dir: ${APP_IMPORT_EXPORT_EXPORT_DIR:exports/bills}
   jwt:
     issuer: wuye-backend
-    secret: change-this-secret-change-this-secret
+    secret: ${APP_JWT_SECRET}
     expire-hours: 12
   payment:
     wechat:
-      merchant-id: wx-dev-mock-merchant
-      callback-secret: wechat-dev-callback-secret
+      merchant-id: ${APP_PAYMENT_WECHAT_MERCHANT_ID}
+      callback-secret: ${APP_PAYMENT_WECHAT_CALLBACK_SECRET}
     alipay:
-      merchant-id: alipay-dev-mock-merchant
-      callback-secret: alipay-dev-callback-secret
+      merchant-id: ${APP_PAYMENT_ALIPAY_MERCHANT_ID}
+      callback-secret: ${APP_PAYMENT_ALIPAY_CALLBACK_SECRET}
+  security:
+    crypto:
+      config-encryption-key: ${APP_SECURITY_CRYPTO_CONFIG_ENCRYPTION_KEY}

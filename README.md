@@ -67,7 +67,7 @@ Flyway 会在应用启动时自动建表和写入基础演示数据。
 
 - Admin
   - username: `admin`
-  - password: `123456`
+  - password: 由 `APP_BOOTSTRAP_ADMIN_PASSWORD` 注入
 - Resident 开发登录 code
   - `resident-zhangsan`
   - `resident-lisi`

@@ -75,6 +75,30 @@ class AgentScopeConsistencyIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
+    @Test
+    void disabledAgentGroupImmediatelyRemovesOldTokenScope() throws Exception {
+        mockMvc.perform(get("/api/v1/agent/groups")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].groupId").value(5001));
+
+        jdbcTemplate.update("UPDATE agent_group SET status = 0 WHERE id = 80001");
+
+        mockMvc.perform(get("/api/v1/agent/groups")
+                        .header("Authorization", "Bearer " + agentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        mockMvc.perform(get("/api/v1/agent/reports/monthly")
+                        .header("Authorization", "Bearer " + agentToken)
+                        .param("groupId", "5001")
+                        .param("periodYear", "2026")
+                        .param("periodMonth", "6"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
     private void createFeeRule(String feeType, String unitPrice) throws Exception {
         mockMvc.perform(post("/api/v1/admin/fee-rules")
                         .header("Authorization", "Bearer " + adminToken)
