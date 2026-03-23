@@ -7,6 +7,7 @@ import com.wuye.ai.vo.AiRuntimeConfigVO;
 import com.wuye.common.config.AppAiProperties;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import com.wuye.common.security.SensitiveConfigCipher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +19,16 @@ public class AiRuntimeConfigService {
     private final AiRuntimeConfigMapper aiRuntimeConfigMapper;
     private final AccessGuard accessGuard;
     private final AppAiProperties appAiProperties;
+    private final SensitiveConfigCipher sensitiveConfigCipher;
 
     public AiRuntimeConfigService(AiRuntimeConfigMapper aiRuntimeConfigMapper,
                                   AccessGuard accessGuard,
-                                  AppAiProperties appAiProperties) {
+                                  AppAiProperties appAiProperties,
+                                  SensitiveConfigCipher sensitiveConfigCipher) {
         this.aiRuntimeConfigMapper = aiRuntimeConfigMapper;
         this.accessGuard = accessGuard;
         this.appAiProperties = appAiProperties;
+        this.sensitiveConfigCipher = sensitiveConfigCipher;
     }
 
     public AiRuntimeConfigVO get(LoginUser loginUser) {
@@ -40,6 +44,7 @@ public class AiRuntimeConfigService {
     public AiRuntimeConfigVO save(LoginUser loginUser, AiRuntimeConfigUpdateDTO dto) {
         accessGuard.requireRole(loginUser, "ADMIN");
         AiRuntimeConfig config = aiRuntimeConfigMapper.findSingleton();
+        boolean existed = config != null;
         if (config == null) {
             config = new AiRuntimeConfig();
             config.setId(SINGLETON_ID);
@@ -49,14 +54,12 @@ public class AiRuntimeConfigService {
         config.setProvider(dto.getProvider().trim());
         config.setModel(dto.getModel().trim());
         if (dto.getApiKey() != null && !dto.getApiKey().isBlank()) {
-            config.setApiKeyCiphertext(dto.getApiKey().trim());
-        } else if (config.getApiKeyCiphertext() == null) {
-            config.setApiKeyCiphertext(appAiProperties.getRuntime().getApiKey());
+            config.setApiKeyCiphertext(sensitiveConfigCipher.encrypt(dto.getApiKey().trim()));
         }
         config.setTimeoutMs(dto.getTimeoutMs());
         config.setMaxTokens(dto.getMaxTokens());
         config.setTemperature(dto.getTemperature());
-        if (aiRuntimeConfigMapper.findSingleton() == null) {
+        if (!existed) {
             aiRuntimeConfigMapper.insert(config);
         } else {
             aiRuntimeConfigMapper.update(config);
@@ -84,7 +87,7 @@ public class AiRuntimeConfigService {
         vo.setApiBaseUrl(config.getApiBaseUrl());
         vo.setProvider(config.getProvider());
         vo.setModel(config.getModel());
-        vo.setApiKeyMasked(mask(config.getApiKeyCiphertext()));
+        vo.setApiKeyMasked(mask(sensitiveConfigCipher.decrypt(config.getApiKeyCiphertext())));
         vo.setTimeoutMs(config.getTimeoutMs() == null ? 30000 : config.getTimeoutMs());
         vo.setMaxTokens(config.getMaxTokens() == null ? 4096 : config.getMaxTokens());
         vo.setTemperature(config.getTemperature() == null ? 0.2D : config.getTemperature());

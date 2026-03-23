@@ -33,6 +33,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,23 +59,23 @@ public class ApiV1AgentClient {
     }
 
     public List<AdminRoomVO> listAdminRooms(AdminRoomListQuery query) {
-        return getList(withQuery("/api/v1/admin/rooms", Map.of(
-                "communityId", query.getCommunityId(),
-                "buildingNo", query.getBuildingNo(),
-                "unitNo", query.getUnitNo(),
-                "roomNo", query.getRoomNo(),
-                "roomNoKeyword", query.getRoomNoKeyword(),
-                "roomSuffix", query.getRoomSuffix(),
-                "roomTypeId", query.getRoomTypeId()
-        )), new ParameterizedTypeReference<>() {});
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("communityId", query.getCommunityId());
+        params.put("buildingNo", query.getBuildingNo());
+        params.put("unitNo", query.getUnitNo());
+        params.put("roomNo", query.getRoomNo());
+        params.put("roomNoKeyword", query.getRoomNoKeyword());
+        params.put("roomSuffix", query.getRoomSuffix());
+        params.put("roomTypeId", query.getRoomTypeId());
+        return getList(withQuery("/api/v1/admin/rooms", params), new ParameterizedTypeReference<>() {});
     }
 
     public AdminRoomVO createRoom(AdminRoomCreateDTO dto) {
         return post("/api/v1/admin/rooms", dto, new ParameterizedTypeReference<>() {});
     }
 
-    public AdminRoomVO disableRoom(Long roomId) {
-        return exchange("/api/v1/admin/rooms/" + roomId, HttpMethod.DELETE, null, new ParameterizedTypeReference<>() {});
+    public void disableRoom(Long roomId) {
+        exchange("/api/v1/admin/rooms/" + roomId, HttpMethod.DELETE, null, new ParameterizedTypeReference<Void>() {});
     }
 
     public BillDetailVO getBillDetail(Long billId, boolean admin) {
@@ -83,9 +84,19 @@ public class ApiV1AgentClient {
     }
 
     public PageResponse<BillListItemVO> listRoomBills(Long roomId, String status, boolean admin) {
-        String path = admin
-                ? withQuery("/api/v1/admin/bills", Map.of("roomId", roomId, "status", status, "pageNo", 1, "pageSize", 20))
-                : withQuery("/api/v1/me/rooms/" + roomId + "/bills", Map.of("status", status));
+        String path;
+        if (admin) {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("roomId", roomId);
+            params.put("status", status);
+            params.put("pageNo", 1);
+            params.put("pageSize", 20);
+            path = withQuery("/api/v1/admin/bills", params);
+        } else {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("status", status);
+            path = withQuery("/api/v1/me/rooms/" + roomId + "/bills", params);
+        }
         return exchange(path, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
     }
 

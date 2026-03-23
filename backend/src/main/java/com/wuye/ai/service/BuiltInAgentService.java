@@ -32,6 +32,7 @@ import com.wuye.common.config.AppAiProperties;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import com.wuye.common.security.SensitiveConfigCipher;
 import com.wuye.payment.dto.PaymentCreateDTO;
 import com.wuye.payment.vo.PaymentCreateVO;
 import com.wuye.payment.vo.PaymentStatusVO;
@@ -119,6 +120,7 @@ public class BuiltInAgentService {
     private final AdminMonthlyReportService adminMonthlyReportService;
     private final AiRuntimeConfigMapper aiRuntimeConfigMapper;
     private final AppAiProperties appAiProperties;
+    private final SensitiveConfigCipher sensitiveConfigCipher;
     private final OaiChatClient oaiChatClient;
     private final ApiV1AgentClient apiV1AgentClient;
     private final AuditLogService auditLogService;
@@ -135,6 +137,7 @@ public class BuiltInAgentService {
                                AdminMonthlyReportService adminMonthlyReportService,
                                AiRuntimeConfigMapper aiRuntimeConfigMapper,
                                AppAiProperties appAiProperties,
+                               SensitiveConfigCipher sensitiveConfigCipher,
                                OaiChatClient oaiChatClient,
                                ApiV1AgentClient apiV1AgentClient,
                                AuditLogService auditLogService,
@@ -149,6 +152,7 @@ public class BuiltInAgentService {
         this.adminMonthlyReportService = adminMonthlyReportService;
         this.aiRuntimeConfigMapper = aiRuntimeConfigMapper;
         this.appAiProperties = appAiProperties;
+        this.sensitiveConfigCipher = sensitiveConfigCipher;
         this.oaiChatClient = oaiChatClient;
         this.apiV1AgentClient = apiV1AgentClient;
         this.auditLogService = auditLogService;
@@ -480,12 +484,15 @@ public class BuiltInAgentService {
         if (roomId == null) {
             throw new BusinessException("AI_ARGUMENTS_INCOMPLETE", "缺少可停用的房间标识", HttpStatus.BAD_REQUEST);
         }
-        AdminRoomVO updated = apiV1AgentClient.disableRoom(roomId);
+        apiV1AgentClient.disableRoom(roomId);
         auditLogService.record(loginUser, "AI_AGENT", session.getCommandId(), "ROOM_DISABLE", Map.of(
                 "prompt", session.getOriginalPrompt(),
                 "roomId", roomId
         ));
-        return Map.of("room", updated, "mode", "DISABLE");
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("roomId", roomId);
+        result.put("mode", "DISABLE");
+        return result;
     }
 
     private BillDetailVO executeBillDetail(LoginUser loginUser, AgentCommandSession session) {
@@ -742,7 +749,8 @@ public class BuiltInAgentService {
                 "summary", preview.getSummary(),
                 "parsedArguments", preview.getParsedArguments(),
                 "resolvedContext", preview.getResolvedContext(),
-                "warnings", preview.getWarnings()
+                "warnings", preview.getWarnings(),
+                "confirmationToken", preview.getConfirmationToken()
         ));
         return assistantMessage;
     }
@@ -890,6 +898,12 @@ public class BuiltInAgentService {
         vo.setRiskLevel(entity.getRiskLevel());
         vo.setConfirmationRequired(entity.isConfirmationRequired());
         vo.setPayload(readPayload(entity.getPayloadJson()));
+        if (vo.isConfirmationRequired() && vo.getPayload() != null) {
+            Object confirmationToken = vo.getPayload().get("confirmationToken");
+            if (confirmationToken != null) {
+                vo.setConfirmationToken(String.valueOf(confirmationToken));
+            }
+        }
         vo.setCreatedAt(entity.getCreatedAt());
         return vo;
     }
@@ -925,14 +939,6 @@ public class BuiltInAgentService {
     }
 
     private AgentConversationVO sanitizeConversationForHistory(AgentConversationVO conversation) {
-        if (conversation.getMessages() == null) {
-            return conversation;
-        }
-        conversation.getMessages().forEach(item -> {
-            if (item.isConfirmationRequired()) {
-                item.setConfirmationToken(null);
-            }
-        });
         return conversation;
     }
 
@@ -1001,7 +1007,7 @@ public class BuiltInAgentService {
                 config.getApiBaseUrl(),
                 config.getProvider(),
                 config.getModel(),
-                config.getApiKeyCiphertext(),
+                sensitiveConfigCipher.decrypt(config.getApiKeyCiphertext()),
                 config.getTimeoutMs() == null ? 30000 : config.getTimeoutMs(),
                 config.getMaxTokens() == null ? 4096 : config.getMaxTokens(),
                 config.getTemperature() == null ? 0.2D : config.getTemperature()
