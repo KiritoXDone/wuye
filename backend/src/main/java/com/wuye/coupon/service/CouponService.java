@@ -33,6 +33,7 @@ import com.wuye.coupon.vo.AdminVoucherExchangeVO;
 import com.wuye.coupon.vo.AvailableCouponVO;
 import com.wuye.coupon.vo.CouponValidateVO;
 import com.wuye.coupon.vo.ResidentVoucherVO;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -502,8 +503,12 @@ public class CouponService {
                 instance.setStatus("NEW");
                 instance.setIssuedAt(now);
                 instance.setExpiresAt(template.getValidTo());
-                couponInstanceMapper.insert(instance);
-                issued++;
+                try {
+                    couponInstanceMapper.insert(instance);
+                    issued++;
+                } catch (DuplicateKeyException ex) {
+                    // 并发回调下依赖数据库唯一约束兜底，重复奖励券直接忽略。
+                }
             }
         }
         return issued;

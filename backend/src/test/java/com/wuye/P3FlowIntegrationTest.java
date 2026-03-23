@@ -3,6 +3,8 @@ package com.wuye;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.wuye.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MvcResult;
@@ -19,6 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class P3FlowIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private Environment environment;
 
     @Test
     void adminAuditLogsTrackThirdStageBackendEnhancements() throws Exception {
@@ -74,7 +79,9 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.groupCode").value("G-COMM001-1-2"));
 
-        Path importFile = Files.createTempFile("wuye-audit-import-", ".csv");
+        Path importRoot = Path.of(environment.getProperty("app.import-export.import-dir"));
+        Files.createDirectories(importRoot);
+        Path importFile = Files.createTempFile(importRoot, "wuye-audit-import-", ".csv");
         Files.writeString(importFile, """
                 bill_no,fee_type,period_year,period_month,community_code,building_no,unit_no,room_no,group_code,amount_due,due_date,remark
                 B-IMP-AUDIT-001,PROPERTY,2026,,COMM-001,1,2,302,G-COMM001-1-2,220.00,2026-12-31,审计导入测试
@@ -92,9 +99,23 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"))
                 .andReturn();
 
+        long importBatchId = read(importResult).path("data").path("id").asLong();
         String importBatchNo = read(importResult).path("data").path("batchNo").asText();
 
-        mockMvc.perform(post("/api/v1/admin/exports/bills")
+        mockMvc.perform(get("/api/v1/admin/imports/" + importBatchId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(importBatchId))
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.successCount").value(1))
+                .andExpect(jsonPath("$.data.failCount").value(0));
+
+        mockMvc.perform(get("/api/v1/admin/imports/" + importBatchId + "/errors")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+
+        MvcResult exportResult = mockMvc.perform(post("/api/v1/admin/exports/bills")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -105,6 +126,16 @@ class P3FlowIntegrationTest extends AbstractIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.fileUrl").isString())
+                .andReturn();
+
+        long exportJobId = read(exportResult).path("data").path("id").asLong();
+
+        mockMvc.perform(get("/api/v1/admin/exports/" + exportJobId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(exportJobId))
                 .andExpect(jsonPath("$.data.status").value("SUCCESS"))
                 .andExpect(jsonPath("$.data.fileUrl").isString());
 

@@ -116,7 +116,7 @@ public class PaymentCallbackService {
                                                               String sign,
                                                               Object request,
                                                               String channel) {
-        PayOrder payOrder = payOrderMapper.findByPayOrderNo(payOrderNo);
+        PayOrder payOrder = payOrderMapper.findByPayOrderNoForUpdate(payOrderNo);
         if (payOrder == null) {
             return Map.of("accepted", false, "message", "payOrderNo not found");
         }
@@ -140,7 +140,20 @@ public class PaymentCallbackService {
             throw new BusinessException("INVALID_ARGUMENT", "outTradeNo 不能为空", HttpStatus.BAD_REQUEST);
         }
         LocalDateTime paidAt = LocalDateTime.now();
-        payOrderMapper.updateSuccess(payOrder.getPayOrderNo(), "SUCCESS", outTradeNo, paidAt);
+        int updated = payOrderMapper.updateSuccess(payOrder.getPayOrderNo(), "SUCCESS", outTradeNo, paidAt);
+        if (updated == 0) {
+            PayOrder latest = payOrderMapper.findByPayOrderNoForUpdate(payOrder.getPayOrderNo());
+            if (latest != null && "SUCCESS".equals(latest.getStatus())) {
+                if (outTradeNo != null
+                        && latest.getChannelTradeNo() != null
+                        && !outTradeNo.equals(latest.getChannelTradeNo())) {
+                    throw new BusinessException("CONFLICT", "閲嶅鍥炶皟鐨?outTradeNo 涓嶄竴鑷?", HttpStatus.CONFLICT);
+                }
+                insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request, Map.of("alreadyProcessed", true), "SUCCESS", null, null);
+                return Map.of("accepted", true, "alreadyProcessed", true, "rewardIssuedCount", 0);
+            }
+            throw new BusinessException("CONFLICT", "褰撳墠鏀粯鍗曠姸鎬佷笉鍏佽鍥炶皟鍏ヨ处", HttpStatus.CONFLICT);
+        }
         List<PayOrderBillCover> covers = payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo());
         Bill bill = billMapper.findById(payOrder.getBillId());
         if (!covers.isEmpty()) {

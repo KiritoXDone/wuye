@@ -67,4 +67,51 @@ class ImportExportClosureIntegrationTest extends AbstractIntegrationTest {
             Files.deleteIfExists(blockedRoot);
         }
     }
+
+    @Test
+    void importRejectsRemoteAndOutOfDirectorySources() throws Exception {
+        MvcResult remoteImportResult = mockMvc.perform(post("/api/v1/admin/imports/bills")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fileUrl": "http://127.0.0.1:8080/evil.csv"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("FAILED"))
+                .andReturn();
+
+        long remoteBatchId = read(remoteImportResult).path("data").path("id").asLong();
+        mockMvc.perform(get("/api/v1/admin/imports/" + remoteBatchId + "/errors")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].errorCode").value("INVALID_ARGUMENT"));
+
+        Path outsideFile = Files.createTempFile("wuye-import-outside-", ".csv");
+        Files.writeString(outsideFile, "bill_no\n", java.nio.charset.StandardCharsets.UTF_8);
+        try {
+            MvcResult outsideImportResult = mockMvc.perform(post("/api/v1/admin/imports/bills")
+                            .header("Authorization", "Bearer " + adminToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "fileUrl": "%s"
+                                    }
+                                    """.formatted(outsideFile.toString().replace("\\", "\\\\"))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("FAILED"))
+                    .andReturn();
+
+            long outsideBatchId = read(outsideImportResult).path("data").path("id").asLong();
+            mockMvc.perform(get("/api/v1/admin/imports/" + outsideBatchId + "/errors")
+                            .header("Authorization", "Bearer " + adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].errorCode").value("INVALID_ARGUMENT"));
+        } finally {
+            Files.deleteIfExists(outsideFile);
+        }
+    }
 }

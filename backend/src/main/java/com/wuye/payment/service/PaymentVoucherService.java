@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class PaymentVoucherService {
@@ -110,10 +111,21 @@ public class PaymentVoucherService {
         content.put("coveredBillCount", payOrder.getCoveredBillCount());
         if (Boolean.TRUE.equals(payOrder.getAnnualPayment())) {
             content.put("coveredPeriods", payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo()).stream()
-                    .map(cover -> cover.getPeriodYear() + "-" + String.format("%02d", cover.getPeriodMonth()))
+                    .map(this::formatCoveredPeriod)
+                    .filter(Objects::nonNull)
                     .toList());
         }
         return content;
+    }
+
+    private String formatCoveredPeriod(PayOrderBillCover cover) {
+        if (cover == null || cover.getPeriodYear() == null) {
+            return null;
+        }
+        if (cover.getPeriodMonth() == null) {
+            return String.valueOf(cover.getPeriodYear());
+        }
+        return cover.getPeriodYear() + "-" + String.format("%02d", cover.getPeriodMonth());
     }
 
     private String writeJson(Object value) {
@@ -125,6 +137,9 @@ public class PaymentVoucherService {
     }
 
     private Map<String, Object> parseContent(String contentJson) {
+        if (contentJson == null || contentJson.isBlank()) {
+            return Map.of();
+        }
         try {
             return objectMapper.readValue(contentJson, new TypeReference<>() {
             });

@@ -97,7 +97,7 @@ public class BillQueryService {
         List<BillLineVO> lines = billLineMapper.findByBillId(billId);
         lines.forEach(line -> line.setExt(parseExt(line)));
         detail.setBillLines(lines);
-        if (loginUser.hasRole("RESIDENT")) {
+        if (loginUser.hasRole("USER") || loginUser.hasRole("RESIDENT")) {
             detail.setAvailableCoupons(Collections.unmodifiableList(couponService.listBillCoupons(loginUser, bill)));
         } else {
             detail.setAvailableCoupons(Collections.emptyList());

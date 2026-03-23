@@ -138,6 +138,7 @@ public class AdminRoomService {
             room.setRoomNo(roomNo);
             room.setRoomTypeId(dto.getRoomTypeId());
             room.setAreaM2(normalizeArea(dto.getAreaM2()));
+            room.setStatus(1);
             roomMapper.insert(room);
             ensureWaterMeter(room.getId());
             result.setSuccessCount(result.getSuccessCount() + 1);

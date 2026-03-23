@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,7 +21,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,13 +33,20 @@ import java.util.Map;
 @Service
 public class ImportExportFileService {
 
+    private final Path importRootPath;
+
+    public ImportExportFileService(@Value("${app.import-export.import-dir:imports/bills}") String importRootDir) {
+        this.importRootPath = Path.of(importRootDir).toAbsolutePath().normalize();
+    }
+
     public List<Map<String, String>> readRows(String fileUrl) throws IOException {
-        String lower = fileUrl.toLowerCase(Locale.ROOT);
+        Path filePath = resolveImportPath(fileUrl);
+        String lower = filePath.getFileName().toString().toLowerCase(Locale.ROOT);
         if (lower.endsWith(".csv")) {
-            return readCsv(fileUrl);
+            return readCsv(filePath);
         }
         if (lower.endsWith(".xlsx")) {
-            return readXlsx(fileUrl);
+            return readXlsx(filePath);
         }
         throw new IOException("仅支持 csv / xlsx 文件");
     }
@@ -75,8 +82,8 @@ public class ImportExportFileService {
         }
     }
 
-    private List<Map<String, String>> readCsv(String fileUrl) throws IOException {
-        try (InputStream inputStream = openInputStream(fileUrl);
+    private List<Map<String, String>> readCsv(Path filePath) throws IOException {
+        try (InputStream inputStream = Files.newInputStream(filePath);
              Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder()
                      .setHeader()
@@ -95,9 +102,9 @@ public class ImportExportFileService {
         }
     }
 
-    private List<Map<String, String>> readXlsx(String fileUrl) throws IOException {
+    private List<Map<String, String>> readXlsx(Path filePath) throws IOException {
         DataFormatter formatter = new DataFormatter();
-        try (Workbook workbook = openWorkbook(fileUrl)) {
+        try (Workbook workbook = WorkbookFactory.create(filePath.toFile())) {
             Sheet sheet = workbook.getSheetAt(0);
             Row headerRow = sheet.getRow(0);
             List<String> headers = new ArrayList<>();
@@ -130,26 +137,27 @@ public class ImportExportFileService {
         }
     }
 
-    private InputStream openInputStream(String fileUrl) throws IOException {
-        if (fileUrl.startsWith("file:/")) {
-            return Files.newInputStream(Path.of(URI.create(fileUrl)));
+    private Path resolveImportPath(String fileUrl) throws IOException {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new IOException("导入文件不能为空");
         }
-        if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
-            return URI.create(fileUrl).toURL().openStream();
+        String normalized = fileUrl.trim();
+        String lower = normalized.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("file:")) {
+            throw new IOException("导入文件必须位于服务端导入目录内");
         }
-        return Files.newInputStream(Path.of(fileUrl));
-    }
-
-    private Workbook openWorkbook(String fileUrl) throws IOException {
-        if (fileUrl.startsWith("file:/")) {
-            return WorkbookFactory.create(Path.of(URI.create(fileUrl)).toFile());
+        Path candidate = Path.of(normalized);
+        if (!candidate.isAbsolute()) {
+            candidate = importRootPath.resolve(candidate);
         }
-        if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
-            try (InputStream inputStream = openInputStream(fileUrl)) {
-                return WorkbookFactory.create(inputStream);
-            }
+        Path resolved = candidate.toAbsolutePath().normalize();
+        if (!resolved.startsWith(importRootPath)) {
+            throw new IOException("导入文件必须位于服务端导入目录内");
         }
-        return WorkbookFactory.create(Path.of(fileUrl).toFile());
+        if (!Files.isRegularFile(resolved)) {
+            throw new IOException("导入文件不存在");
+        }
+        return resolved;
     }
 
     private String cleanHeader(String header) {
