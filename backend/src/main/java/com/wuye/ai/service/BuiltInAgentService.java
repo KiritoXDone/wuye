@@ -219,7 +219,9 @@ public class BuiltInAgentService {
         String summary = fallbackSummary(readText(parsed, "summary"), action);
 
         Map<String, Object> resolvedContext = resolveContext(action, arguments, prompt);
-        boolean confirmationRequired = "L4".equals(riskLevel);
+        List<String> missingArguments = collectMissingArguments(action, resolvedContext);
+        boolean executable = missingArguments.isEmpty();
+        boolean confirmationRequired = executable && "L4".equals(riskLevel);
         String confirmationToken = confirmationRequired ? UUID.randomUUID().toString() : null;
         String commandId = UUID.randomUUID().toString();
 
@@ -237,10 +239,12 @@ public class BuiltInAgentService {
                 resolvedContext,
                 warnings,
                 LocalDateTime.now(),
-                confirmationRequired ? "PENDING_CONFIRMATION" : "EXECUTED"
+                executable ? (confirmationRequired ? "PENDING_CONFIRMATION" : "EXECUTED") : "NEEDS_INPUT"
         );
 
-        if (confirmationRequired) {
+        if (!executable) {
+            sessions.put(commandId, session);
+        } else if (confirmationRequired) {
             sessions.put(commandId, session);
             agentConversationCacheService.saveCommandConfirmation(commandId, Map.of(
                     "operatorId", loginUser.accountId(),
@@ -262,11 +266,15 @@ public class BuiltInAgentService {
         vo.setRiskLevel(riskLevel);
         vo.setConfirmationRequired(confirmationRequired);
         vo.setConfirmationToken(confirmationToken);
-        vo.setExecutable(true);
-        vo.setMessage(confirmationRequired ? "该操作风险较高，请确认后执行" : "已执行");
+        vo.setExecutable(executable);
+        vo.setMessage(executable
+                ? (confirmationRequired ? "该操作风险较高，请确认后执行" : "已完成指令预处理")
+                : buildMissingArgumentsMessage(action, missingArguments));
+        vo.setMissingArguments(missingArguments);
         vo.setParsedArguments(arguments);
         vo.setResolvedContext(resolvedContext);
         vo.setWarnings(warnings);
+        vo.setResult(session.getResult());
         return vo;
     }
 
@@ -311,18 +319,24 @@ public class BuiltInAgentService {
         appendMessage(conversation, userMessage);
 
         AgentConversationMessageVO assistantMessage;
-        if (shouldHandleAsCommand(message)) {
+        Map<String, Object> context = readContext(conversation);
+        AgentCommandSession pendingSession = findPendingCommandSession(loginUser, context);
+        if (pendingSession != null) {
+            AgentCommandPreviewVO preview = continuePendingCommand(loginUser, pendingSession, message);
+            assistantMessage = buildCommandConversationMessage(preview);
+            appendMessage(conversation, assistantMessage);
+            updateCommandContext(context, preview);
+            updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
+        } else if (shouldHandleAsCommand(message)) {
             AgentCommandPreviewVO preview = preview(loginUser, toPreviewRequest(message));
             assistantMessage = buildCommandConversationMessage(preview);
             appendMessage(conversation, assistantMessage);
-            Map<String, Object> context = readContext(conversation);
-            context.putAll(preview.getResolvedContext());
-            context.put("lastAction", preview.getAction());
+            updateCommandContext(context, preview);
             updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
         } else {
             assistantMessage = buildChatReply(loginUser, conversation);
             appendMessage(conversation, assistantMessage);
-            Map<String, Object> context = readContext(conversation);
+            context.remove("pendingCommandId");
             context.put("lastMode", "CHAT");
             updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
         }
@@ -377,13 +391,24 @@ public class BuiltInAgentService {
             try {
                 RequestAuthHolder.setAuthorization(authorization);
                 sendEvent(emitter, "session", Map.of("sessionId", conversation.getSessionId()));
+                Map<String, Object> context = readContext(conversation);
+                AgentCommandSession pendingSession = findPendingCommandSession(loginUser, context);
+                if (pendingSession != null) {
+                    AgentCommandPreviewVO preview = continuePendingCommand(loginUser, pendingSession, message);
+                    AgentConversationMessageVO assistantMessage = buildCommandConversationMessage(preview);
+                    appendMessage(conversation, assistantMessage);
+                    updateCommandContext(context, preview);
+                    updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
+                    sendEvent(emitter, "command-preview", toStreamMessagePayload(conversation.getSessionId(), assistantMessage.getId(), assistantMessage));
+                    sendEvent(emitter, "done", Map.of("sessionId", conversation.getSessionId()));
+                    emitter.complete();
+                    return;
+                }
                 if (shouldHandleAsCommand(message)) {
                     AgentCommandPreviewVO preview = preview(loginUser, toPreviewRequest(message));
                     AgentConversationMessageVO assistantMessage = buildCommandConversationMessage(preview);
                     appendMessage(conversation, assistantMessage);
-                    Map<String, Object> context = readContext(conversation);
-                    context.putAll(preview.getResolvedContext());
-                    context.put("lastAction", preview.getAction());
+                    updateCommandContext(context, preview);
                     updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
                     sendEvent(emitter, "command-preview", toStreamMessagePayload(conversation.getSessionId(), assistantMessage.getId(), assistantMessage));
                     sendEvent(emitter, "done", Map.of("sessionId", conversation.getSessionId()));
@@ -417,7 +442,7 @@ public class BuiltInAgentService {
                 assistantMessage.setContent(fullReply);
                 assistantMessage.setConfirmationRequired(false);
                 appendMessage(conversation, assistantMessage);
-                Map<String, Object> context = readContext(conversation);
+                context.remove("pendingCommandId");
                 context.put("lastMode", "CHAT");
                 updateConversationState(conversation, context, assistantMessage.getContent(), firstUserPrompt(conversation, message));
 
@@ -678,6 +703,183 @@ public class BuiltInAgentService {
         return resolved;
     }
 
+    private AgentCommandSession findPendingCommandSession(LoginUser loginUser, Map<String, Object> context) {
+        if (context == null) {
+            return null;
+        }
+        String pendingCommandId = asText(context.get("pendingCommandId"));
+        if (pendingCommandId == null) {
+            return null;
+        }
+        AgentCommandSession session = sessions.get(pendingCommandId);
+        if (session == null || !"NEEDS_INPUT".equals(session.getStatus())) {
+            return null;
+        }
+        return Objects.equals(loginUser.accountId(), session.getOperatorId()) ? session : null;
+    }
+
+    private AgentCommandPreviewVO continuePendingCommand(LoginUser loginUser,
+                                                         AgentCommandSession pendingSession,
+                                                         String supplementPrompt) {
+        String supplement = supplementPrompt == null ? "" : supplementPrompt.trim();
+        JsonNode parsed = oaiChatClient.completeJson(loadRuntimeSettings(), AGENT_PARSE_SYSTEM_PROMPT, supplement);
+
+        Map<String, Object> arguments = new LinkedHashMap<>(pendingSession.getParsedArguments());
+        arguments.putAll(toMap(parsed.path("arguments")));
+
+        List<String> warnings = new ArrayList<>();
+        warnings.add("已结合上一轮上下文继续补全参数。");
+        warnings.addAll(toList(parsed.path("warnings")));
+
+        String action = pendingSession.getAction();
+        String summary = fallbackSummary(readText(parsed, "summary"), action);
+        String riskLevel = normalizeRisk(readText(parsed, "riskLevel"), action);
+        String normalizedPrompt = pendingSession.getOriginalPrompt() + "\n补充参数：" + supplement;
+        Map<String, Object> resolvedContext = new LinkedHashMap<>(pendingSession.getResolvedContext());
+        resolvedContext.putAll(resolveContext(action, arguments, normalizedPrompt));
+        List<String> missingArguments = collectMissingArguments(action, resolvedContext);
+        boolean executable = missingArguments.isEmpty();
+        boolean confirmationRequired = executable && "L4".equals(riskLevel);
+        String confirmationToken = confirmationRequired ? UUID.randomUUID().toString() : null;
+        String commandId = UUID.randomUUID().toString();
+
+        AgentCommandSession session = new AgentCommandSession(
+                commandId,
+                loginUser.accountId(),
+                normalizedPrompt,
+                normalizedPrompt,
+                action,
+                summary,
+                riskLevel,
+                confirmationRequired,
+                confirmationToken,
+                arguments,
+                resolvedContext,
+                warnings,
+                LocalDateTime.now(),
+                executable ? (confirmationRequired ? "PENDING_CONFIRMATION" : "EXECUTED") : "NEEDS_INPUT"
+        );
+
+        if (!executable) {
+            sessions.put(commandId, session);
+        } else if (confirmationRequired) {
+            sessions.put(commandId, session);
+            agentConversationCacheService.saveCommandConfirmation(commandId, Map.of(
+                    "operatorId", loginUser.accountId(),
+                    "confirmationToken", confirmationToken,
+                    "createdAt", session.getCreatedAt().toString()
+            ));
+        } else {
+            Object result = execute(loginUser, session);
+            session.setResult(result);
+            sessions.put(commandId, session);
+        }
+
+        AgentCommandPreviewVO vo = new AgentCommandPreviewVO();
+        vo.setCommandId(commandId);
+        vo.setOriginalPrompt(supplement);
+        vo.setNormalizedPrompt(normalizedPrompt);
+        vo.setAction(action);
+        vo.setSummary(summary);
+        vo.setRiskLevel(riskLevel);
+        vo.setConfirmationRequired(confirmationRequired);
+        vo.setConfirmationToken(confirmationToken);
+        vo.setExecutable(executable);
+        vo.setMessage(executable ? "已完成指令预处理" : buildMissingArgumentsMessage(action, missingArguments));
+        vo.setMissingArguments(missingArguments);
+        vo.setParsedArguments(arguments);
+        vo.setResolvedContext(resolvedContext);
+        vo.setWarnings(warnings);
+        vo.setResult(session.getResult());
+        return vo;
+    }
+
+    private void updateCommandContext(Map<String, Object> context, AgentCommandPreviewVO preview) {
+        context.putAll(preview.getResolvedContext());
+        context.put("lastAction", preview.getAction());
+        if (preview.isExecutable()) {
+            context.remove("pendingCommandId");
+        } else {
+            context.put("pendingCommandId", preview.getCommandId());
+        }
+    }
+
+    private List<String> collectMissingArguments(String action, Map<String, Object> resolvedContext) {
+        List<String> missing = new ArrayList<>();
+        switch (action) {
+            case "ROOM_CREATE" -> {
+                requireMissing(missing, resolvedContext, "communityId", "小区");
+                requireMissing(missing, resolvedContext, "buildingNo", "楼栋");
+                requireMissing(missing, resolvedContext, "unitNo", "单元");
+                requireMissing(missing, resolvedContext, "roomNo", "房号");
+                requireMissing(missing, resolvedContext, "areaM2", "面积");
+            }
+            case "ROOM_DISABLE" -> {
+                if (asLong(resolvedContext.get("roomId")) == null) {
+                    requireMissing(missing, resolvedContext, "communityName", "小区");
+                    requireMissing(missing, resolvedContext, "buildingNo", "楼栋");
+                    requireMissing(missing, resolvedContext, "unitNo", "单元");
+                    requireMissing(missing, resolvedContext, "roomNo", "房号");
+                }
+            }
+            case "BILL_DETAIL" -> requireMissing(missing, resolvedContext, "billId", "账单ID");
+            case "BILL_LIST_BY_ROOM" -> {
+                if (asLong(resolvedContext.get("roomId")) == null) {
+                    requireMissing(missing, resolvedContext, "communityName", "小区");
+                    requireMissing(missing, resolvedContext, "buildingNo", "楼栋");
+                    requireMissing(missing, resolvedContext, "unitNo", "单元");
+                    requireMissing(missing, resolvedContext, "roomNo", "房号");
+                }
+            }
+            case "PAYMENT_CREATE" -> {
+                requireMissing(missing, resolvedContext, "billId", "账单ID");
+                requireMissing(missing, resolvedContext, "channel", "支付渠道");
+            }
+            case "PAYMENT_QUERY" -> requireMissing(missing, resolvedContext, "payOrderNo", "支付单号");
+            case "WATER_READING_CREATE" -> {
+                if (asLong(resolvedContext.get("roomId")) == null) {
+                    requireMissing(missing, resolvedContext, "communityName", "小区");
+                    requireMissing(missing, resolvedContext, "buildingNo", "楼栋");
+                    requireMissing(missing, resolvedContext, "unitNo", "单元");
+                    requireMissing(missing, resolvedContext, "roomNo", "房号");
+                }
+                requireMissing(missing, resolvedContext, "year", "年份");
+                requireMissing(missing, resolvedContext, "month", "月份");
+                requireMissing(missing, resolvedContext, "prevReading", "上期读数");
+                requireMissing(missing, resolvedContext, "currReading", "本期读数");
+                requireMissing(missing, resolvedContext, "readAt", "抄表时间");
+            }
+            default -> {
+            }
+        }
+        return missing;
+    }
+
+    private void requireMissing(List<String> missing, Map<String, Object> context, String key, String label) {
+        Object value = context.get(key);
+        boolean absent = value == null;
+        if (value instanceof String text) {
+            absent = text.isBlank();
+        }
+        if (absent && !missing.contains(label)) {
+            missing.add(label);
+        }
+    }
+
+    private String buildMissingArgumentsMessage(String action, List<String> missingArguments) {
+        String missing = String.join("、", missingArguments);
+        return switch (action) {
+            case "ROOM_CREATE" -> "创建房间前还缺少：" + missing + "。请继续补充。";
+            case "ROOM_DISABLE" -> "停用房间前还缺少：" + missing + "。请继续补充。";
+            case "BILL_DETAIL" -> "查询账单详情前还缺少：" + missing + "。请继续补充。";
+            case "BILL_LIST_BY_ROOM" -> "按房间查询账单前还缺少：" + missing + "。请继续补充。";
+            case "PAYMENT_CREATE" -> "创建支付单前还缺少：" + missing + "。请继续补充。";
+            case "PAYMENT_QUERY" -> "查询支付单前还缺少：" + missing + "。请继续补充。";
+            case "WATER_READING_CREATE" -> "录入水表抄表前还缺少：" + missing + "。请继续补充。";
+            default -> "当前指令还缺少必要参数：" + missing + "。请继续补充。";
+        };
+    }
+
     private AgentCommandExecutionVO toExecutionVo(AgentCommandSession session) {
         AgentCommandExecutionVO vo = new AgentCommandExecutionVO();
         vo.setCommandId(session.getCommandId());
@@ -745,13 +947,16 @@ public class BuiltInAgentService {
         assistantMessage.setRiskLevel(preview.getRiskLevel());
         assistantMessage.setConfirmationRequired(preview.isConfirmationRequired());
         assistantMessage.setConfirmationToken(preview.getConfirmationToken());
-        assistantMessage.setPayload(Map.of(
-                "summary", preview.getSummary(),
-                "parsedArguments", preview.getParsedArguments(),
-                "resolvedContext", preview.getResolvedContext(),
-                "warnings", preview.getWarnings(),
-                "confirmationToken", preview.getConfirmationToken()
-        ));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("summary", preview.getSummary());
+        payload.put("parsedArguments", preview.getParsedArguments());
+        payload.put("resolvedContext", preview.getResolvedContext());
+        payload.put("missingArguments", preview.getMissingArguments());
+        payload.put("warnings", preview.getWarnings());
+        payload.put("confirmationToken", preview.getConfirmationToken());
+        payload.put("executable", preview.isExecutable());
+        payload.put("result", preview.getResult());
+        assistantMessage.setPayload(payload);
         return assistantMessage;
     }
 
@@ -804,6 +1009,9 @@ public class BuiltInAgentService {
     }
 
     private String buildAssistantReplyText(AgentCommandPreviewVO preview) {
+        if (!preview.isExecutable()) {
+            return preview.getMessage();
+        }
         if (preview.isConfirmationRequired()) {
             return "我已经整理好这次受控操作的预览，请确认后再执行。";
         }

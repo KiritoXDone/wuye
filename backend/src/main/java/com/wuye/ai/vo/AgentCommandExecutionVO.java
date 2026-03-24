@@ -7,6 +7,8 @@ public class AgentCommandExecutionVO {
     private String action;
     private String riskLevel;
     private String summary;
+    private String resultSummary;
+    private String resultMarkdown;
     private Object result;
 
     public String getCommandId() {
@@ -47,6 +49,22 @@ public class AgentCommandExecutionVO {
 
     public void setSummary(String summary) {
         this.summary = summary;
+    }
+
+    public String getResultSummary() {
+        return resultSummary;
+    }
+
+    public void setResultSummary(String resultSummary) {
+        this.resultSummary = resultSummary;
+    }
+
+    public String getResultMarkdown() {
+        return resultMarkdown;
+    }
+
+    public void setResultMarkdown(String resultMarkdown) {
+        this.resultMarkdown = resultMarkdown;
     }
 
     public Object getResult() {

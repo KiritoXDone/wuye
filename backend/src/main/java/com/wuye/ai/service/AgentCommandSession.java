@@ -19,6 +19,7 @@ public class AgentCommandSession {
     private final Map<String, Object> resolvedContext;
     private final List<String> warnings;
     private final LocalDateTime createdAt;
+    private String sessionId;
     private Object result;
     private String status;
 
@@ -110,6 +111,14 @@ public class AgentCommandSession {
 
     public void setResult(Object result) {
         this.result = result;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getStatus() {

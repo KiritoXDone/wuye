@@ -15,9 +15,13 @@ public class AgentCommandPreviewVO {
     private String confirmationToken;
     private boolean executable;
     private String message;
+    private List<String> missingArguments;
     private Map<String, Object> parsedArguments;
     private Map<String, Object> resolvedContext;
     private List<String> warnings;
+    private String resultSummary;
+    private String resultMarkdown;
+    private Object result;
 
     public String getCommandId() {
         return commandId;
@@ -99,6 +103,14 @@ public class AgentCommandPreviewVO {
         this.message = message;
     }
 
+    public List<String> getMissingArguments() {
+        return missingArguments;
+    }
+
+    public void setMissingArguments(List<String> missingArguments) {
+        this.missingArguments = missingArguments;
+    }
+
     public Map<String, Object> getParsedArguments() {
         return parsedArguments;
     }
@@ -121,5 +133,29 @@ public class AgentCommandPreviewVO {
 
     public void setWarnings(List<String> warnings) {
         this.warnings = warnings;
+    }
+
+    public String getResultSummary() {
+        return resultSummary;
+    }
+
+    public void setResultSummary(String resultSummary) {
+        this.resultSummary = resultSummary;
+    }
+
+    public String getResultMarkdown() {
+        return resultMarkdown;
+    }
+
+    public void setResultMarkdown(String resultMarkdown) {
+        this.resultMarkdown = resultMarkdown;
+    }
+
+    public Object getResult() {
+        return result;
+    }
+
+    public void setResult(Object result) {
+        this.result = result;
     }
 }

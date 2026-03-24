@@ -485,6 +485,78 @@ class BuiltInAgentCommandIntegrationTest {
     }
 
     @Test
+    void conversationCanGuideAndContinueWhenCommandArgumentsAreMissing() throws Exception {
+        mockAgentCommand("""
+                {
+                  "action": "ROOM_CREATE",
+                  "arguments": {
+                    "communityName": "%s",
+                    "buildingNo": "9",
+                    "unitNo": "6",
+                    "roomNo": "906"
+                  },
+                  "warnings": [],
+                  "riskLevel": "L2",
+                  "summary": "创建房间"
+                }
+                """.formatted(COMMUNITY_NAME));
+
+        MvcResult firstResult = mockMvc.perform(post("/api/v1/ai/agent/conversation")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "message": "请新增 9 栋 6 单元 906"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messageCount").value(2))
+                .andExpect(jsonPath("$.data.messages[1].mode").value("ACTION"))
+                .andExpect(jsonPath("$.data.messages[1].content").value(org.hamcrest.Matchers.containsString("面积")))
+                .andExpect(jsonPath("$.data.messages[1].payload.missingArguments[0]").value("面积"))
+                .andExpect(jsonPath("$.data.messages[1].payload.executable").value(false))
+                .andReturn();
+
+        JsonNode firstConversation = read(firstResult).path("data");
+        String sessionId = firstConversation.path("sessionId").asText();
+
+        mockAgentCommand("""
+                {
+                  "action": "UNKNOWN",
+                  "arguments": {
+                    "areaM2": 109.66
+                  },
+                  "warnings": [],
+                  "riskLevel": "L1",
+                  "summary": "补充面积"
+                }
+                """);
+
+        MvcResult secondResult = mockMvc.perform(post("/api/v1/ai/agent/conversation")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sessionId": "%s",
+                                  "message": "面积 109.66 平方米"
+                                }
+                                """.formatted(sessionId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messageCount").value(4))
+                .andExpect(jsonPath("$.data.messages[3].action").value("ROOM_CREATE"))
+                .andExpect(jsonPath("$.data.messages[3].payload.executable").value(true))
+                .andExpect(jsonPath("$.data.messages[3].payload.result.id").isNumber())
+                .andReturn();
+
+        long createdRoomId = read(secondResult).path("data").path("messages").get(3).path("payload").path("result").path("id").asLong();
+        assertThat(createdRoomId).isPositive();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM room WHERE id = ? AND community_id = 100 AND building_no = '9' AND unit_no = '6' AND room_no = '906' AND area_m2 = 109.66 AND status = 1",
+                Integer.class,
+                createdRoomId)).isEqualTo(1);
+    }
+
+    @Test
     void conversationStreamCommandPreviewEmitsSseEventsAndPersistsSession() throws Exception {
         mockAgentCommand("""
                 {
