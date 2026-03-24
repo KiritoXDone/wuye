@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
+import ThemeController from '@/components/theme/ThemeController'
 import AppShell from '@/layouts/AppShell'
 import BillsPage from '@/pages/BillsPage'
 import BillingGeneratePage from '@/pages/BillingGeneratePage'
@@ -11,6 +12,7 @@ import CouponsPage from '@/pages/CouponsPage'
 import DashboardPage from '@/pages/DashboardPage'
 import DunningPage from '@/pages/DunningPage'
 import FeeRulesPage from '@/pages/FeeRulesPage'
+import HouseholdPaymentOverviewPage from '@/pages/HouseholdPaymentOverviewPage'
 import ImportExportPage from '@/pages/ImportExportPage'
 import InvoiceApplicationsPage from '@/pages/InvoiceApplicationsPage'
 import LoginPage from '@/pages/LoginPage'
@@ -73,39 +75,43 @@ function GuestOnly({ children }: { children: React.ReactElement }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <GuestOnly>
-              <LoginPage />
-            </GuestOnly>
-          }
-        />
-        <Route element={<ProtectedApp />}>
-          <Route element={<AppShell />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/billing-generate" element={<BillingGeneratePage />} />
-            <Route path="/water-readings" element={<WaterReadingsPage />} />
-            <Route path="/import-export" element={<ImportExportPage />} />
-            <Route path="/fee-rules" element={<FeeRulesPage />} />
-            <Route path="/org-units" element={<OrgUnitsPage />} />
-            <Route path="/users" element={<UserManagementPage />} />
-            <Route path="/audit-logs" element={<AuditLogsPage />} />
-            <Route path="/built-in-agent" element={<BuiltInAgentPage />} />
-            <Route path="/ai-runtime-config" element={<AiRuntimeConfigPage />} />
-            <Route path="/dunning" element={<DunningPage />} />
-            <Route path="/coupons" element={<CouponsPage />} />
-            <Route path="/coupon-templates" element={<CouponsPage />} />
-            <Route path="/coupon-rules" element={<CouponsPage />} />
-            <Route path="/coupon-instances" element={<CouponsPage />} />
-            <Route path="/invoice-applications" element={<InvoiceApplicationsPage />} />
-            <Route path="/bills" element={<BillsPage />} />
+    <>
+      <ThemeController />
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <GuestOnly>
+                <LoginPage />
+              </GuestOnly>
+            }
+          />
+          <Route element={<ProtectedApp />}>
+            <Route element={<AppShell />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/billing-generate" element={<BillingGeneratePage />} />
+              <Route path="/water-readings" element={<WaterReadingsPage />} />
+              <Route path="/household-payments" element={<HouseholdPaymentOverviewPage />} />
+              <Route path="/import-export" element={<ImportExportPage />} />
+              <Route path="/fee-rules" element={<FeeRulesPage />} />
+              <Route path="/org-units" element={<OrgUnitsPage />} />
+              <Route path="/users" element={<UserManagementPage />} />
+              <Route path="/audit-logs" element={<AuditLogsPage />} />
+              <Route path="/built-in-agent" element={<BuiltInAgentPage />} />
+              <Route path="/ai-runtime-config" element={<AiRuntimeConfigPage />} />
+              <Route path="/dunning" element={<DunningPage />} />
+              <Route path="/coupons" element={<CouponsPage />} />
+              <Route path="/coupon-templates" element={<CouponsPage />} />
+              <Route path="/coupon-rules" element={<CouponsPage />} />
+              <Route path="/coupon-instances" element={<CouponsPage />} />
+              <Route path="/invoice-applications" element={<InvoiceApplicationsPage />} />
+              <Route path="/bills" element={<BillsPage />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </>
   )
 }

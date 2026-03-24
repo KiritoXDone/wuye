@@ -49,9 +49,13 @@ export interface AgentCommandPreview {
   confirmationToken?: string
   executable: boolean
   message: string
+  missingArguments?: string[]
   parsedArguments: Record<string, unknown>
   resolvedContext: Record<string, unknown>
   warnings: string[]
+  resultSummary?: string
+  resultMarkdown?: string
+  result?: unknown
 }
 
 export interface AgentConversationMessage {
@@ -93,5 +97,7 @@ export interface AgentCommandExecution {
   action: string
   riskLevel: string
   summary: string
+  resultSummary?: string
+  resultMarkdown?: string
   result: unknown
 }

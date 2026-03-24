@@ -112,9 +112,9 @@ export default function BillsPage() {
               ['账单数量', `${list.length} / ${total}`],
               ['当前账期', formatPeriod(query.periodYear, query.periodMonth || null, query.periodMonth ? 'MONTH' : 'YEAR')],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
                 <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{value}</div>
               </div>
             ))}
           </div>
@@ -172,8 +172,8 @@ export default function BillsPage() {
                       <td className="px-4 py-4 text-slate-600">{item.roomLabel}</td>
                       <td className="px-4 py-4"><StatusBadge value={item.feeType} /></td>
                       <td className="px-4 py-4 text-slate-600">{item.period}</td>
-                      <td className="px-4 py-4 font-medium text-slate-900">{formatMoney(item.amountDue)}</td>
-                      <td className="px-4 py-4 text-slate-600">{formatMoney(item.amountPaid)}</td>
+                      <td className="px-4 py-4 font-semibold text-slate-950 dark:text-slate-50">{formatMoney(item.amountDue)}</td>
+                      <td className="px-4 py-4 font-medium text-slate-700 dark:text-slate-200">{formatMoney(item.amountPaid)}</td>
                       <td className="px-4 py-4 text-slate-600">{formatDate(item.dueDate)}</td>
                       <td className="px-4 py-4"><StatusBadge value={item.status} /></td>
                       <td className="px-4 py-4">
@@ -227,14 +227,14 @@ export default function BillsPage() {
                         <StatusBadge value={detail.cycleType} />
                         <StatusBadge value={detail.status} />
                       </div>
-                      <div className="mt-4 text-xl font-semibold text-slate-950">{detail.billNo}</div>
+                      <div className="mt-4 text-xl font-semibold text-slate-950 dark:text-slate-50">{detail.billNo}</div>
                       <dl className="mt-4 space-y-3 text-sm">
                         <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">房间</dt><dd className="font-medium text-slate-900">{detail.roomLabel}</dd></div>
                         <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">户型</dt><dd className="font-medium text-slate-900">{detail.roomTypeName || '--'}</dd></div>
                         <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">账期</dt><dd className="font-medium text-slate-900">{formatPeriod(detail.periodYear, detail.periodMonth || undefined, detail.cycleType)}</dd></div>
                         <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">服务周期</dt><dd className="font-medium text-slate-900">{formatServicePeriod(detail.servicePeriodStart, detail.servicePeriodEnd)}</dd></div>
-                        <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">应收金额</dt><dd className="font-medium text-slate-900">{formatMoney(detail.amountDue)}</dd></div>
-                        <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">已收金额</dt><dd className="font-medium text-slate-900">{formatMoney(detail.amountPaid)}</dd></div>
+                        <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">应收金额</dt><dd className="font-semibold text-slate-950 dark:text-slate-50">{formatMoney(detail.amountDue)}</dd></div>
+                        <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">已收金额</dt><dd className="font-medium text-slate-700 dark:text-slate-200">{formatMoney(detail.amountPaid)}</dd></div>
                         <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">到期日</dt><dd className="font-medium text-slate-900">{formatDate(detail.dueDate)}</dd></div>
                       </dl>
                     </div>
@@ -256,7 +256,7 @@ export default function BillsPage() {
                                 {line.ext?.pricingMode === 'TIERED' ? <div className="mt-1 text-xs text-slate-500">按阶梯水价计算</div> : null}
                               </div>
                               <div className="text-right">
-                                <div className="font-semibold text-slate-900">{formatMoney(line.lineAmount)}</div>
+                                <div className="font-semibold text-slate-950 dark:text-slate-50">{formatMoney(line.lineAmount)}</div>
                                 <div className="mt-1 text-xs text-slate-500">
                                   {line.ext?.pricingMode === 'TIERED'
                                     ? '按阶梯水价结算'

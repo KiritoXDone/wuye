@@ -56,3 +56,49 @@ export interface BillDetail {
 }
 
 export type BillPage = PageResponse<BillListItem>
+
+export interface HouseholdPaymentOverviewQuery {
+  communityId?: number
+  periodYear: number
+  periodMonth: number
+  buildingNo?: string
+  unitNo?: string
+  roomKeyword?: string
+  propertyStatus?: string
+  waterStatus?: string
+  pageNo: number
+  pageSize: number
+}
+
+export interface HouseholdPaymentOverviewItem {
+  roomId: number
+  communityId: number
+  communityName: string
+  buildingNo: string
+  unitNo: string
+  roomNo: string
+  roomLabel: string
+  roomTypeName?: string | null
+  areaM2?: number | string | null
+  propertyBillId?: number | null
+  propertyBillNo?: string | null
+  propertyAmountDue?: number | string | null
+  propertyAmountPaid?: number | string | null
+  propertyStatus: string
+  propertyDueDate?: string | null
+  propertyPaidAt?: string | null
+  waterBillId?: number | null
+  waterBillNo?: string | null
+  waterAmountDue?: number | string | null
+  waterAmountPaid?: number | string | null
+  waterStatus: string
+  waterDueDate?: string | null
+  waterPaidAt?: string | null
+}
+
+export interface MarkBillPaidPayload {
+  paidAt?: string
+  remark?: string
+}
+
+export type HouseholdPaymentOverviewPage = PageResponse<HouseholdPaymentOverviewItem>

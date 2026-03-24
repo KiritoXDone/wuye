@@ -5,8 +5,8 @@ import { ArrowRight, Droplets, FileText, ReceiptText } from 'lucide-react'
 import { getDashboardSummary, getPropertyYearlyReport, getWaterMonthlyReport } from '@/api/dashboard'
 import AsyncState from '@/components/ui/AsyncState'
 import PageSection from '@/components/ui/PageSection'
-import { formatMoney, formatPercent, formatPeriod } from '@/utils/format'
 import type { DashboardSummary, MonthlyReport } from '@/types/dashboard'
+import { formatMoney, formatPercent, formatPeriod } from '@/utils/format'
 
 export default function DashboardPage() {
   const now = new Date()
@@ -32,7 +32,7 @@ export default function DashboardPage() {
         totalCount: summaryResult.totalCount,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '仪表盘加载失败')
+      setError(err instanceof Error ? err.message : '仪表盘加载失败。')
     } finally {
       setLoading(false)
     }
@@ -55,10 +55,10 @@ export default function DashboardPage() {
   }, [monthly?.payRate, summary])
 
   const heroCards = [
-    { label: '账期实收', value: formatMoney(summary?.paidAmount), hint: '已回款' },
-    { label: '欠费余额', value: formatMoney(summary?.unpaidAmount), hint: `${derived.unpaidCount} 间未缴` },
-    { label: '收缴率', value: formatPercent(summary?.payRate), hint: `${derived.paidCount} / ${derived.totalCount}` },
-    { label: '优惠影响', value: formatMoney(summary?.discountAmount), hint: '优惠金额' },
+    { label: '本期实收', value: formatMoney(summary?.paidAmount), hint: '已回款金额' },
+    { label: '欠费余额', value: formatMoney(summary?.unpaidAmount), hint: `${derived.unpaidCount} 户待缴` },
+    { label: '缴费率', value: formatPercent(summary?.payRate), hint: `${derived.paidCount} / ${derived.totalCount}` },
+    { label: '优惠影响', value: formatMoney(summary?.discountAmount), hint: '本期优惠金额' },
   ]
 
   const quickActions = [
@@ -72,7 +72,7 @@ export default function DashboardPage() {
       <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">经营总览</div>
+            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">运营总览</div>
             <h1 className="mt-2 text-2xl font-semibold text-slate-950">本期经营结果</h1>
           </div>
 
@@ -112,9 +112,9 @@ export default function DashboardPage() {
 
         <div className="grid gap-3 xl:grid-cols-4">
           {heroCards.map((card) => (
-            <article key={card.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <article key={card.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
               <div className="text-sm text-slate-500">{card.label}</div>
-              <div className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{card.value}</div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{card.value}</div>
               <div className="mt-1 text-xs text-slate-500">{card.hint}</div>
             </article>
           ))}
@@ -123,16 +123,16 @@ export default function DashboardPage() {
 
       <AsyncState loading={loading} error={error} empty={!summary || !monthly}>
         <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
-          <PageSection title="经营复核" description="查看当期核心数据。">
+          <PageSection title="经营复核" description="查看当前账期的核心经营指标。">
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="panel-muted p-5">
                 <div className="text-sm font-medium text-slate-500">当前账期</div>
                 <dl className="mt-4 space-y-4 text-sm">
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">水费账期</dt><dd className="font-semibold text-slate-900">{formatPeriod(monthly?.periodYear, monthly?.periodMonth, 'MONTH')}</dd></div>
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">缴费率</dt><dd className="font-semibold text-slate-900">{formatPercent(monthly?.payRate)}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">年度物业费实收</dt><dd className="font-semibold text-slate-900">{formatMoney(monthly?.paidAmount)}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">当月水费优惠</dt><dd className="font-semibold text-slate-900">{formatMoney(monthly?.discountAmount)}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">当月水费欠费</dt><dd className="font-semibold text-slate-900">{formatMoney(monthly?.unpaidAmount)}</dd></div>
+                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">年度物业费实收</dt><dd className="font-semibold text-slate-950 dark:text-slate-50">{formatMoney(monthly?.paidAmount)}</dd></div>
+                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">当月水费优惠</dt><dd className="font-semibold text-slate-950 dark:text-slate-50">{formatMoney(monthly?.discountAmount)}</dd></div>
+                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">当月水费欠费</dt><dd className="font-semibold text-slate-950 dark:text-slate-50">{formatMoney(monthly?.unpaidAmount)}</dd></div>
                 </dl>
               </div>
 
@@ -140,13 +140,13 @@ export default function DashboardPage() {
                 <div className="text-sm font-medium text-slate-500">经营信号</div>
                 <div className="mt-4 grid gap-3">
                   {[
-                    ['未缴房间', `${derived.unpaidCount} 间`],
+                    ['未缴房间', `${derived.unpaidCount} 户`],
                     ['平均回款', formatMoney(derived.averagePaidAmount)],
-                    ['总房间基数', `${derived.totalCount} 间`],
+                    ['总房间基数', `${derived.totalCount} 户`],
                   ].map(([label, value]) => (
-                    <article key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                    <article key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950">
                       <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{label}</div>
-                      <div className="mt-2 text-xl font-semibold text-slate-950">{value}</div>
+                      <div className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">{value}</div>
                     </article>
                   ))}
                 </div>
@@ -154,15 +154,15 @@ export default function DashboardPage() {
             </div>
           </PageSection>
 
-          <PageSection title="快捷入口" description="进入高频操作。">
+          <PageSection title="快捷入口" description="进入高频业务页面。">
             <div className="space-y-4">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className="text-sm font-medium text-slate-500">收缴进度</div>
-                    <div className="mt-2 text-2xl font-semibold text-slate-950">{formatPercent(summary?.payRate)}</div>
+                    <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{formatPercent(summary?.payRate)}</div>
                   </div>
-                  <div className="tag">未缴 {derived.unpaidCount} 间</div>
+                  <div className="tag">未缴 {derived.unpaidCount} 户</div>
                 </div>
                 <div className="mt-4 h-2 rounded-full bg-slate-200">
                   <div className="h-2 rounded-full bg-slate-900" style={{ width: `${Math.min(Math.max(derived.payRate, 0), 100)}%` }} />
