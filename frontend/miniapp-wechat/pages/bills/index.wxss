@@ -10,6 +10,10 @@
   background: var(--color-surface);
 }
 
+.list-stack {
+  margin-top: var(--space-4);
+}
+
 .bill-list-card__top {
   display: flex;
   align-items: flex-start;

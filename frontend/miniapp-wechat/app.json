@@ -11,10 +11,10 @@
     "pages/rewards/index"
   ],
   "tabBar": {
-    "color": "#6b7280",
-    "selectedColor": "#111827",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
+    "color": "@tabBarColor",
+    "selectedColor": "@tabBarSelectedColor",
+    "backgroundColor": "@tabBarBackgroundColor",
+    "borderStyle": "@tabBarBorderStyle",
     "list": [
       {
         "pagePath": "pages/rooms/index",
@@ -43,12 +43,14 @@
     ]
   },
   "window": {
-    "navigationBarBackgroundColor": "#eff5fb",
-    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "@navBgColor",
+    "navigationBarTextStyle": "@navTextStyle",
     "navigationBarTitleText": "物业缴费",
-    "backgroundColor": "#eff5fb",
-    "backgroundTextStyle": "light"
+    "backgroundColor": "@windowBgColor",
+    "backgroundTextStyle": "@windowBgTextStyle"
   },
+  "darkmode": true,
+  "themeLocation": "theme.json",
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }
