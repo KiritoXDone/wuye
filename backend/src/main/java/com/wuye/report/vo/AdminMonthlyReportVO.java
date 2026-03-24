@@ -2,7 +2,7 @@ package com.wuye.report.vo;
 
 import java.math.BigDecimal;
 
-public class AdminMonthlyReportVO {
+public class AdminMonthlyReportVO implements ReportMetrics {
 
     private Integer periodYear;
     private Integer periodMonth;

@@ -13,7 +13,6 @@ import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.mapper.InvoiceApplicationMapper;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.vo.InvoiceApplicationVO;
-import com.wuye.room.service.RoomBindingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,18 +26,18 @@ public class InvoiceApplicationService {
     private final InvoiceApplicationMapper invoiceApplicationMapper;
     private final PayOrderMapper payOrderMapper;
     private final BillMapper billMapper;
-    private final RoomBindingService roomBindingService;
+    private final PaymentAccessService paymentAccessService;
     private final AccessGuard accessGuard;
 
     public InvoiceApplicationService(InvoiceApplicationMapper invoiceApplicationMapper,
                                      PayOrderMapper payOrderMapper,
                                      BillMapper billMapper,
-                                     RoomBindingService roomBindingService,
+                                     PaymentAccessService paymentAccessService,
                                      AccessGuard accessGuard) {
         this.invoiceApplicationMapper = invoiceApplicationMapper;
         this.payOrderMapper = payOrderMapper;
         this.billMapper = billMapper;
-        this.roomBindingService = roomBindingService;
+        this.paymentAccessService = paymentAccessService;
         this.accessGuard = accessGuard;
     }
 
@@ -50,7 +49,7 @@ public class InvoiceApplicationService {
             throw new BusinessException("CONFLICT", "仅已支付账单可申请发票", HttpStatus.CONFLICT);
         }
         Bill bill = billMapper.findById(dto.getBillId());
-        accessGuard.requireSelfRoom(loginUser, bill != null && roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
+        paymentAccessService.requireResidentBillAccess(loginUser, bill);
         InvoiceApplication application = new InvoiceApplication();
         application.setApplicationNo("INV-" + NoGenerator.payOrderNo());
         application.setBillId(dto.getBillId());

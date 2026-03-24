@@ -2,6 +2,8 @@ package com.wuye.bill.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wuye.bill.dto.AdminBillMarkPaidDTO;
+import com.wuye.bill.dto.AdminHouseholdPaymentQuery;
 import com.wuye.bill.dto.BillListQuery;
 import com.wuye.bill.dto.AdminBillListQuery;
 import com.wuye.bill.entity.Bill;
@@ -13,6 +15,7 @@ import com.wuye.bill.vo.AdminWaterReadingVO;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillLineVO;
 import com.wuye.bill.vo.BillListItemVO;
+import com.wuye.bill.vo.HouseholdPaymentOverviewVO;
 import com.wuye.common.api.PageResponse;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
@@ -23,6 +26,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +68,11 @@ public class BillQueryService {
         int pageNo = query.getPageNo() == null || query.getPageNo() < 1 ? 1 : query.getPageNo();
         int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
         int offset = (pageNo - 1) * pageSize;
-        List<BillListItemVO> list = billMapper.listByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId(), offset, pageSize);
-        long total = billMapper.countByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId());
+        LocalDate now = LocalDate.now();
+        int currentYear = now.getYear();
+        int currentMonth = now.getMonthValue();
+        List<BillListItemVO> list = billMapper.listByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId(), currentYear, currentMonth, offset, pageSize);
+        long total = billMapper.countByAccountId(loginUser.accountId(), query.getStatus(), query.getRoomId(), currentYear, currentMonth);
         return new PageResponse<>(list, pageNo, pageSize, total);
     }
 
@@ -74,7 +83,8 @@ public class BillQueryService {
     public PageResponse<BillListItemVO> listRoomBills(LoginUser loginUser, Long roomId, String status) {
         accessGuard.requireRole(loginUser, "RESIDENT");
         roomBindingService.myRoom(loginUser, roomId);
-        List<BillListItemVO> list = billMapper.listByAccountIdAndRoom(loginUser.accountId(), roomId, status);
+        LocalDate now = LocalDate.now();
+        List<BillListItemVO> list = billMapper.listByAccountIdAndRoom(loginUser.accountId(), roomId, status, now.getYear(), now.getMonthValue());
         return new PageResponse<>(list, 1, list.size() == 0 ? 20 : list.size(), list.size());
     }
 
@@ -120,6 +130,63 @@ public class BillQueryService {
         return waterReadingMapper.listAdminReadings(periodYear, periodMonth);
     }
 
+    public PageResponse<HouseholdPaymentOverviewVO> listAdminHouseholdOverview(LoginUser loginUser, AdminHouseholdPaymentQuery query) {
+        accessGuard.requireAnyRole(loginUser, "ADMIN", "FINANCE");
+        int pageNo = query.getPageNo() == null || query.getPageNo() < 1 ? 1 : query.getPageNo();
+        int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
+        int offset = (pageNo - 1) * pageSize;
+        List<HouseholdPaymentOverviewVO> list = billMapper.listAdminHouseholdOverview(
+                query.getCommunityId(),
+                query.getPeriodYear(),
+                query.getPeriodMonth(),
+                query.getBuildingNo(),
+                query.getUnitNo(),
+                query.getRoomKeyword(),
+                query.getPropertyStatus(),
+                query.getWaterStatus(),
+                offset,
+                pageSize
+        );
+        long total = billMapper.countAdminHouseholdOverview(
+                query.getCommunityId(),
+                query.getPeriodYear(),
+                query.getPeriodMonth(),
+                query.getBuildingNo(),
+                query.getUnitNo(),
+                query.getRoomKeyword(),
+                query.getPropertyStatus(),
+                query.getWaterStatus()
+        );
+        return new PageResponse<>(list, pageNo, pageSize, total);
+    }
+
+    public void markBillPaid(LoginUser loginUser, Long billId, AdminBillMarkPaidDTO dto) {
+        accessGuard.requireRole(loginUser, "ADMIN");
+        Bill bill = billMapper.findById(billId);
+        if (bill == null) {
+            throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
+        }
+        if (!"ISSUED".equals(bill.getStatus())) {
+            throw new BusinessException("CONFLICT", "仅未支付账单允许手动标记已缴", HttpStatus.CONFLICT);
+        }
+        LocalDateTime paidAt = dto != null && dto.getPaidAt() != null ? dto.getPaidAt() : LocalDateTime.now();
+        String remark = buildManualPaidRemark(dto);
+        if (billMapper.markPaidOffline(billId, paidAt, remark) == 0) {
+            throw new BusinessException("CONFLICT", "账单状态已变化，无法手动标记已缴", HttpStatus.CONFLICT);
+        }
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("billId", billId);
+        detail.put("billNo", bill.getBillNo());
+        detail.put("roomId", bill.getRoomId());
+        detail.put("feeType", bill.getFeeType());
+        detail.put("periodYear", bill.getPeriodYear());
+        detail.put("periodMonth", bill.getPeriodMonth());
+        detail.put("paidAt", paidAt);
+        detail.put("remark", remark);
+        detail.put("status", "PAID");
+        auditLogService.record(loginUser, "BILL", String.valueOf(billId), "MANUAL_MARK_PAID", detail);
+    }
+
     public void deleteBill(LoginUser loginUser, Long billId) {
         accessGuard.requireRole(loginUser, "ADMIN");
         Bill bill = billMapper.findById(billId);
@@ -152,5 +219,13 @@ public class BillQueryService {
         } catch (IOException ex) {
             throw new IllegalStateException("failed to parse bill line ext json", ex);
         }
+    }
+
+    private String buildManualPaidRemark(AdminBillMarkPaidDTO dto) {
+        String defaultRemark = "后台手动标记已缴";
+        if (dto == null || dto.getRemark() == null || dto.getRemark().isBlank()) {
+            return defaultRemark;
+        }
+        return defaultRemark + "：" + dto.getRemark().trim();
     }
 }

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -190,8 +192,9 @@ class AuthAndResidentRoomIntegrationTest extends AbstractIntegrationTest {
     @Test
     void residentCanApplyBindingAndQueryRoomBills() throws Exception {
         String lisiToken = loginResident("resident-lisi");
-        createPropertyFeeRule(2031);
-        generatePropertyBill(2031);
+        int currentYear = LocalDate.now().getYear();
+        createPropertyFeeRule(currentYear);
+        generatePropertyBill(currentYear);
 
         mockMvc.perform(post("/api/v1/me/rooms")
                         .header("Authorization", "Bearer " + lisiToken)

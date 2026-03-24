@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -34,6 +35,22 @@ public interface DunningTaskMapper {
     DunningTask findByUniqueKey(@Param("billId") Long billId,
                                 @Param("triggerType") String triggerType,
                                 @Param("triggerDate") LocalDate triggerDate);
+
+    @Select("""
+            <script>
+            SELECT bill_id
+            FROM dunning_task
+            WHERE trigger_type = #{triggerType}
+              AND trigger_date = #{triggerDate}
+              AND bill_id IN
+              <foreach collection="billIds" item="billId" open="(" separator="," close=")">
+                #{billId}
+              </foreach>
+            </script>
+            """)
+    List<Long> listExistingBillIds(@Param("billIds") Collection<Long> billIds,
+                                   @Param("triggerType") String triggerType,
+                                   @Param("triggerDate") LocalDate triggerDate);
 
     @Select("""
             SELECT id,

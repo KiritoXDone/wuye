@@ -42,6 +42,7 @@ public interface CommunityMapper {
                 WHERE status = 1
                 GROUP BY community_id
             ) r ON r.community_id = c.id
+            WHERE c.status = 1
             ORDER BY c.id ASC
             """)
     List<AdminCommunityVO> listAdminCommunities();
@@ -91,6 +92,7 @@ public interface CommunityMapper {
             SELECT COUNT(1)
             FROM room_type
             WHERE community_id = #{communityId}
+              AND status = 1
             """)
     long countRoomTypes(@Param("communityId") Long communityId);
 
@@ -98,6 +100,7 @@ public interface CommunityMapper {
             SELECT COUNT(1)
             FROM room
             WHERE community_id = #{communityId}
+              AND status = 1
             """)
     long countRooms(@Param("communityId") Long communityId);
 

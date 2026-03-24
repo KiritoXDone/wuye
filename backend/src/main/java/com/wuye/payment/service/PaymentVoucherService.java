@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.mapper.BillMapper;
 import com.wuye.common.exception.BusinessException;
-import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
 import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.entity.PayOrderBillCover;
@@ -14,7 +13,6 @@ import com.wuye.payment.mapper.PayOrderBillCoverMapper;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PaymentVoucherMapper;
 import com.wuye.payment.vo.PaymentVoucherVO;
-import com.wuye.room.service.RoomBindingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.StreamSupport;
 
 @Service
 public class PaymentVoucherService {
@@ -32,28 +31,33 @@ public class PaymentVoucherService {
     private final PayOrderMapper payOrderMapper;
     private final PayOrderBillCoverMapper payOrderBillCoverMapper;
     private final BillMapper billMapper;
-    private final RoomBindingService roomBindingService;
-    private final AccessGuard accessGuard;
+    private final PaymentAccessService paymentAccessService;
     private final ObjectMapper objectMapper;
 
     public PaymentVoucherService(PaymentVoucherMapper paymentVoucherMapper,
                                  PayOrderMapper payOrderMapper,
                                  PayOrderBillCoverMapper payOrderBillCoverMapper,
                                  BillMapper billMapper,
-                                 RoomBindingService roomBindingService,
-                                 AccessGuard accessGuard,
+                                 PaymentAccessService paymentAccessService,
                                  ObjectMapper objectMapper) {
         this.paymentVoucherMapper = paymentVoucherMapper;
         this.payOrderMapper = payOrderMapper;
         this.payOrderBillCoverMapper = payOrderBillCoverMapper;
         this.billMapper = billMapper;
-        this.roomBindingService = roomBindingService;
-        this.accessGuard = accessGuard;
+        this.paymentAccessService = paymentAccessService;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
     public PaymentVoucher ensureVoucher(PayOrder payOrder, Bill bill, LocalDateTime issuedAt) {
+        return ensureVoucher(payOrder, bill, null, issuedAt);
+    }
+
+    @Transactional
+    public PaymentVoucher ensureVoucher(PayOrder payOrder,
+                                        Bill bill,
+                                        Iterable<PayOrderBillCover> covers,
+                                        LocalDateTime issuedAt) {
         PaymentVoucher existed = paymentVoucherMapper.findByPayOrderNo(payOrder.getPayOrderNo());
         if (existed != null) {
             return existed;
@@ -66,7 +70,7 @@ public class PaymentVoucherService {
         voucher.setAmount(payOrder.getPayAmount());
         voucher.setStatus("ISSUED");
         voucher.setIssuedAt(issuedAt);
-        voucher.setContentJson(writeJson(buildContent(payOrder, bill, issuedAt)));
+        voucher.setContentJson(writeJson(buildContent(payOrder, bill, covers, issuedAt)));
         paymentVoucherMapper.insert(voucher);
         return voucher;
     }
@@ -77,9 +81,8 @@ public class PaymentVoucherService {
             throw new BusinessException("NOT_FOUND", "支付单不存在", HttpStatus.NOT_FOUND);
         }
         Bill bill = billMapper.findById(payOrder.getBillId());
-        if (!loginUser.hasRole("ADMIN")) {
-            accessGuard.requireRole(loginUser, "RESIDENT");
-            accessGuard.requireSelfRoom(loginUser, bill != null && roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
+        if (!paymentAccessService.isAdmin(loginUser)) {
+            paymentAccessService.requireResidentBillAccess(loginUser, bill);
         }
         PaymentVoucher voucher = paymentVoucherMapper.findByPayOrderNo(payOrderNo);
         if (voucher == null) {
@@ -100,7 +103,10 @@ public class PaymentVoucherService {
         return paymentVoucherMapper.findByPayOrderNo(payOrderNo) != null;
     }
 
-    private Map<String, Object> buildContent(PayOrder payOrder, Bill bill, LocalDateTime issuedAt) {
+    private Map<String, Object> buildContent(PayOrder payOrder,
+                                             Bill bill,
+                                             Iterable<PayOrderBillCover> covers,
+                                             LocalDateTime issuedAt) {
         Map<String, Object> content = new LinkedHashMap<>();
         content.put("billId", payOrder.getBillId());
         content.put("billNo", bill == null ? null : bill.getBillNo());
@@ -110,7 +116,8 @@ public class PaymentVoucherService {
         content.put("annualPayment", Boolean.TRUE.equals(payOrder.getAnnualPayment()));
         content.put("coveredBillCount", payOrder.getCoveredBillCount());
         if (Boolean.TRUE.equals(payOrder.getAnnualPayment())) {
-            content.put("coveredPeriods", payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo()).stream()
+            Iterable<PayOrderBillCover> resolvedCovers = covers == null ? payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo()) : covers;
+            content.put("coveredPeriods", StreamSupport.stream(resolvedCovers.spliterator(), false)
                     .map(this::formatCoveredPeriod)
                     .filter(Objects::nonNull)
                     .toList());

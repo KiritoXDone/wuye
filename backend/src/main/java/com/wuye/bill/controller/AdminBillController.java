@@ -1,7 +1,9 @@
 package com.wuye.bill.controller;
 
 import com.wuye.bill.dto.PropertyBillGenerateDTO;
+import com.wuye.bill.dto.AdminBillMarkPaidDTO;
 import com.wuye.bill.dto.AdminBillListQuery;
+import com.wuye.bill.dto.AdminHouseholdPaymentQuery;
 import com.wuye.bill.dto.WaterBillGenerateDTO;
 import com.wuye.bill.dto.WaterMeterCreateDTO;
 import com.wuye.bill.dto.WaterReadingCreateDTO;
@@ -14,6 +16,7 @@ import com.wuye.bill.service.WaterReadingService;
 import com.wuye.bill.vo.AdminWaterReadingVO;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillListItemVO;
+import com.wuye.bill.vo.HouseholdPaymentOverviewVO;
 import com.wuye.common.api.ApiResponse;
 import com.wuye.common.api.PageResponse;
 import com.wuye.common.security.CurrentUser;
@@ -53,6 +56,12 @@ public class AdminBillController {
     @GetMapping("/bills")
     public ApiResponse<PageResponse<BillListItemVO>> listBills(@CurrentUser LoginUser loginUser, AdminBillListQuery query) {
         return ApiResponse.success(billQueryService.listAdminBills(loginUser, query));
+    }
+
+    @GetMapping("/billing/households")
+    public ApiResponse<PageResponse<HouseholdPaymentOverviewVO>> listHouseholds(@CurrentUser LoginUser loginUser,
+                                                                                AdminHouseholdPaymentQuery query) {
+        return ApiResponse.success(billQueryService.listAdminHouseholdOverview(loginUser, query));
     }
 
     @GetMapping("/bills/{billId}")
@@ -100,6 +109,14 @@ public class AdminBillController {
     @DeleteMapping("/bills/{billId}")
     public ApiResponse<Void> deleteBill(@CurrentUser LoginUser loginUser, @PathVariable Long billId) {
         billQueryService.deleteBill(loginUser, billId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/bills/{billId}/mark-paid")
+    public ApiResponse<Void> markBillPaid(@CurrentUser LoginUser loginUser,
+                                          @PathVariable Long billId,
+                                          @Valid @RequestBody(required = false) AdminBillMarkPaidDTO dto) {
+        billQueryService.markBillPaid(loginUser, billId, dto);
         return ApiResponse.success(null);
     }
 

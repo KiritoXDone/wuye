@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -17,6 +18,18 @@ public interface OrgUnitMapper {
             WHERE id = #{id}
             """)
     OrgUnit findById(@Param("id") Long id);
+
+    @Select("""
+            <script>
+            SELECT id, tenant_code, org_code, name, parent_id, community_id, status
+            FROM org_unit
+            WHERE id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            </script>
+            """)
+    List<OrgUnit> listByIds(@Param("ids") Collection<Long> ids);
 
     @Select("""
             SELECT ou.id,

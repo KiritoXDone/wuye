@@ -3,7 +3,6 @@ package com.wuye.payment.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.mapper.BillMapper;
-import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
 import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.entity.PayOrderBillCover;
@@ -39,8 +38,7 @@ class PaymentVoucherServiceTest {
                 payOrderMapper,
                 payOrderBillCoverMapper,
                 billMapper,
-                null,
-                new AccessGuard(),
+                new PaymentAccessService(null, null),
                 objectMapper
         );
 
@@ -70,8 +68,7 @@ class PaymentVoucherServiceTest {
                 payOrderMapper,
                 payOrderBillCoverMapper,
                 billMapper,
-                null,
-                new AccessGuard(),
+                new PaymentAccessService(null, null),
                 objectMapper
         );
 

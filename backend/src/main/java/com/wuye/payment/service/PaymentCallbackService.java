@@ -166,7 +166,7 @@ public class PaymentCallbackService {
             billMapper.markPaid(bill.getId(), payOrder.getPayAmount(), paidAt);
             bill.setAmountPaid(payOrder.getPayAmount());
         }
-        paymentVoucherService.ensureVoucher(payOrder, bill, paidAt);
+        paymentVoucherService.ensureVoucher(payOrder, bill, covers, paidAt);
         couponService.markCouponUsed(payOrder.getCouponInstanceId(), payOrder.getPayOrderNo(), payOrder.getAccountId());
         int rewardIssuedCount = bill == null ? 0 : couponService.issueRewardCoupons(bill, payOrder.getAccountId(), payOrder.getPayOrderNo());
         PaymentSuccessEvent event = new PaymentSuccessEvent();

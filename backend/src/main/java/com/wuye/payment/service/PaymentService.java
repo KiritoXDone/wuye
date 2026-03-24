@@ -7,6 +7,7 @@ import com.wuye.bill.mapper.BillMapper;
 import com.wuye.common.exception.BusinessException;
 import com.wuye.common.security.AccessGuard;
 import com.wuye.common.security.LoginUser;
+import com.wuye.common.util.MoneyUtils;
 import com.wuye.common.util.NoGenerator;
 import com.wuye.coupon.service.CouponService;
 import com.wuye.payment.dto.PaymentCreateDTO;
@@ -18,7 +19,6 @@ import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PayTransactionMapper;
 import com.wuye.payment.vo.PaymentCreateVO;
 import com.wuye.payment.vo.PaymentStatusVO;
-import com.wuye.room.service.RoomBindingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +37,8 @@ public class PaymentService {
     private final PayOrderMapper payOrderMapper;
     private final PayOrderBillCoverMapper payOrderBillCoverMapper;
     private final PayTransactionMapper payTransactionMapper;
-    private final RoomBindingService roomBindingService;
     private final AccessGuard accessGuard;
+    private final PaymentAccessService paymentAccessService;
     private final ObjectMapper objectMapper;
     private final CouponService couponService;
     private final PaymentVoucherService paymentVoucherService;
@@ -47,8 +47,8 @@ public class PaymentService {
                           PayOrderMapper payOrderMapper,
                           PayOrderBillCoverMapper payOrderBillCoverMapper,
                           PayTransactionMapper payTransactionMapper,
-                          RoomBindingService roomBindingService,
                           AccessGuard accessGuard,
+                          PaymentAccessService paymentAccessService,
                           ObjectMapper objectMapper,
                           CouponService couponService,
                           PaymentVoucherService paymentVoucherService) {
@@ -56,8 +56,8 @@ public class PaymentService {
         this.payOrderMapper = payOrderMapper;
         this.payOrderBillCoverMapper = payOrderBillCoverMapper;
         this.payTransactionMapper = payTransactionMapper;
-        this.roomBindingService = roomBindingService;
         this.accessGuard = accessGuard;
+        this.paymentAccessService = paymentAccessService;
         this.objectMapper = objectMapper;
         this.couponService = couponService;
         this.paymentVoucherService = paymentVoucherService;
@@ -73,7 +73,7 @@ public class PaymentService {
         if (bill == null) {
             throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
         }
-        accessGuard.requireSelfRoom(loginUser, roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
+        paymentAccessService.requireResidentBillAccess(loginUser, bill);
         if ("PAID".equals(bill.getStatus())) {
             throw new BusinessException("CONFLICT", "账单已支付，禁止再次创建支付单", HttpStatus.CONFLICT);
         }
@@ -101,7 +101,7 @@ public class PaymentService {
         payOrder.setCoveredBillCount(coveredBills.size());
         payOrder.setOriginAmount(sumOriginAmount(coveredBills));
         BigDecimal discountAmount = annualPayment
-                ? BigDecimal.ZERO.setScale(2)
+                ? MoneyUtils.scaleMoney(BigDecimal.ZERO)
                 : couponService.lockCoupon(loginUser.accountId(), bill, dto.getCouponInstanceId());
         payOrder.setDiscountAmount(discountAmount);
         payOrder.setCouponInstanceId(dto.getCouponInstanceId());
@@ -138,10 +138,9 @@ public class PaymentService {
         if (payOrder == null) {
             throw new BusinessException("NOT_FOUND", "支付单不存在", HttpStatus.NOT_FOUND);
         }
-        if (!loginUser.hasRole("ADMIN")) {
-            accessGuard.requireRole(loginUser, "RESIDENT");
+        if (!paymentAccessService.isAdmin(loginUser)) {
             Bill bill = billMapper.findById(payOrder.getBillId());
-            accessGuard.requireSelfRoom(loginUser, bill != null && roomBindingService.hasActiveBinding(loginUser.accountId(), bill.getRoomId()));
+            paymentAccessService.requireResidentBillAccess(loginUser, bill);
         }
         PaymentStatusVO status = payOrderMapper.findStatus(payOrderNo);
         status.setRewardIssuedCount(couponService.countRewardIssuedByPayOrderNo(payOrderNo));
@@ -175,18 +174,11 @@ public class PaymentService {
         if (!"ISSUED".equals(anchorBill.getStatus())) {
             throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在非待缴状态，暂不支持按年缴纳", HttpStatus.CONFLICT);
         }
-        Bill yearlyBill = billMapper.findByUniqueKey(anchorBill.getRoomId(), "PROPERTY", anchorBill.getPeriodYear(), null);
-        if (yearlyBill == null) {
-            throw new BusinessException("NOT_FOUND", "当前房间该年度物业费账单不存在", HttpStatus.NOT_FOUND);
-        }
-        if (!"ISSUED".equals(yearlyBill.getStatus())) {
-            throw new BusinessException("CONFLICT", "当前房间该年度物业费账单存在非待缴状态，暂不支持按年缴纳", HttpStatus.CONFLICT);
-        }
-        return List.of(yearlyBill);
+        return List.of(anchorBill);
     }
 
     private BigDecimal sumOriginAmount(List<Bill> bills) {
-        BigDecimal total = BigDecimal.ZERO.setScale(2);
+        BigDecimal total = MoneyUtils.scaleMoney(BigDecimal.ZERO);
         for (Bill current : bills) {
             total = total.add(current.getAmountDue());
         }

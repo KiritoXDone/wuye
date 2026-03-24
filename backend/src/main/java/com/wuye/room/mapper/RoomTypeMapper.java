@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -46,6 +47,18 @@ public interface RoomTypeMapper {
             WHERE id = #{id}
             """)
     RoomType findById(@Param("id") Long id);
+
+    @Select("""
+            <script>
+            SELECT id, community_id, type_code, type_name, area_m2, status
+            FROM room_type
+            WHERE id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            </script>
+            """)
+    List<RoomType> listByIds(@Param("ids") Collection<Long> ids);
 
     @Select("""
             SELECT id, community_id, type_code, type_name, area_m2, status

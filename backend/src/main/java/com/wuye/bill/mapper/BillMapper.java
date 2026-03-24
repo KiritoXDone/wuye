@@ -3,6 +3,7 @@ package com.wuye.bill.mapper;
 import com.wuye.bill.entity.Bill;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillListItemVO;
+import com.wuye.bill.vo.HouseholdPaymentOverviewVO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -12,6 +13,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -77,6 +79,60 @@ public interface BillMapper {
                             @Param("month") Integer month);
 
     @Select("""
+            <script>
+            SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
+                   amount_due, discount_amount_total, amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
+            FROM bill
+            WHERE room_id IN
+            <foreach collection="roomIds" item="roomId" open="(" separator="," close=")">
+                #{roomId}
+            </foreach>
+              AND fee_type = #{feeType}
+              AND period_year = #{year}
+              AND status IN ('ISSUED', 'PAID')
+              <choose>
+                <when test='month != null'>
+                  AND period_month = #{month}
+                </when>
+                <otherwise>
+                  AND period_month IS NULL
+                </otherwise>
+              </choose>
+            </script>
+            """)
+    List<Bill> listActiveByRoomIdsAndPeriod(@Param("roomIds") Collection<Long> roomIds,
+                                            @Param("feeType") String feeType,
+                                            @Param("year") Integer year,
+                                            @Param("month") Integer month);
+
+    @Select("""
+            <script>
+            SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
+                   amount_due, discount_amount_total, amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
+            FROM bill
+            WHERE room_id IN
+            <foreach collection="roomIds" item="roomId" open="(" separator="," close=")">
+                #{roomId}
+            </foreach>
+              AND fee_type = #{feeType}
+              AND period_year = #{year}
+              <choose>
+                <when test='month != null'>
+                  AND period_month = #{month}
+                </when>
+                <otherwise>
+                  AND period_month IS NULL
+                </otherwise>
+              </choose>
+            ORDER BY id ASC
+            </script>
+            """)
+    List<Bill> listByRoomIdsAndPeriod(@Param("roomIds") Collection<Long> roomIds,
+                                      @Param("feeType") String feeType,
+                                      @Param("year") Integer year,
+                                      @Param("month") Integer month);
+
+    @Select("""
             SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
                    amount_due, discount_amount_total, amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
             FROM bill
@@ -114,12 +170,25 @@ public interface BillMapper {
               AND b.status IN ('ISSUED', 'PAID')
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
               AND (#{roomId} IS NULL OR b.room_id = #{roomId})
+              AND (
+                  (b.fee_type = 'PROPERTY' AND NOT (b.period_year > #{currentYear}))
+                  OR (
+                      b.fee_type = 'WATER'
+                      AND (
+                          NOT (b.period_year >= #{currentYear})
+                          OR (b.period_year = #{currentYear} AND NOT (COALESCE(b.period_month, 0) > #{currentMonth}))
+                      )
+                  )
+                  OR (b.fee_type NOT IN ('PROPERTY', 'WATER'))
+              )
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
             LIMIT #{limit} OFFSET #{offset}
             """)
     List<BillListItemVO> listByAccountId(@Param("accountId") Long accountId,
                                          @Param("status") String status,
                                          @Param("roomId") Long roomId,
+                                         @Param("currentYear") int currentYear,
+                                         @Param("currentMonth") int currentMonth,
                                          @Param("offset") int offset,
                                          @Param("limit") int limit);
 
@@ -132,10 +201,23 @@ public interface BillMapper {
               AND b.status IN ('ISSUED', 'PAID')
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
               AND (#{roomId} IS NULL OR b.room_id = #{roomId})
+              AND (
+                  (b.fee_type = 'PROPERTY' AND NOT (b.period_year > #{currentYear}))
+                  OR (
+                      b.fee_type = 'WATER'
+                      AND (
+                          NOT (b.period_year >= #{currentYear})
+                          OR (b.period_year = #{currentYear} AND NOT (COALESCE(b.period_month, 0) > #{currentMonth}))
+                      )
+                  )
+                  OR (b.fee_type NOT IN ('PROPERTY', 'WATER'))
+              )
             """)
     long countByAccountId(@Param("accountId") Long accountId,
                           @Param("status") String status,
-                          @Param("roomId") Long roomId);
+                          @Param("roomId") Long roomId,
+                          @Param("currentYear") int currentYear,
+                          @Param("currentMonth") int currentMonth);
 
     @Select("""
             SELECT b.id AS bill_id,
@@ -193,6 +275,196 @@ public interface BillMapper {
                          @Param("roomId") Long roomId);
 
     @Select("""
+            <script>
+            SELECT r.id AS room_id,
+                   r.community_id,
+                   c.name AS community_name,
+                   r.building_no,
+                   r.unit_no,
+                   r.room_no,
+                   CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) AS room_label,
+                   rt.type_name AS room_type_name,
+                   r.area_m2,
+                   bp.id AS property_bill_id,
+                   bp.bill_no AS property_bill_no,
+                   bp.amount_due AS property_amount_due,
+                   bp.amount_paid AS property_amount_paid,
+                   COALESCE(bp.status, 'MISSING') AS property_status,
+                   bp.due_date AS property_due_date,
+                   bp.paid_at AS property_paid_at,
+                   bw.id AS water_bill_id,
+                   bw.bill_no AS water_bill_no,
+                   bw.amount_due AS water_amount_due,
+                   bw.amount_paid AS water_amount_paid,
+                   COALESCE(bw.status, 'MISSING') AS water_status,
+                   bw.due_date AS water_due_date,
+                   bw.paid_at AS water_paid_at
+            FROM room r
+            JOIN community c ON c.id = r.community_id
+            LEFT JOIN room_type rt ON rt.id = r.room_type_id
+            LEFT JOIN bill bp ON bp.id = (
+                SELECT b1.id
+                FROM bill b1
+                WHERE b1.room_id = r.id
+                  AND b1.fee_type = 'PROPERTY'
+                  AND b1.period_year = #{periodYear}
+                  AND b1.period_month IS NULL
+                ORDER BY CASE b1.status
+                    WHEN 'ISSUED' THEN 0
+                    WHEN 'PAID' THEN 1
+                    WHEN 'CANCELLED' THEN 2
+                    ELSE 3
+                END, b1.id DESC
+                LIMIT 1
+            )
+            LEFT JOIN bill bw ON bw.id = (
+                SELECT b2.id
+                FROM bill b2
+                WHERE b2.room_id = r.id
+                  AND b2.fee_type = 'WATER'
+                  AND b2.period_year = #{periodYear}
+                  AND b2.period_month = #{periodMonth}
+                ORDER BY CASE b2.status
+                    WHEN 'ISSUED' THEN 0
+                    WHEN 'PAID' THEN 1
+                    WHEN 'CANCELLED' THEN 2
+                    ELSE 3
+                END, b2.id DESC
+                LIMIT 1
+            )
+            WHERE r.status = 1
+              <if test='communityId != null'>
+                AND r.community_id = #{communityId}
+              </if>
+              <if test='buildingNo != null and buildingNo != ""'>
+                AND r.building_no = #{buildingNo}
+              </if>
+              <if test='unitNo != null and unitNo != ""'>
+                AND r.unit_no = #{unitNo}
+              </if>
+              <if test='roomKeyword != null and roomKeyword != ""'>
+                AND (
+                  r.room_no LIKE CONCAT('%', #{roomKeyword}, '%')
+                  OR CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) LIKE CONCAT('%', #{roomKeyword}, '%')
+                )
+              </if>
+              <if test='propertyStatus != null and propertyStatus != ""'>
+                <choose>
+                  <when test='propertyStatus == "MISSING"'>
+                    AND bp.id IS NULL
+                  </when>
+                  <otherwise>
+                    AND bp.status = #{propertyStatus}
+                  </otherwise>
+                </choose>
+              </if>
+              <if test='waterStatus != null and waterStatus != ""'>
+                <choose>
+                  <when test='waterStatus == "MISSING"'>
+                    AND bw.id IS NULL
+                  </when>
+                  <otherwise>
+                    AND bw.status = #{waterStatus}
+                  </otherwise>
+                </choose>
+              </if>
+            ORDER BY r.community_id ASC, r.building_no ASC, r.unit_no ASC, r.room_no ASC, r.id ASC
+            LIMIT #{limit} OFFSET #{offset}
+            </script>
+            """)
+    List<HouseholdPaymentOverviewVO> listAdminHouseholdOverview(@Param("communityId") Long communityId,
+                                                                @Param("periodYear") Integer periodYear,
+                                                                @Param("periodMonth") Integer periodMonth,
+                                                                @Param("buildingNo") String buildingNo,
+                                                                @Param("unitNo") String unitNo,
+                                                                @Param("roomKeyword") String roomKeyword,
+                                                                @Param("propertyStatus") String propertyStatus,
+                                                                @Param("waterStatus") String waterStatus,
+                                                                @Param("offset") int offset,
+                                                                @Param("limit") int limit);
+
+    @Select("""
+            <script>
+            SELECT COUNT(1)
+            FROM room r
+            LEFT JOIN bill bp ON bp.id = (
+                SELECT b1.id
+                FROM bill b1
+                WHERE b1.room_id = r.id
+                  AND b1.fee_type = 'PROPERTY'
+                  AND b1.period_year = #{periodYear}
+                  AND b1.period_month IS NULL
+                ORDER BY CASE b1.status
+                    WHEN 'ISSUED' THEN 0
+                    WHEN 'PAID' THEN 1
+                    WHEN 'CANCELLED' THEN 2
+                    ELSE 3
+                END, b1.id DESC
+                LIMIT 1
+            )
+            LEFT JOIN bill bw ON bw.id = (
+                SELECT b2.id
+                FROM bill b2
+                WHERE b2.room_id = r.id
+                  AND b2.fee_type = 'WATER'
+                  AND b2.period_year = #{periodYear}
+                  AND b2.period_month = #{periodMonth}
+                ORDER BY CASE b2.status
+                    WHEN 'ISSUED' THEN 0
+                    WHEN 'PAID' THEN 1
+                    WHEN 'CANCELLED' THEN 2
+                    ELSE 3
+                END, b2.id DESC
+                LIMIT 1
+            )
+            WHERE r.status = 1
+              <if test='communityId != null'>
+                AND r.community_id = #{communityId}
+              </if>
+              <if test='buildingNo != null and buildingNo != ""'>
+                AND r.building_no = #{buildingNo}
+              </if>
+              <if test='unitNo != null and unitNo != ""'>
+                AND r.unit_no = #{unitNo}
+              </if>
+              <if test='roomKeyword != null and roomKeyword != ""'>
+                AND (
+                  r.room_no LIKE CONCAT('%', #{roomKeyword}, '%')
+                  OR CONCAT(r.building_no, '-', r.unit_no, '-', r.room_no) LIKE CONCAT('%', #{roomKeyword}, '%')
+                )
+              </if>
+              <if test='propertyStatus != null and propertyStatus != ""'>
+                <choose>
+                  <when test='propertyStatus == "MISSING"'>
+                    AND bp.id IS NULL
+                  </when>
+                  <otherwise>
+                    AND bp.status = #{propertyStatus}
+                  </otherwise>
+                </choose>
+              </if>
+              <if test='waterStatus != null and waterStatus != ""'>
+                <choose>
+                  <when test='waterStatus == "MISSING"'>
+                    AND bw.id IS NULL
+                  </when>
+                  <otherwise>
+                    AND bw.status = #{waterStatus}
+                  </otherwise>
+                </choose>
+              </if>
+            </script>
+            """)
+    long countAdminHouseholdOverview(@Param("communityId") Long communityId,
+                                     @Param("periodYear") Integer periodYear,
+                                     @Param("periodMonth") Integer periodMonth,
+                                     @Param("buildingNo") String buildingNo,
+                                     @Param("unitNo") String unitNo,
+                                     @Param("roomKeyword") String roomKeyword,
+                                     @Param("propertyStatus") String propertyStatus,
+                                     @Param("waterStatus") String waterStatus);
+
+    @Select("""
             SELECT b.id AS bill_id,
                    b.bill_no,
                    b.room_id,
@@ -245,11 +517,24 @@ public interface BillMapper {
               AND b.status IN ('ISSUED', 'PAID')
               AND b.room_id = #{roomId}
               AND (#{status} IS NULL OR #{status} = '' OR b.status = #{status})
+              AND (
+                  (b.fee_type = 'PROPERTY' AND NOT (b.period_year > #{currentYear}))
+                  OR (
+                      b.fee_type = 'WATER'
+                      AND (
+                          NOT (b.period_year >= #{currentYear})
+                          OR (b.period_year = #{currentYear} AND NOT (COALESCE(b.period_month, 0) > #{currentMonth}))
+                      )
+                  )
+                  OR (b.fee_type NOT IN ('PROPERTY', 'WATER'))
+              )
             ORDER BY b.period_year DESC, COALESCE(b.period_month, 0) DESC, b.id DESC
             """)
     List<BillListItemVO> listByAccountIdAndRoom(@Param("accountId") Long accountId,
                                                 @Param("roomId") Long roomId,
-                                                @Param("status") String status);
+                                                @Param("status") String status,
+                                                @Param("currentYear") int currentYear,
+                                                @Param("currentMonth") int currentMonth);
 
     @Update("""
             UPDATE bill
@@ -262,6 +547,24 @@ public interface BillMapper {
     int markPaid(@Param("billId") Long billId,
                  @Param("amountPaid") BigDecimal amountPaid,
                  @Param("paidAt") LocalDateTime paidAt);
+
+    @Update("""
+            UPDATE bill
+            SET amount_paid = amount_due - COALESCE(discount_amount_total, 0),
+                status = 'PAID',
+                paid_at = #{paidAt},
+                updated_at = CURRENT_TIMESTAMP,
+                remark = CASE
+                    WHEN #{remark} IS NULL OR #{remark} = '' THEN remark
+                    WHEN remark IS NULL OR remark = '' THEN #{remark}
+                    ELSE CONCAT(remark, '；', #{remark})
+                END
+            WHERE id = #{billId}
+              AND status = 'ISSUED'
+            """)
+    int markPaidOffline(@Param("billId") Long billId,
+                        @Param("paidAt") LocalDateTime paidAt,
+                        @Param("remark") String remark);
 
     @Update("""
             UPDATE bill
@@ -295,7 +598,7 @@ public interface BillMapper {
                     WHEN remark IS NULL OR remark = '' THEN #{remark}
                     ELSE CONCAT(remark, '；', #{remark})
                 END
-            WHERE status &lt;&gt; 'PAID'
+            WHERE NOT status = 'PAID'
               AND id IN
               <foreach collection="billIds" item="billId" open="(" separator="," close=")">
                 #{billId}

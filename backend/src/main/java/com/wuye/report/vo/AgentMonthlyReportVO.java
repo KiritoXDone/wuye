@@ -2,7 +2,7 @@ package com.wuye.report.vo;
 
 import java.math.BigDecimal;
 
-public class AgentMonthlyReportVO {
+public class AgentMonthlyReportVO implements ReportMetrics {
 
     private Long groupId;
     private String groupName;

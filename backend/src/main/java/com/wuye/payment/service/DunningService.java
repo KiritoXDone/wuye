@@ -22,7 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DunningService {
@@ -72,12 +78,19 @@ public class DunningService {
 
     private List<DunningTaskVO> triggerInternal(LocalDate triggerDate, String triggerType) {
         List<DunningTaskVO> created = new ArrayList<>();
-        for (Bill bill : billMapper.listOverdueBills(triggerDate)) {
-            if (dunningTaskMapper.findByUniqueKey(bill.getId(), triggerType, triggerDate) != null) {
+        List<Bill> overdueBills = billMapper.listOverdueBills(triggerDate);
+        if (overdueBills.isEmpty()) {
+            return dunningTaskMapper.listAll();
+        }
+        Set<Long> existingBillIds = findExistingBillIds(overdueBills, triggerType, triggerDate);
+        Map<Long, UserGroup> groupMap = loadGroupMap(overdueBills);
+        Map<Long, OrgUnit> orgUnitMap = loadOrgUnitMap(groupMap.values());
+        for (Bill bill : overdueBills) {
+            if (existingBillIds.contains(bill.getId())) {
                 continue;
             }
-            UserGroup group = bill.getGroupId() == null ? null : userGroupMapper.findById(bill.getGroupId());
-            OrgUnit orgUnit = group == null || group.getOrgUnitId() == null ? null : orgUnitMapper.findById(group.getOrgUnitId());
+            UserGroup group = bill.getGroupId() == null ? null : groupMap.get(bill.getGroupId());
+            OrgUnit orgUnit = group == null || group.getOrgUnitId() == null ? null : orgUnitMap.get(group.getOrgUnitId());
             DunningTask task = new DunningTask();
             task.setTaskNo("DUN-" + NoGenerator.payOrderNo());
             task.setBillId(bill.getId());
@@ -102,5 +115,43 @@ public class DunningService {
         }
         created.addAll(dunningTaskMapper.listAll());
         return created;
+    }
+
+    private Set<Long> findExistingBillIds(List<Bill> overdueBills, String triggerType, LocalDate triggerDate) {
+        List<Long> billIds = overdueBills.stream().map(Bill::getId).toList();
+        return dunningTaskMapper.listExistingBillIds(billIds, triggerType, triggerDate).stream()
+                .collect(Collectors.toSet());
+    }
+
+    private Map<Long, UserGroup> loadGroupMap(List<Bill> overdueBills) {
+        Set<Long> groupIds = overdueBills.stream()
+                .map(Bill::getGroupId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (groupIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, UserGroup> result = new HashMap<>();
+        for (UserGroup group : userGroupMapper.listByIds(groupIds)) {
+            result.put(group.getId(), group);
+        }
+        return result;
+    }
+
+    private Map<Long, OrgUnit> loadOrgUnitMap(Iterable<UserGroup> groups) {
+        Set<Long> orgUnitIds = new java.util.HashSet<>();
+        for (UserGroup group : groups) {
+            if (group.getOrgUnitId() != null) {
+                orgUnitIds.add(group.getOrgUnitId());
+            }
+        }
+        if (orgUnitIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, OrgUnit> result = new HashMap<>();
+        for (OrgUnit orgUnit : orgUnitMapper.listByIds(orgUnitIds)) {
+            result.put(orgUnit.getId(), orgUnit);
+        }
+        return result;
     }
 }
