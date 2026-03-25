@@ -19,6 +19,7 @@
 - 上线导向：兼顾发布、回滚、对账、审计与历史兼容性，减少“开发可用、生产不可落地”的问题
 - 多端协同：后端、Web 管理端、微信小程序端均按真实业务角色拆分，便于后续继续扩展
 - 可维护性强：后端采用 Spring Boot + MyBatis 的清晰分层，前端采用 React + Tailwind 的轻量栈，便于持续迭代
+- Agent 能力已落地：不是只停留在模型配置层，已经具备会话、流式回复、指令预览、确认执行与结果回写能力
 
 ## 核心业务规则
 
@@ -56,6 +57,7 @@
 
 - 原生微信小程序
 - TypeScript
+- Resident 智能助手页
 
 ### 发布与运维
 
@@ -77,6 +79,23 @@
 - 管理端缴费统计、手动标记已缴、费用规则、水费录入
 - 报表、导入导出、催缴、发票申请、审计日志基础能力
 
+### Agent / AI 能力
+
+- Admin 侧支持 AI Runtime 配置管理，可配置 `provider`、`model`、`apiBaseUrl`、`timeout`、`maxTokens`、`temperature`
+- AI Runtime API Key 已支持加密存储与脱敏展示，避免敏感信息明文落库
+- 内置 Agent 支持会话模式、会话历史查询、最近会话列表与上下文延续
+- 支持 SSE 流式对话输出，适配“边生成边展示”的交互模式
+- 支持“先预览、后确认”的指令执行机制，降低高风险操作误触发概率
+- 支持自然语言补齐参数，当房间、年月、账单号等信息不完整时，会继续追问而不是直接失败
+- 当前已接通的内置业务动作包括：
+  - 房间创建
+  - 房间停用
+  - 按房间查询账单
+  - 查询账单详情
+  - 创建支付单
+  - 查询支付单
+  - 录入水表抄表
+
 ### Web 管理端页面
 
 - `/dashboard`
@@ -96,6 +115,7 @@
 - 账单详情
 - 创建支付单
 - 支付结果轮询
+- 智能助手对话与指令确认
 
 ## 工程结构
 
@@ -183,6 +203,20 @@ npm install
 - `GET /api/v1/bills/{billId}`
 - `POST /api/v1/payments`
 - `GET /api/v1/payments/{payOrderNo}`
+
+### Agent / AI
+
+- `GET /api/v1/admin/agent/runtime-config`
+- `PUT /api/v1/admin/agent/runtime-config`
+- `GET /api/v1/ai/agent/me/bill-summary`
+- `GET /api/v1/ai/agent/admin/bill-stats`
+- `POST /api/v1/ai/agent/commands/preview`
+- `POST /api/v1/ai/agent/commands/confirm`
+- `GET /api/v1/ai/agent/commands/{commandId}`
+- `POST /api/v1/ai/agent/conversation`
+- `POST /api/v1/ai/agent/conversation/stream`
+- `GET /api/v1/ai/agent/conversation/sessions`
+- `GET /api/v1/ai/agent/conversation/{sessionId}`
 
 ## 最低冒烟关注点
 
