@@ -8,20 +8,20 @@ import com.wuye.common.exception.BusinessException;
 import com.wuye.common.infra.mq.PaymentEventPublisher;
 import com.wuye.common.infra.redis.RedisCallbackLock;
 import com.wuye.coupon.service.CouponService;
-import com.wuye.payment.event.PaymentSuccessEvent;
 import com.wuye.payment.dto.AlipayCallbackDTO;
 import com.wuye.payment.dto.WechatCallbackDTO;
 import com.wuye.payment.entity.PayOrder;
 import com.wuye.payment.entity.PayOrderBillCover;
 import com.wuye.payment.entity.PayTransaction;
+import com.wuye.payment.event.PaymentSuccessEvent;
 import com.wuye.payment.mapper.PayOrderBillCoverMapper;
 import com.wuye.payment.mapper.PayOrderMapper;
 import com.wuye.payment.mapper.PayTransactionMapper;
 import com.wuye.payment.util.PaymentSignUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,7 +96,7 @@ public class PaymentCallbackService {
                                                       String channel) {
         String callbackLockKey = channel.toLowerCase() + ":callback:" + payOrderNo;
         if (!redisCallbackLock.acquire(callbackLockKey)) {
-            throw new BusinessException("CONFLICT", "回调正在处理中，请稍后重试", HttpStatus.CONFLICT);
+            throw new BusinessException("CONFLICT", "支付回调处理中，请稍后重试", HttpStatus.CONFLICT);
         }
         try {
             return handleSuccessCallbackInternal(payOrderNo, outTradeNo, merchantId, totalAmount, sign, request, channel);
@@ -139,6 +139,7 @@ public class PaymentCallbackService {
         if (outTradeNo == null || outTradeNo.isBlank()) {
             throw new BusinessException("INVALID_ARGUMENT", "outTradeNo 不能为空", HttpStatus.BAD_REQUEST);
         }
+
         LocalDateTime paidAt = LocalDateTime.now();
         int updated = payOrderMapper.updateSuccess(payOrder.getPayOrderNo(), "SUCCESS", outTradeNo, paidAt);
         if (updated == 0) {
@@ -147,28 +148,43 @@ public class PaymentCallbackService {
                 if (outTradeNo != null
                         && latest.getChannelTradeNo() != null
                         && !outTradeNo.equals(latest.getChannelTradeNo())) {
-                    throw new BusinessException("CONFLICT", "閲嶅鍥炶皟鐨?outTradeNo 涓嶄竴鑷?", HttpStatus.CONFLICT);
+                    throw new BusinessException("CONFLICT", "重复回调的 outTradeNo 不一致", HttpStatus.CONFLICT);
                 }
                 insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request, Map.of("alreadyProcessed", true), "SUCCESS", null, null);
                 return Map.of("accepted", true, "alreadyProcessed", true, "rewardIssuedCount", 0);
             }
-            throw new BusinessException("CONFLICT", "褰撳墠鏀粯鍗曠姸鎬佷笉鍏佽鍥炶皟鍏ヨ处", HttpStatus.CONFLICT);
+            throw new BusinessException("CONFLICT", "支付单状态推进失败，请稍后重试", HttpStatus.CONFLICT);
         }
+
         List<PayOrderBillCover> covers = payOrderBillCoverMapper.findByPayOrderNo(payOrder.getPayOrderNo());
-        Bill bill = billMapper.findById(payOrder.getBillId());
+        Bill bill = billMapper.findByIdForUpdate(payOrder.getBillId());
+        int affectedBills = 0;
         if (!covers.isEmpty()) {
             List<Long> coveredBillIds = covers.stream().map(PayOrderBillCover::getBillId).toList();
-            billMapper.markPaidByIds(coveredBillIds, paidAt, "年度物业费缴纳覆盖，支付单号=" + payOrder.getPayOrderNo());
+            affectedBills = billMapper.markPaidByIds(coveredBillIds, paidAt, "年度物业费缴纳覆盖，支付单号=" + payOrder.getPayOrderNo());
             if (bill != null) {
                 bill.setAmountPaid(bill.getAmountDue());
+                if (affectedBills > 0) {
+                    bill.setStatus("PAID");
+                }
             }
-        } else if (bill != null && !"PAID".equals(bill.getStatus())) {
-            billMapper.markPaid(bill.getId(), payOrder.getPayAmount(), paidAt);
-            bill.setAmountPaid(payOrder.getPayAmount());
+        } else if (bill != null) {
+            affectedBills = billMapper.markPaid(bill.getId(), payOrder.getPayAmount(), paidAt);
+            if (affectedBills > 0) {
+                bill.setAmountPaid(payOrder.getPayAmount());
+                bill.setStatus("PAID");
+            }
         }
+        if (affectedBills == 0) {
+            insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,
+                    Map.of("alreadyProcessed", true, "billAlreadyPaid", true), "SUCCESS", null, null);
+            return Map.of("accepted", true, "alreadyProcessed", true, "billAlreadyPaid", true, "rewardIssuedCount", 0);
+        }
+
         paymentVoucherService.ensureVoucher(payOrder, bill, covers, paidAt);
         couponService.markCouponUsed(payOrder.getCouponInstanceId(), payOrder.getPayOrderNo(), payOrder.getAccountId());
         int rewardIssuedCount = bill == null ? 0 : couponService.issueRewardCoupons(bill, payOrder.getAccountId(), payOrder.getPayOrderNo());
+
         PaymentSuccessEvent event = new PaymentSuccessEvent();
         event.setPayOrderNo(payOrder.getPayOrderNo());
         event.setBillId(payOrder.getBillId());
@@ -179,6 +195,7 @@ public class PaymentCallbackService {
         event.setAnnualPayment(Boolean.TRUE.equals(payOrder.getAnnualPayment()));
         event.setCoveredBillCount(payOrder.getCoveredBillCount());
         paymentEventPublisher.publishPaymentSuccess(event);
+
         insertTransaction(payOrder.getPayOrderNo(), channel + "_CALLBACK", request,
                 Map.of("paidAt", paidAt, "status", "SUCCESS", "rewardIssuedCount", rewardIssuedCount), "SUCCESS", null, null);
         return Map.of("accepted", true, "alreadyProcessed", false, "rewardIssuedCount", rewardIssuedCount);

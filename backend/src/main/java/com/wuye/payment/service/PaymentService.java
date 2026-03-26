@@ -69,7 +69,7 @@ public class PaymentService {
         if (!"WECHAT".equalsIgnoreCase(dto.getChannel()) && !"ALIPAY".equalsIgnoreCase(dto.getChannel())) {
             throw new BusinessException("INVALID_ARGUMENT", "当前仅支持 WECHAT 或 ALIPAY 渠道", HttpStatus.BAD_REQUEST);
         }
-        Bill bill = billMapper.findById(dto.getBillId());
+        Bill bill = billMapper.findByIdForUpdate(dto.getBillId());
         if (bill == null) {
             throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
         }
@@ -91,6 +91,10 @@ public class PaymentService {
         }
 
         List<Bill> coveredBills = annualPayment ? resolveAnnualPropertyBills(bill, dto) : List.of(bill);
+        PayOrder activePayOrder = payOrderMapper.findLatestActiveByBillId(bill.getId());
+        if (activePayOrder != null) {
+            throw new BusinessException("CONFLICT", "当前账单已存在进行中的支付单，请勿重复下单", HttpStatus.CONFLICT);
+        }
 
         PayOrder payOrder = new PayOrder();
         payOrder.setPayOrderNo(NoGenerator.payOrderNo());

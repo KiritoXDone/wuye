@@ -53,6 +53,18 @@ public interface PayOrderMapper {
             """)
     PayOrder findByPayOrderNoForUpdate(@Param("payOrderNo") String payOrderNo);
 
+    @Select("""
+            SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason,
+                   is_annual_payment AS annual_payment, covered_bill_count
+            FROM pay_order
+            WHERE bill_id = #{billId}
+              AND status IN ('CREATED', 'PAYING')
+            ORDER BY id DESC
+            LIMIT 1
+            """)
+    PayOrder findLatestActiveByBillId(@Param("billId") Long billId);
+
     @Update("""
             UPDATE pay_order
             SET status = #{status},

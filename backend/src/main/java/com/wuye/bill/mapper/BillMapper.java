@@ -141,6 +141,15 @@ public interface BillMapper {
     Bill findById(@Param("billId") Long billId);
 
     @Select("""
+            SELECT id, bill_no, room_id, group_id, fee_type, cycle_type, period_year, period_month, service_period_start, service_period_end,
+                   amount_due, discount_amount_total, amount_paid, due_date, status, paid_at, cancelled_at, source_type, remark
+            FROM bill
+            WHERE id = #{billId}
+            FOR UPDATE
+            """)
+    Bill findByIdForUpdate(@Param("billId") Long billId);
+
+    @Select("""
             SELECT b.id AS bill_id,
                    b.bill_no,
                    b.room_id,
@@ -543,6 +552,7 @@ public interface BillMapper {
                 paid_at = #{paidAt},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{billId}
+              AND status = 'ISSUED'
             """)
     int markPaid(@Param("billId") Long billId,
                  @Param("amountPaid") BigDecimal amountPaid,
@@ -598,7 +608,7 @@ public interface BillMapper {
                     WHEN remark IS NULL OR remark = '' THEN #{remark}
                     ELSE CONCAT(remark, '；', #{remark})
                 END
-            WHERE NOT status = 'PAID'
+            WHERE status = 'ISSUED'
               AND id IN
               <foreach collection="billIds" item="billId" open="(" separator="," close=")">
                 #{billId}

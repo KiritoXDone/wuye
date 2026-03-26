@@ -88,6 +88,40 @@ class PaymentIdempotencyIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void secondBoundResidentCannotCreateAnotherActivePayOrderForSameBill() throws Exception {
+        long billId = createIssuedPropertyBill(2026, 10);
+        String secondResidentToken = loginResident("resident-lisi");
+
+        MvcResult firstCreate = createPayment(billId, "WECHAT", "idem-shared-room-001");
+        String payOrderNo = read(firstCreate).path("data").path("payOrderNo").asText();
+
+        mockMvc.perform(post("/api/v1/payments")
+                        .header("Authorization", "Bearer " + secondResidentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "billId": %s,
+                                  "channel": "WECHAT",
+                                  "idempotencyKey": "idem-shared-room-002"
+                                }
+                                """.formatted(billId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+
+        Integer payOrderCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM pay_order WHERE bill_id = ? AND status IN ('CREATED', 'PAYING')",
+                Integer.class,
+                billId);
+        String persistedPayOrderNo = jdbcTemplate.queryForObject(
+                "SELECT pay_order_no FROM pay_order WHERE bill_id = ? ORDER BY id DESC LIMIT 1",
+                String.class,
+                billId);
+
+        assertThat(payOrderCount).isEqualTo(1);
+        assertThat(persistedPayOrderNo).isEqualTo(payOrderNo);
+    }
+
+    @Test
     void duplicateCallbackIsIdempotentAndDoesNotDuplicateVoucher() throws Exception {
         long billId = createIssuedPropertyBill(2027, 1);
 
