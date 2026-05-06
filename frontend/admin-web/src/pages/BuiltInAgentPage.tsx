@@ -291,7 +291,7 @@ export default function BuiltInAgentPage({ embedded = false }: BuiltInAgentPageP
           </div>
           {item.streaming ? <span className="mt-1 inline-block h-4 w-2 animate-pulse rounded-full bg-slate-300 align-middle dark:bg-slate-500" /> : null}
           {!isUser && item.mode === 'RESULT' ? renderStructured(item) : null}
-          {!isUser && item.mode !== 'RESULT' && (item.confirmationRequired || payloadParts(item.payload).missingArguments.length || payloadParts(item.payload).warnings.length) ? renderStructured(item) : null}
+          {!isUser && item.mode !== 'RESULT' && (item.confirmationRequired || payloadParts(item.payload).missingArguments.length || payloadParts(item.payload).warnings.length || payloadParts(item.payload).resultSummary || payloadParts(item.payload).resultMarkdown) ? renderStructured(item) : null}
           {item.confirmationRequired && item.confirmationToken ? (
             <div className="mt-3 flex justify-end">
               <button
@@ -373,6 +373,21 @@ export default function BuiltInAgentPage({ embedded = false }: BuiltInAgentPageP
         </div>
 
         <div className="shrink-0 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+          {!messages.length ? (
+            <div className="flex flex-wrap gap-2">
+              {['你好，介绍一下你能做什么', '帮我查 1 栋 2 单元 301 的未缴账单', '最近有什么活动或优惠'].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={() => void handleSend(item)}
+                  disabled={chatLoading}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="flex items-end gap-3">
             <textarea
               className="textarea min-h-[96px] flex-1"

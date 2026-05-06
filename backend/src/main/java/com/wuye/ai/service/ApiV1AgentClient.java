@@ -3,7 +3,11 @@ package com.wuye.ai.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wuye.ai.vo.AgentRecentActivityVO;
+import com.wuye.ai.vo.AgentResidentBillSummaryVO;
+import com.wuye.bill.dto.PropertyBillGenerateDTO;
 import com.wuye.bill.dto.WaterReadingCreateDTO;
+import com.wuye.bill.dto.WaterBillGenerateDTO;
 import com.wuye.bill.vo.BillDetailVO;
 import com.wuye.bill.vo.BillListItemVO;
 import com.wuye.common.api.PageResponse;
@@ -100,6 +104,18 @@ public class ApiV1AgentClient {
         return exchange(path, HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
     }
 
+    public AgentResidentBillSummaryVO getResidentBillSummary() {
+        return exchange("/api/v1/ai/agent/me/bill-summary", HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
+    }
+
+    public Map<String, Object> generatePropertyBills(PropertyBillGenerateDTO dto) {
+        return post("/api/v1/admin/bills/generate/property-yearly", dto, new ParameterizedTypeReference<>() {});
+    }
+
+    public Map<String, Object> generateWaterBills(WaterBillGenerateDTO dto) {
+        return post("/api/v1/admin/bills/generate/water", dto, new ParameterizedTypeReference<>() {});
+    }
+
     public PaymentCreateVO createPayment(PaymentCreateDTO dto) {
         return post("/api/v1/payments", dto, new ParameterizedTypeReference<>() {});
     }
@@ -124,6 +140,10 @@ public class ApiV1AgentClient {
         dto.setReadAt(java.time.LocalDateTime.parse(readAt));
         dto.setRemark(remark);
         return post("/api/v1/admin/water-readings", dto, new ParameterizedTypeReference<>() {});
+    }
+
+    public List<AgentRecentActivityVO> listRecentActivities() {
+        return getList("/api/v1/ai/agent/activities/recent", new ParameterizedTypeReference<>() {});
     }
 
     private <T> T post(String path, Object body, ParameterizedTypeReference<T> type) {

@@ -4,6 +4,8 @@ import { hasAuthSession } from '../../utils/auth'
 
 function payloadParts(payload?: Record<string, unknown>) {
   const summary = typeof payload?.summary === 'string' ? payload.summary : ''
+  const resultSummary = typeof payload?.resultSummary === 'string' ? payload.resultSummary : ''
+  const resultMarkdown = typeof payload?.resultMarkdown === 'string' ? payload.resultMarkdown : ''
   const warnings = Array.isArray(payload?.warnings) ? payload.warnings.map((item) => String(item)) : []
   const parsedArguments = payload?.parsedArguments && typeof payload.parsedArguments === 'object'
     ? Object.entries(payload.parsedArguments as Record<string, unknown>).filter(([, value]) => value !== null && value !== undefined && `${value}` !== '')
@@ -14,7 +16,7 @@ function payloadParts(payload?: Record<string, unknown>) {
   const resultEntries = payload?.result && typeof payload.result === 'object' && !Array.isArray(payload.result)
     ? Object.entries(payload.result as Record<string, unknown>).filter(([, value]) => value !== null && value !== undefined && `${value}` !== '')
     : []
-  return { summary, warnings, parsedArguments, resolvedContext, resultEntries }
+  return { summary, resultSummary, resultMarkdown, warnings, parsedArguments, resolvedContext, resultEntries }
 }
 
 function decorateMessage(message: AgentConversationMessage) {
@@ -23,6 +25,8 @@ function decorateMessage(message: AgentConversationMessage) {
     ...message,
     metaText: [message.action || '', message.riskLevel || ''].filter(Boolean).join(' · '),
     summaryText: payload.summary,
+    resultSummaryText: payload.resultSummary,
+    resultMarkdownText: payload.resultMarkdown,
     warningList: payload.warnings,
     parsedArgumentEntries: payload.parsedArguments.map(([label, value]) => ({ label, value: String(value) })),
     resolvedContextEntries: payload.resolvedContext.map(([label, value]) => ({ label, value: String(value) })),
@@ -35,13 +39,15 @@ function buildResultMessage(result: AgentCommandExecution): AgentConversationMes
     id: `result-${result.commandId}`,
     role: 'assistant',
     mode: 'RESULT',
-    content: result.summary || '已完成操作。',
+    content: result.resultSummary || result.summary || '已完成操作。',
     action: result.action,
     commandId: result.commandId,
     riskLevel: result.riskLevel,
     confirmationRequired: false,
     payload: {
       summary: result.summary,
+      resultSummary: result.resultSummary,
+      resultMarkdown: result.resultMarkdown,
       result: typeof result.result === 'object' && result.result ? result.result as Record<string, unknown> : undefined,
     },
     streaming: false,
@@ -60,6 +66,11 @@ Page({
     messages: [] as Array<ReturnType<typeof decorateMessage>>,
     recentSessions: [] as AgentConversationListItem[],
     loadingSessions: false,
+    quickPrompts: [
+      '你好，帮我介绍一下你能做什么',
+      '帮我查一下我的未缴账单',
+      '最近有什么活动或优惠',
+    ],
   },
 
   streamTask: null as { abort(): void } | null,
@@ -133,8 +144,7 @@ Page({
     if (!prompt || this.data.streaming) {
       return
     }
-    this.setData({ inputMessage: prompt })
-    this.handleSend()
+    this.handleSend(prompt)
   },
 
   updateMessages(messages: AgentConversationMessage[]) {
@@ -177,8 +187,8 @@ Page({
     this.pendingMessageId = ''
   },
 
-  async handleSend() {
-    const finalPrompt = this.data.inputMessage.trim()
+  async handleSend(promptOverride?: unknown) {
+    const finalPrompt = (typeof promptOverride === 'string' ? promptOverride : this.data.inputMessage).trim()
     if (!finalPrompt) {
       this.setData({ errorMessage: '请输入问题或操作指令。', successMessage: '' })
       return

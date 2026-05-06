@@ -10,6 +10,7 @@ import com.wuye.ai.vo.AgentCommandExecutionVO;
 import com.wuye.ai.vo.AgentCommandPreviewVO;
 import com.wuye.ai.vo.AgentConversationListItemVO;
 import com.wuye.ai.vo.AgentConversationVO;
+import com.wuye.ai.vo.AgentRecentActivityVO;
 import com.wuye.ai.vo.AgentResidentBillSummaryVO;
 import com.wuye.common.api.ApiResponse;
 import com.wuye.common.api.PageResponse;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ai/agent")
@@ -45,6 +48,11 @@ public class BuiltInAgentController {
                                                              @RequestParam(required = false) Integer periodYear,
                                                              @RequestParam(required = false) Integer periodMonth) {
         return ApiResponse.success(builtInAgentService.adminBillStats(loginUser, periodYear, periodMonth));
+    }
+
+    @GetMapping("/activities/recent")
+    public ApiResponse<List<AgentRecentActivityVO>> recentActivities(@CurrentUser LoginUser loginUser) {
+        return ApiResponse.success(builtInAgentService.recentActivities(loginUser));
     }
 
     @PostMapping("/commands/preview")

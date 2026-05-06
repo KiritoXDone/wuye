@@ -18,12 +18,14 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.StatementCallback;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -85,6 +87,38 @@ class BuiltInAgentCommandIntegrationTest {
                 .andExpect(jsonPath("$.data.issuedBillCount").value(1))
                 .andExpect(jsonPath("$.data.unpaidBillCount").value(1))
                 .andExpect(jsonPath("$.data.recentBills[0].feeType").value("PROPERTY"));
+    }
+
+    @Test
+    void residentBillSummaryCanBeQueriedThroughAgentConversation() throws Exception {
+        createPropertyFeeRule(2026);
+        generatePropertyBill(2026);
+
+        mockAgentCommand("""
+                {
+                  "action": "RESIDENT_BILL_SUMMARY",
+                  "arguments": {},
+                  "warnings": [],
+                  "riskLevel": "L1",
+                  "summary": "查询我的账单"
+                }
+                """);
+
+        mockMvc.perform(post("/api/v1/ai/agent/conversation")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "message": "帮我查一下我的未缴账单"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messageCount").value(2))
+                .andExpect(jsonPath("$.data.messages[1].mode").value("QUERY"))
+                .andExpect(jsonPath("$.data.messages[1].action").value("RESIDENT_BILL_SUMMARY"))
+                .andExpect(jsonPath("$.data.messages[1].payload.resultSummary").value(org.hamcrest.Matchers.containsString("未缴账单 1 张")))
+                .andExpect(jsonPath("$.data.messages[1].payload.resultMarkdown").value(org.hamcrest.Matchers.containsString("未缴金额")))
+                .andExpect(jsonPath("$.data.messages[1].payload.result.recentBills[0].feeType").value("PROPERTY"));
     }
 
     @Test
@@ -283,6 +317,32 @@ class BuiltInAgentCommandIntegrationTest {
     }
 
     @Test
+    void propertyBillGenerateRequiresConfirmationAndCanExecuteThroughAgentPreview() throws Exception {
+        createPropertyFeeRule(2028);
+        mockAgentCommand("""
+                {
+                  "action": "PROPERTY_BILL_GENERATE",
+                  "arguments": {
+                    "communityName": "%s",
+                    "year": 2028,
+                    "overwriteStrategy": "SKIP"
+                  },
+                  "warnings": [],
+                  "summary": "生成物业费账单"
+                }
+                """.formatted(COMMUNITY_NAME));
+
+        JsonNode preview = previewCommandExpectingConfirmation(adminToken, "生成阳光花园 2028 年物业费账单");
+        assertThat(preview.path("action").asText()).isEqualTo("PROPERTY_BILL_GENERATE");
+        assertThat(preview.path("riskLevel").asText()).isEqualTo("L4");
+        assertThat(preview.path("resolvedContext").path("communityId").asLong()).isEqualTo(100L);
+
+        JsonNode execution = confirmCommand(adminToken, preview.path("confirmationToken").asText());
+        assertThat(execution.path("result").path("generatedCount").asInt()).isEqualTo(2);
+        assertThat(execution.path("resultSummary").asText()).contains("物业费").contains("2");
+    }
+
+    @Test
     void paymentQueryCanBeExecutedThroughAgentPreview() throws Exception {
         createPropertyFeeRule(2026);
         generatePropertyBill(2026);
@@ -307,6 +367,51 @@ class BuiltInAgentCommandIntegrationTest {
         assertThat(execution.path("result").path("payOrderNo").asText()).isEqualTo(payOrderNo);
         assertThat(execution.path("result").path("status").asText()).isEqualTo("PAYING");
         assertThat(execution.path("result").path("billId").asLong()).isEqualTo(billId);
+        assertThat(execution.path("resultSummary").asText()).contains(payOrderNo);
+        assertThat(execution.path("resultMarkdown").asText()).contains("支付单号").contains(payOrderNo);
+    }
+
+    @Test
+    void recentActivitiesCanBeQueriedFromAgentRoute() throws Exception {
+        mockMvc.perform(get("/api/v1/ai/agent/activities/recent")
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].title").isString())
+                .andExpect(jsonPath("$.data[0].description").isString());
+    }
+
+    @Test
+    void recentActivitiesCanBeQueriedThroughAgentConversation() throws Exception {
+        mockAgentCommand("""
+                {
+                  "action": "RECENT_ACTIVITIES",
+                  "arguments": {},
+                  "warnings": [],
+                  "riskLevel": "L1",
+                  "summary": "查询近期活动"
+                }
+                """);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/ai/agent/conversation")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "message": "最近有什么活动或优惠"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.messageCount").value(2))
+                .andExpect(jsonPath("$.data.messages[1].mode").value("QUERY"))
+                .andExpect(jsonPath("$.data.messages[1].action").value("RECENT_ACTIVITIES"))
+                .andExpect(jsonPath("$.data.messages[1].payload.resultSummary").value(org.hamcrest.Matchers.containsString("活动")))
+                .andExpect(jsonPath("$.data.messages[1].payload.resultMarkdown").value(org.hamcrest.Matchers.containsString("满100减10物业券")))
+                .andReturn();
+
+        JsonNode assistantMessage = read(result).path("data").path("messages").get(1);
+        assertThat(assistantMessage.path("payload").path("result").isArray()).isTrue();
+        assertThat(assistantMessage.path("payload").path("result").size()).isEqualTo(2);
     }
 
     @Test
@@ -795,6 +900,7 @@ class BuiltInAgentCommandIntegrationTest {
         executeIgnoringMissingTable("DELETE FROM invoice_application");
         executeIgnoringMissingTable("DELETE FROM payment_voucher");
         executeIgnoringMissingTable("DELETE FROM water_usage_alert");
+        executeIgnoringMissingTable("DELETE FROM coupon_seckill_order");
         executeIgnoringMissingTable("DELETE FROM coupon_redemption");
         executeIgnoringMissingTable("DELETE FROM coupon_exchange_record");
         executeIgnoringMissingTable("DELETE FROM pay_transaction");
@@ -802,6 +908,7 @@ class BuiltInAgentCommandIntegrationTest {
         executeIgnoringMissingTable("DELETE FROM pay_order");
         executeIgnoringMissingTable("UPDATE coupon_instance SET status = 'NEW', source_ref_no = NULL, owner_account_id = CASE WHEN id = 92001 THEN 10001 ELSE owner_account_id END WHERE id >= 92001");
         executeIgnoringMissingTable("DELETE FROM coupon_instance WHERE id > 92001");
+        executeIgnoringMissingTable("DELETE FROM coupon_seckill_campaign");
         executeIgnoringMissingTable("DELETE FROM coupon_issue_rule WHERE id > 91001");
         executeIgnoringMissingTable("DELETE FROM coupon_template WHERE id > 90002");
         executeIgnoringMissingTable("DELETE FROM export_job");
@@ -886,7 +993,8 @@ class BuiltInAgentCommandIntegrationTest {
     }
 
     private JsonNode read(MvcResult result) throws Exception {
-        return objectMapper.readTree(result.getResponse().getContentAsString());
+        MockHttpServletResponse response = result.getResponse();
+        return objectMapper.readTree(response.getContentAsString(StandardCharsets.UTF_8));
     }
 
     private String waitForSse(MvcResult result, String expectedFragment) throws Exception {

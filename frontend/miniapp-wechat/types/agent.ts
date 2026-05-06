@@ -52,5 +52,7 @@ export interface AgentCommandExecution {
   action: string
   riskLevel: string
   summary: string
+  resultSummary?: string
+  resultMarkdown?: string
   result: unknown
 }

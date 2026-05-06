@@ -1,6 +1,7 @@
 package com.wuye.coupon.mapper;
 
 import com.wuye.coupon.entity.CouponTemplate;
+import com.wuye.ai.vo.AgentRecentActivityVO;
 import com.wuye.coupon.vo.AdminCouponSummaryVO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -65,6 +66,42 @@ public interface CouponTemplateMapper {
             ORDER BY ct.id DESC
             """)
     List<AdminCouponSummaryVO> listAdminSummaries();
+
+    @Select("""
+            SELECT ct.id,
+                   CASE WHEN ct.type = 'VOUCHER' THEN 'VOUCHER_REWARD' ELSE 'PAYMENT_DISCOUNT' END AS activity_type,
+                   ct.name AS title,
+                   ct.fee_type,
+                   ct.discount_mode,
+                   ct.value_amount AS benefit_amount,
+                   ct.threshold_amount,
+                   ct.goods_name,
+                   ct.goods_spec,
+                   ct.redeem_instruction,
+                   ct.valid_from,
+                   ct.valid_to,
+                   COALESCE(cir.trigger_type,
+                            CASE WHEN ct.type = 'VOUCHER' THEN 'PROPERTY_PAYMENT' ELSE NULL END) AS trigger_type,
+                   cir.reward_count,
+                   COALESCE(ci_stats.issued_count, 0) AS issued_count,
+                   CASE
+                       WHEN ct.type = 'VOUCHER' THEN CONCAT('缴费后可获得', COALESCE(ct.goods_name, ct.name), '，', COALESCE(ct.goods_spec, '线下自提兑换'))
+                       ELSE CONCAT('支付', CASE WHEN ct.fee_type = 'PROPERTY' THEN '物业费' WHEN ct.fee_type = 'WATER' THEN '水费' ELSE '账单' END,
+                                   '满', ct.threshold_amount, '元可优惠', ct.value_amount, '元')
+                   END AS description
+            FROM coupon_template ct
+            LEFT JOIN coupon_issue_rule cir ON cir.template_id = ct.id AND cir.status = 1
+            LEFT JOIN (
+                SELECT template_id, COUNT(1) AS issued_count
+                FROM coupon_instance
+                GROUP BY template_id
+            ) ci_stats ON ci_stats.template_id = ct.id
+            WHERE ct.status = 1
+              AND (ct.valid_from IS NULL OR ct.valid_from <= CURRENT_TIMESTAMP)
+              AND (ct.valid_to IS NULL OR ct.valid_to >= CURRENT_TIMESTAMP)
+            ORDER BY ct.valid_to ASC, ct.id DESC
+            """)
+    List<AgentRecentActivityVO> listAgentRecentActivities();
 
     @Select("""
             SELECT id, template_code, type, fee_type, name, goods_name, goods_spec, fulfillment_type, redeem_instruction, discount_mode, value_amount, threshold_amount,

@@ -32,7 +32,19 @@
       <view wx:if="{{!messages.length}}" class="agent-empty-state">
         <view class="agent-empty-badge">Assistant</view>
         <view class="agent-empty-title">开始对话</view>
-        <view class="agent-empty-desc">可以直接提问，或让助手帮你解释账单与支付问题。</view>
+        <view class="agent-empty-desc">可以直接提问，或让助手帮你解释账单、支付和近期活动。</view>
+        <view class="agent-quick-grid">
+          <button
+            wx:for="{{quickPrompts}}"
+            wx:key="*this"
+            class="agent-quick-chip"
+            data-prompt="{{item}}"
+            bindtap="handleQuickPrompt"
+            disabled="{{streaming}}"
+          >
+            {{item}}
+          </button>
+        </view>
       </view>
 
       <view
@@ -52,6 +64,15 @@
 
             <view wx:if="{{item.summaryText && item.role !== 'user'}}" class="agent-card agent-card--muted">
               <view class="agent-card-text">{{item.summaryText}}</view>
+            </view>
+
+            <view wx:if="{{item.resultSummaryText && item.role !== 'user'}}" class="agent-card agent-card--success">
+              <view class="agent-card-text">{{item.resultSummaryText}}</view>
+            </view>
+
+            <view wx:if="{{item.resultMarkdownText && item.role !== 'user'}}" class="agent-card">
+              <view class="agent-card-title">整理结果</view>
+              <view class="agent-card-text agent-card-markdown">{{item.resultMarkdownText}}</view>
             </view>
 
             <view wx:if="{{item.warningList.length}}" class="agent-card agent-card--warn">
