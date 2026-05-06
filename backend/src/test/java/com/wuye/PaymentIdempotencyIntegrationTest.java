@@ -9,6 +9,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -223,19 +224,24 @@ class PaymentIdempotencyIntegrationTest extends AbstractIntegrationTest {
                                 """.formatted(year, month)))
                 .andExpect(status().isOk());
 
-        MvcResult billsResult = mockMvc.perform(get("/api/v1/me/bills")
-                        .param("pageNo", "1")
-                        .param("pageSize", "20")
-                        .header("Authorization", "Bearer " + residentToken))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        for (JsonNode item : read(billsResult).path("data").path("list")) {
-            if ("PROPERTY".equals(item.path("feeType").asText())) {
-                return item.path("billId").asLong();
-            }
+        List<Long> billIds = jdbcTemplate.queryForList("""
+                        SELECT b.id
+                        FROM bill b
+                        JOIN account_room ar ON ar.room_id = b.room_id
+                        WHERE ar.account_id = 10001
+                          AND ar.status = 'ACTIVE'
+                          AND b.fee_type = 'PROPERTY'
+                          AND b.period_year = ?
+                          AND b.period_month IS NULL
+                          AND b.status = 'ISSUED'
+                        ORDER BY b.id DESC
+                        """,
+                Long.class,
+                year);
+        if (billIds.isEmpty()) {
+            throw new AssertionError("未找到已生成的物业费账单, year=" + year);
         }
-        throw new AssertionError("未找到已生成的物业费账单, year=" + year);
+        return billIds.get(0);
     }
 
     private MvcResult createPayment(long billId, String channel, String idempotencyKey) throws Exception {
