@@ -36,12 +36,17 @@ app:
       enabled: false
       key-prefix: 'wuye:test:'
       callback-lock-seconds: 30
+      seckill-lock-seconds: 5
     rabbit:
       enabled: false
       payment-exchange: wuye.test.payment.events
       payment-success-routing-key: payment.success
       payment-success-queue: wuye.test.payment.success
       payment-success-dlq: wuye.test.payment.success.dlq
+      coupon-exchange: wuye.test.coupon.events
+      coupon-seckill-routing-key: coupon.seckill.order
+      coupon-seckill-queue: wuye.test.coupon.seckill.order
+      coupon-seckill-dlq: wuye.test.coupon.seckill.order.dlq
   ai:
     runtime:
       enabled: false

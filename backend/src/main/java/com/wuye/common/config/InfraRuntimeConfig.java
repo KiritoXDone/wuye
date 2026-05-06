@@ -3,12 +3,21 @@ package com.wuye.common.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wuye.ai.service.AgentConversationCacheService;
 import com.wuye.ai.service.NoopAgentConversationCacheService;
+import com.wuye.common.infra.mq.CouponSeckillEventPublisher;
+import com.wuye.common.infra.mq.NoopCouponSeckillEventPublisher;
 import com.wuye.common.infra.mq.NoopPaymentEventPublisher;
 import com.wuye.common.infra.mq.PaymentEventPublisher;
+import com.wuye.common.infra.mq.RabbitCouponSeckillEventPublisher;
 import com.wuye.common.infra.mq.RabbitPaymentEventPublisher;
 import com.wuye.common.infra.redis.NoopRedisCallbackLock;
+import com.wuye.common.infra.redis.NoopSeckillStockLock;
+import com.wuye.common.infra.redis.RedissonSeckillStockLock;
 import com.wuye.common.infra.redis.RedisCallbackLock;
+import com.wuye.common.infra.redis.SeckillStockLock;
 import com.wuye.common.infra.redis.StringRedisCallbackLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.Redisson;
+import org.redisson.config.Config;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -43,6 +52,35 @@ public class InfraRuntimeConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "app.infra.redis", name = "enabled", havingValue = "true")
+    public RedissonClient redissonClient(org.springframework.boot.autoconfigure.data.redis.RedisProperties redisProperties) {
+        Config config = new Config();
+        String address = "redis://" + redisProperties.getHost() + ":" + redisProperties.getPort();
+        config.useSingleServer()
+                .setAddress(address)
+                .setDatabase(redisProperties.getDatabase())
+                .setPassword(redisProperties.getPassword() == null || redisProperties.getPassword().isBlank() ? null : redisProperties.getPassword());
+        return Redisson.create(config);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.redis", name = "enabled", havingValue = "true")
+    public SeckillStockLock redissonSeckillStockLock(RedissonClient redissonClient,
+                                                     AppInfraProperties appInfraProperties) {
+        return new RedissonSeckillStockLock(
+                redissonClient,
+                appInfraProperties.getRedis().getKeyPrefix(),
+                Duration.ofSeconds(appInfraProperties.getRedis().getSeckillLockSeconds())
+        );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SeckillStockLock.class)
+    public SeckillStockLock noopSeckillStockLock() {
+        return new NoopSeckillStockLock();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(AgentConversationCacheService.class)
     public AgentConversationCacheService noopAgentConversationCacheService() {
         return new NoopAgentConversationCacheService();
@@ -68,12 +106,40 @@ public class InfraRuntimeConfig {
 
     @Bean
     @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
+    public TopicExchange couponEventExchange(AppInfraProperties appInfraProperties) {
+        return new TopicExchange(appInfraProperties.getRabbit().getCouponExchange(), true, false);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
+    public Queue couponSeckillQueue(AppInfraProperties appInfraProperties) {
+        return new Queue(appInfraProperties.getRabbit().getCouponSeckillQueue(), true);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
+    public Queue couponSeckillDlq(AppInfraProperties appInfraProperties) {
+        return new Queue(appInfraProperties.getRabbit().getCouponSeckillDlq(), true);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
     public Binding paymentSuccessBinding(Queue paymentSuccessQueue,
                                          TopicExchange paymentEventExchange,
                                          AppInfraProperties appInfraProperties) {
         return BindingBuilder.bind(paymentSuccessQueue)
                 .to(paymentEventExchange)
                 .with(appInfraProperties.getRabbit().getPaymentSuccessRoutingKey());
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
+    public Binding couponSeckillBinding(Queue couponSeckillQueue,
+                                        TopicExchange couponEventExchange,
+                                        AppInfraProperties appInfraProperties) {
+        return BindingBuilder.bind(couponSeckillQueue)
+                .to(couponEventExchange)
+                .with(appInfraProperties.getRabbit().getCouponSeckillRoutingKey());
     }
 
     @Bean
@@ -93,5 +159,24 @@ public class InfraRuntimeConfig {
     @ConditionalOnMissingBean(PaymentEventPublisher.class)
     public PaymentEventPublisher noopPaymentEventPublisher() {
         return new NoopPaymentEventPublisher();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "app.infra.rabbit", name = "enabled", havingValue = "true")
+    public CouponSeckillEventPublisher couponSeckillEventPublisher(RabbitTemplate rabbitTemplate,
+                                                                   ObjectMapper objectMapper,
+                                                                   AppInfraProperties appInfraProperties) {
+        return new RabbitCouponSeckillEventPublisher(
+                rabbitTemplate,
+                objectMapper,
+                appInfraProperties.getRabbit().getCouponExchange(),
+                appInfraProperties.getRabbit().getCouponSeckillRoutingKey()
+        );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CouponSeckillEventPublisher.class)
+    public CouponSeckillEventPublisher noopCouponSeckillEventPublisher() {
+        return new NoopCouponSeckillEventPublisher();
     }
 }

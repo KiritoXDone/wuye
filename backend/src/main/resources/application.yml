@@ -31,12 +31,17 @@ app:
       enabled: ${APP_INFRA_REDIS_ENABLED:false}
       key-prefix: ${APP_INFRA_REDIS_KEY_PREFIX:wuye:}
       callback-lock-seconds: ${APP_INFRA_REDIS_CALLBACK_LOCK_SECONDS:300}
+      seckill-lock-seconds: ${APP_INFRA_REDIS_SECKILL_LOCK_SECONDS:10}
     rabbit:
       enabled: ${APP_INFRA_RABBIT_ENABLED:false}
       payment-exchange: ${APP_INFRA_RABBIT_PAYMENT_EXCHANGE:wuye.payment.events}
       payment-success-routing-key: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_ROUTING_KEY:payment.success}
       payment-success-queue: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_QUEUE:wuye.payment.success}
       payment-success-dlq: ${APP_INFRA_RABBIT_PAYMENT_SUCCESS_DLQ:wuye.payment.success.dlq}
+      coupon-exchange: ${APP_INFRA_RABBIT_COUPON_EXCHANGE:wuye.coupon.events}
+      coupon-seckill-routing-key: ${APP_INFRA_RABBIT_COUPON_SECKILL_ROUTING_KEY:coupon.seckill.order}
+      coupon-seckill-queue: ${APP_INFRA_RABBIT_COUPON_SECKILL_QUEUE:wuye.coupon.seckill.order}
+      coupon-seckill-dlq: ${APP_INFRA_RABBIT_COUPON_SECKILL_DLQ:wuye.coupon.seckill.order.dlq}
   ai:
     runtime:
       enabled: ${APP_AI_RUNTIME_ENABLED:false}

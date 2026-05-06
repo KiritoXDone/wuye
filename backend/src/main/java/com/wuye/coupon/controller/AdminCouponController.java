@@ -5,17 +5,20 @@ import com.wuye.common.security.CurrentUser;
 import com.wuye.common.security.LoginUser;
 import com.wuye.coupon.dto.AdminCouponInstanceQuery;
 import com.wuye.coupon.dto.AdminCouponManualIssueDTO;
+import com.wuye.coupon.dto.AdminCouponSeckillCampaignCreateDTO;
 import com.wuye.coupon.dto.AdminCouponUpsertDTO;
 import com.wuye.coupon.dto.AdminVoucherExchangeStatusDTO;
 import com.wuye.coupon.dto.CouponRuleCreateDTO;
 import com.wuye.coupon.dto.CouponTemplateCreateDTO;
 import com.wuye.coupon.entity.CouponIssueRule;
+import com.wuye.coupon.entity.CouponSeckillCampaign;
 import com.wuye.coupon.entity.CouponTemplate;
 import com.wuye.coupon.vo.AdminCouponInstanceVO;
 import com.wuye.coupon.vo.AdminCouponManualIssueResultVO;
 import com.wuye.coupon.vo.AdminCouponSummaryVO;
 import com.wuye.coupon.vo.AdminVoucherExchangeVO;
 import com.wuye.coupon.service.CouponService;
+import com.wuye.coupon.service.CouponSeckillService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +35,11 @@ import java.util.List;
 public class AdminCouponController {
 
     private final CouponService couponService;
+    private final CouponSeckillService couponSeckillService;
 
-    public AdminCouponController(CouponService couponService) {
+    public AdminCouponController(CouponService couponService, CouponSeckillService couponSeckillService) {
         this.couponService = couponService;
+        this.couponSeckillService = couponSeckillService;
     }
 
     @PostMapping("/coupon-templates")
@@ -57,6 +62,12 @@ public class AdminCouponController {
     public ApiResponse<AdminCouponSummaryVO> saveCoupon(@CurrentUser LoginUser loginUser,
                                                         @Valid @RequestBody AdminCouponUpsertDTO dto) {
         return ApiResponse.success(couponService.saveCoupon(loginUser, dto));
+    }
+
+    @PostMapping("/coupons/seckill-campaigns")
+    public ApiResponse<CouponSeckillCampaign> createSeckillCampaign(@CurrentUser LoginUser loginUser,
+                                                                    @Valid @RequestBody AdminCouponSeckillCampaignCreateDTO dto) {
+        return ApiResponse.success(couponSeckillService.createCampaign(loginUser, dto));
     }
 
     @PostMapping("/coupon-rules")

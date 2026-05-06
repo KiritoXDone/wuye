@@ -53,6 +53,8 @@ public abstract class AbstractIntegrationTest {
         executeIgnoringMissingTable("DELETE FROM water_usage_alert");
         executeIgnoringMissingTable("DELETE FROM coupon_redemption");
         executeIgnoringMissingTable("DELETE FROM coupon_exchange_record");
+        executeIgnoringMissingTable("DELETE FROM coupon_seckill_order");
+        executeIgnoringMissingTable("DELETE FROM coupon_seckill_campaign");
         executeIgnoringMissingTable("DELETE FROM pay_transaction");
         executeIgnoringMissingTable("DELETE FROM pay_order_bill_cover");
         executeIgnoringMissingTable("DELETE FROM pay_order");
