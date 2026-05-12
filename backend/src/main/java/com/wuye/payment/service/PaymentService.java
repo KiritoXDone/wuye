@@ -69,6 +69,13 @@ public class PaymentService {
         if (!"WECHAT".equalsIgnoreCase(dto.getChannel()) && !"ALIPAY".equalsIgnoreCase(dto.getChannel())) {
             throw new BusinessException("INVALID_ARGUMENT", "当前仅支持 WECHAT 或 ALIPAY 渠道", HttpStatus.BAD_REQUEST);
         }
+        LocalDateTime now = LocalDateTime.now();
+        Bill billSnapshot = billMapper.findById(dto.getBillId());
+        if (billSnapshot == null) {
+            throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
+        }
+        paymentAccessService.requireResidentBillAccess(loginUser, billSnapshot);
+        boolean resetDiscountAfterExpiredClose = closeExpiredPayOrders(dto.getBillId(), now);
         Bill bill = billMapper.findByIdForUpdate(dto.getBillId());
         if (bill == null) {
             throw new BusinessException("NOT_FOUND", "账单不存在", HttpStatus.NOT_FOUND);
@@ -80,6 +87,9 @@ public class PaymentService {
         boolean annualPayment = Boolean.TRUE.equals(dto.getAnnualPayment());
         PayOrder existed = payOrderMapper.findByIdempotencyKey(dto.getIdempotencyKey());
         if (existed != null) {
+            if ("CLOSED".equals(existed.getStatus())) {
+                throw new BusinessException("CONFLICT", "支付请求已超时，请重新发起支付", HttpStatus.CONFLICT);
+            }
             if (!existed.getAccountId().equals(loginUser.accountId())
                     || !existed.getBillId().equals(dto.getBillId())
                     || !existed.getChannel().equalsIgnoreCase(dto.getChannel())
@@ -91,9 +101,13 @@ public class PaymentService {
         }
 
         List<Bill> coveredBills = annualPayment ? resolveAnnualPropertyBills(bill, dto) : List.of(bill);
-        PayOrder activePayOrder = payOrderMapper.findLatestActiveByBillId(bill.getId());
+        PayOrder activePayOrder = payOrderMapper.findLatestActiveByBillId(bill.getId(), now);
         if (activePayOrder != null) {
             throw new BusinessException("CONFLICT", "当前账单已存在进行中的支付单，请勿重复下单", HttpStatus.CONFLICT);
+        }
+        if (resetDiscountAfterExpiredClose) {
+            billMapper.updateDiscountAmount(bill.getId(), BigDecimal.ZERO.setScale(2));
+            bill.setDiscountAmountTotal(BigDecimal.ZERO.setScale(2));
         }
 
         PayOrder payOrder = new PayOrder();
@@ -112,7 +126,7 @@ public class PaymentService {
         payOrder.setPayAmount(payOrder.getOriginAmount().subtract(discountAmount));
         payOrder.setIdempotencyKey(dto.getIdempotencyKey());
         payOrder.setStatus("PAYING");
-        payOrder.setExpiredAt(LocalDateTime.now().plusMinutes(30));
+        payOrder.setExpiredAt(now.plusMinutes(30));
         payOrderMapper.insert(payOrder);
         if (!annualPayment) {
             billMapper.updateDiscountAmount(bill.getId(), discountAmount);
@@ -135,6 +149,24 @@ public class PaymentService {
         transaction.setTransactionStatus("SUCCESS");
         payTransactionMapper.insert(transaction);
         return toCreateVO(payOrder);
+    }
+
+    private boolean closeExpiredPayOrders(Long billId, LocalDateTime now) {
+        List<PayOrder> expiredPayOrders = payOrderMapper.findExpiredActiveByBillIdForUpdate(billId, now);
+        boolean resetDiscount = false;
+        for (PayOrder expiredPayOrder : expiredPayOrders) {
+            int closed = payOrderMapper.closeExpired(expiredPayOrder.getPayOrderNo(), "PAYMENT_TIMEOUT", now);
+            if (closed == 0) {
+                continue;
+            }
+            if (expiredPayOrder.getCouponInstanceId() != null) {
+                couponService.rollbackLockedCoupon(expiredPayOrder.getCouponInstanceId());
+            }
+            if (expiredPayOrder.getDiscountAmount() != null && expiredPayOrder.getDiscountAmount().signum() > 0) {
+                resetDiscount = true;
+            }
+        }
+        return resetDiscount;
     }
 
     public PaymentStatusVO query(LoginUser loginUser, String payOrderNo) {

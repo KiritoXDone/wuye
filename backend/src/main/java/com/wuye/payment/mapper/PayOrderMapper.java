@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Mapper
 public interface PayOrderMapper {
@@ -60,10 +61,41 @@ public interface PayOrderMapper {
             FROM pay_order
             WHERE bill_id = #{billId}
               AND status IN ('CREATED', 'PAYING')
+              AND (expired_at IS NULL OR expired_at > #{now})
             ORDER BY id DESC
             LIMIT 1
             """)
-    PayOrder findLatestActiveByBillId(@Param("billId") Long billId);
+    PayOrder findLatestActiveByBillId(@Param("billId") Long billId,
+                                      @Param("now") LocalDateTime now);
+
+    @Select("""
+            SELECT id, pay_order_no, bill_id, account_id, channel, origin_amount, discount_amount, pay_amount,
+                   coupon_instance_id, idempotency_key, status, channel_trade_no, paid_at, expired_at, close_reason,
+                   is_annual_payment AS annual_payment, covered_bill_count
+            FROM pay_order
+            WHERE bill_id = #{billId}
+              AND status IN ('CREATED', 'PAYING')
+              AND expired_at IS NOT NULL
+              AND expired_at <= #{now}
+            ORDER BY id ASC
+            FOR UPDATE
+            """)
+    List<PayOrder> findExpiredActiveByBillIdForUpdate(@Param("billId") Long billId,
+                                                      @Param("now") LocalDateTime now);
+
+    @Update("""
+            UPDATE pay_order
+            SET status = 'CLOSED',
+                close_reason = #{closeReason},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE pay_order_no = #{payOrderNo}
+              AND status IN ('CREATED', 'PAYING')
+              AND expired_at IS NOT NULL
+              AND expired_at <= #{now}
+            """)
+    int closeExpired(@Param("payOrderNo") String payOrderNo,
+                     @Param("closeReason") String closeReason,
+                     @Param("now") LocalDateTime now);
 
     @Update("""
             UPDATE pay_order

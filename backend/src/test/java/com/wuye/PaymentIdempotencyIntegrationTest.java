@@ -123,6 +123,97 @@ class PaymentIdempotencyIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void expiredPayingOrderIsClosedAndBillCanCreateNewPayment() throws Exception {
+        long billId = createIssuedPropertyBill(2027, 3);
+
+        String expiredPayOrderNo = read(createPayment(billId, "WECHAT", "idem-expired-001"))
+                .path("data")
+                .path("payOrderNo")
+                .asText();
+        jdbcTemplate.update("""
+                        UPDATE pay_order
+                        SET expired_at = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 MINUTE)
+                        WHERE pay_order_no = ?
+                        """,
+                expiredPayOrderNo);
+
+        String newPayOrderNo = read(createPayment(billId, "ALIPAY", "idem-expired-002"))
+                .path("data")
+                .path("payOrderNo")
+                .asText();
+
+        assertThat(newPayOrderNo).isNotEqualTo(expiredPayOrderNo);
+        String expiredStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM pay_order WHERE pay_order_no = ?",
+                String.class,
+                expiredPayOrderNo);
+        String closeReason = jdbcTemplate.queryForObject(
+                "SELECT close_reason FROM pay_order WHERE pay_order_no = ?",
+                String.class,
+                expiredPayOrderNo);
+        String newStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM pay_order WHERE pay_order_no = ?",
+                String.class,
+                newPayOrderNo);
+        String billStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM bill WHERE id = ?",
+                String.class,
+                billId);
+        Integer activePayOrderCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM pay_order WHERE bill_id = ? AND status IN ('CREATED', 'PAYING')",
+                Integer.class,
+                billId);
+
+        assertThat(expiredStatus).isEqualTo("CLOSED");
+        assertThat(closeReason).isEqualTo("PAYMENT_TIMEOUT");
+        assertThat(newStatus).isEqualTo("PAYING");
+        assertThat(billStatus).isEqualTo("ISSUED");
+        assertThat(activePayOrderCount).isEqualTo(1);
+    }
+
+    @Test
+    void expiredPayingOrderReleasesCouponAndClearsBillDiscountBeforeNewPayment() throws Exception {
+        long billId = createIssuedPropertyBill(2027, 4);
+
+        String expiredPayOrderNo = read(createPayment(billId, "WECHAT", "idem-expired-coupon-001", 92001L))
+                .path("data")
+                .path("payOrderNo")
+                .asText();
+        jdbcTemplate.update("""
+                        UPDATE pay_order
+                        SET expired_at = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 MINUTE)
+                        WHERE pay_order_no = ?
+                        """,
+                expiredPayOrderNo);
+
+        String newPayOrderNo = read(createPayment(billId, "ALIPAY", "idem-expired-coupon-002"))
+                .path("data")
+                .path("payOrderNo")
+                .asText();
+
+        String expiredStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM pay_order WHERE pay_order_no = ?",
+                String.class,
+                expiredPayOrderNo);
+        String couponStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM coupon_instance WHERE id = 92001",
+                String.class);
+        BigDecimal discountAmount = jdbcTemplate.queryForObject(
+                "SELECT discount_amount_total FROM bill WHERE id = ?",
+                BigDecimal.class,
+                billId);
+        BigDecimal newOrderDiscountAmount = jdbcTemplate.queryForObject(
+                "SELECT discount_amount FROM pay_order WHERE pay_order_no = ?",
+                BigDecimal.class,
+                newPayOrderNo);
+
+        assertThat(expiredStatus).isEqualTo("CLOSED");
+        assertThat(couponStatus).isEqualTo("NEW");
+        assertThat(discountAmount).isEqualByComparingTo("0.00");
+        assertThat(newOrderDiscountAmount).isEqualByComparingTo("0.00");
+    }
+
+    @Test
     void duplicateCallbackIsIdempotentAndDoesNotDuplicateVoucher() throws Exception {
         long billId = createIssuedPropertyBill(2027, 1);
 
@@ -245,6 +336,13 @@ class PaymentIdempotencyIntegrationTest extends AbstractIntegrationTest {
     }
 
     private MvcResult createPayment(long billId, String channel, String idempotencyKey) throws Exception {
+        return createPayment(billId, channel, idempotencyKey, null);
+    }
+
+    private MvcResult createPayment(long billId, String channel, String idempotencyKey, Long couponInstanceId) throws Exception {
+        String couponJson = couponInstanceId == null ? "" : """
+                                  "couponInstanceId": %s,
+                                """.formatted(couponInstanceId);
         return mockMvc.perform(post("/api/v1/payments")
                         .header("Authorization", "Bearer " + residentToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -252,9 +350,10 @@ class PaymentIdempotencyIntegrationTest extends AbstractIntegrationTest {
                                 {
                                   "billId": %s,
                                   "channel": "%s",
+                %s
                                   "idempotencyKey": "%s"
                                 }
-                                """.formatted(billId, channel, idempotencyKey)))
+                                """.formatted(billId, channel, couponJson, idempotencyKey)))
                 .andExpect(status().isOk())
                 .andReturn();
     }
