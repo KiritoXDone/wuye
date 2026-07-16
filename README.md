@@ -30,7 +30,7 @@
 
 ### AI 助手
 
-- AI Runtime 管理，支持 provider、model、apiBaseUrl、timeout、maxTokens、temperature。
+- AI Runtime 管理，支持 apiBaseUrl、model、apiKey；其余参数使用服务端默认值。
 - API Key 加密落库、脱敏展示，兼容历史明文读取。
 - 内置 Agent 支持会话、会话列表、会话详情、SSE 流式输出和上下文延续。
 - Agent 会缓存会话列表/详情；Redis 未启用时自动使用空实现降级。
@@ -167,7 +167,6 @@ AI Runtime：
 
 ```bash
 APP_AI_RUNTIME_ENABLED=true
-APP_AI_RUNTIME_PROVIDER=openai
 APP_AI_RUNTIME_API_BASE_URL=https://api.openai.com/v1
 APP_AI_RUNTIME_MODEL=gpt-4o-mini
 APP_AI_RUNTIME_API_KEY=

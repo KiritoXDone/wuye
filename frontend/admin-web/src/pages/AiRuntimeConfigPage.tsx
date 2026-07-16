@@ -15,24 +15,16 @@ export default function AiRuntimeConfigPage() {
   const [form, setForm] = useState<AiRuntimeConfigUpdatePayload>({
     enabled: false,
     apiBaseUrl: 'https://api.openai.com/v1',
-    provider: 'openai',
     model: 'gpt-4o-mini',
     apiKey: '',
-    timeoutMs: 30000,
-    maxTokens: 4096,
-    temperature: 0.2,
   })
 
   function patchForm(config: AiRuntimeConfig) {
     setForm({
       enabled: config.enabled,
       apiBaseUrl: config.apiBaseUrl,
-      provider: config.provider,
       model: config.model,
       apiKey: '',
-      timeoutMs: config.timeoutMs,
-      maxTokens: config.maxTokens,
-      temperature: config.temperature,
     })
   }
 
@@ -55,8 +47,8 @@ export default function AiRuntimeConfigPage() {
   }, [])
 
   async function handleSave() {
-    if (!form.apiBaseUrl.trim() || !form.provider.trim() || !form.model.trim()) {
-      setError('请填写 API 源、Provider 和模型名称。')
+    if (!form.apiBaseUrl.trim() || !form.model.trim()) {
+      setError('请填写 API 源和模型名称。')
       return
     }
     setSubmitLoading(true)
@@ -104,12 +96,8 @@ export default function AiRuntimeConfigPage() {
                 <dl className="mt-4 space-y-3">
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">启用状态</dt><dd className="font-medium text-slate-900">{current.enabled ? '已启用' : '未启用'}</dd></div>
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">API 源</dt><dd className="max-w-[260px] truncate font-medium text-slate-900" title={current.apiBaseUrl}>{current.apiBaseUrl}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Provider</dt><dd className="font-medium text-slate-900">{current.provider}</dd></div>
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">模型</dt><dd className="font-medium text-slate-900">{current.model}</dd></div>
                   <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">已存密钥</dt><dd className="font-medium text-slate-900">{current.apiKeyMasked || '--'}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">超时（ms）</dt><dd className="font-medium text-slate-900">{current.timeoutMs}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">最大 Tokens</dt><dd className="font-medium text-slate-900">{current.maxTokens}</dd></div>
-                  <div className="flex items-center justify-between gap-3"><dt className="text-slate-500">Temperature</dt><dd className="font-medium text-slate-900">{current.temperature}</dd></div>
                 </dl>
               </div>
             ) : null}
@@ -129,29 +117,13 @@ export default function AiRuntimeConfigPage() {
               <span className="mb-2 block text-sm font-medium text-slate-700">API 源</span>
               <input className="input" value={form.apiBaseUrl} onChange={(event) => setForm((current) => ({ ...current, apiBaseUrl: event.target.value }))} placeholder="https://api.openai.com/v1" />
             </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Provider</span>
-              <input className="input" value={form.provider} onChange={(event) => setForm((current) => ({ ...current, provider: event.target.value }))} placeholder="openai / anthropic" />
-            </label>
-            <label className="block">
+            <label className="block md:col-span-2">
               <span className="mb-2 block text-sm font-medium text-slate-700">模型</span>
-              <input className="input" value={form.model} onChange={(event) => setForm((current) => ({ ...current, model: event.target.value }))} placeholder="claude-sonnet-4-6" />
+              <input className="input" value={form.model} onChange={(event) => setForm((current) => ({ ...current, model: event.target.value }))} placeholder="gpt-4o-mini" />
             </label>
             <label className="block md:col-span-2">
               <span className="mb-2 block text-sm font-medium text-slate-700">新 API Key（可选）</span>
               <input className="input" type="password" value={form.apiKey || ''} onChange={(event) => setForm((current) => ({ ...current, apiKey: event.target.value }))} placeholder="不填则保留后端已存密钥" />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">超时（ms）</span>
-              <input className="input" type="number" min={1000} max={120000} value={form.timeoutMs} onChange={(event) => setForm((current) => ({ ...current, timeoutMs: Number(event.target.value) }))} />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">最大 Tokens</span>
-              <input className="input" type="number" min={1} max={32768} value={form.maxTokens} onChange={(event) => setForm((current) => ({ ...current, maxTokens: Number(event.target.value) }))} />
-            </label>
-            <label className="block md:col-span-2">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Temperature</span>
-              <input className="input" type="number" min={0} max={2} step={0.1} value={form.temperature} onChange={(event) => setForm((current) => ({ ...current, temperature: Number(event.target.value) }))} />
             </label>
           </div>
           <button type="button" className="btn-primary mt-4 w-full" onClick={() => void handleSave()} disabled={submitLoading}>

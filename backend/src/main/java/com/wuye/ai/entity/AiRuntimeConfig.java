@@ -7,12 +7,8 @@ public class AiRuntimeConfig {
     private Long id;
     private Integer enabled;
     private String apiBaseUrl;
-    private String provider;
     private String model;
     private String apiKeyCiphertext;
-    private Integer timeoutMs;
-    private Integer maxTokens;
-    private Double temperature;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -40,14 +36,6 @@ public class AiRuntimeConfig {
         this.apiBaseUrl = apiBaseUrl;
     }
 
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
     public String getModel() {
         return model;
     }
@@ -62,30 +50,6 @@ public class AiRuntimeConfig {
 
     public void setApiKeyCiphertext(String apiKeyCiphertext) {
         this.apiKeyCiphertext = apiKeyCiphertext;
-    }
-
-    public Integer getTimeoutMs() {
-        return timeoutMs;
-    }
-
-    public void setTimeoutMs(Integer timeoutMs) {
-        this.timeoutMs = timeoutMs;
-    }
-
-    public Integer getMaxTokens() {
-        return maxTokens;
-    }
-
-    public void setMaxTokens(Integer maxTokens) {
-        this.maxTokens = maxTokens;
-    }
-
-    public Double getTemperature() {
-        return temperature;
-    }
-
-    public void setTemperature(Double temperature) {
-        this.temperature = temperature;
     }
 
     public LocalDateTime getCreatedAt() {

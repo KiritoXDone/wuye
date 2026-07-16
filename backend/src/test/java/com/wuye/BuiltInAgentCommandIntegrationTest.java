@@ -8,7 +8,6 @@ import com.wuye.common.config.AppAiProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -928,7 +927,7 @@ class BuiltInAgentCommandIntegrationTest {
         executeIgnoringMissingTable("DELETE FROM account_identity WHERE id > 30003");
         executeIgnoringMissingTable("DELETE FROM account WHERE id > 30001");
         executeIgnoringMissingTable("DELETE FROM ai_runtime_config");
-        executeIgnoringMissingTable("INSERT INTO ai_runtime_config(id, enabled, api_base_url, provider, model, api_key_ciphertext, timeout_ms, max_tokens, temperature) VALUES (1, 0, 'https://api.openai.com/v1', 'openai', 'gpt-4o-mini', NULL, 30000, 4096, 0.20)");
+        executeIgnoringMissingTable("INSERT INTO ai_runtime_config(id, enabled, api_base_url, model, api_key_ciphertext) VALUES (1, 0, 'https://api.openai.com/v1', 'gpt-4o-mini', NULL)");
         executeIgnoringMissingTable("UPDATE account SET status = 1, token_invalid_before = NULL WHERE id IN (10001, 10002, 20001, 30001)");
         executeIgnoringMissingTable("UPDATE agent_group SET status = 1 WHERE id = 80001");
         executeIgnoringMissingTable("UPDATE account_room SET status = 'ACTIVE', bind_source = 'IMPORT', confirmed_at = CURRENT_TIMESTAMP WHERE id IN (40001, 40002)");
@@ -1024,7 +1023,7 @@ class BuiltInAgentCommandIntegrationTest {
         private String nextChat;
 
         ScriptedOaiChatClient(ObjectMapper objectMapper) {
-            super(new RestTemplateBuilder(), objectMapper);
+            super(objectMapper);
         }
 
         void setNextJson(JsonNode nextJson) {

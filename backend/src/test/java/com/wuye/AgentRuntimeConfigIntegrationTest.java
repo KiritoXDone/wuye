@@ -20,13 +20,11 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
         assertRuntimeConfigGet("/api/v1/admin/ai/runtime-config", adminToken)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(false))
-                .andExpect(jsonPath("$.data.provider").value("openai"))
                 .andExpect(jsonPath("$.data.model").value("gpt-4o-mini"));
 
         assertRuntimeConfigGet("/api/v1/admin/agent/runtime-config", adminToken)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(false))
-                .andExpect(jsonPath("$.data.provider").value("openai"))
                 .andExpect(jsonPath("$.data.model").value("gpt-4o-mini"));
     }
 
@@ -38,12 +36,8 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(false))
                 .andExpect(jsonPath("$.data.apiBaseUrl").value("https://api.openai.com/v1"))
-                .andExpect(jsonPath("$.data.provider").value("openai"))
                 .andExpect(jsonPath("$.data.model").value("gpt-4o-mini"))
-                .andExpect(jsonPath("$.data.apiKeyMasked").value(""))
-                .andExpect(jsonPath("$.data.timeoutMs").value(30000))
-                .andExpect(jsonPath("$.data.maxTokens").value(4096))
-                .andExpect(jsonPath("$.data.temperature").value(0.2));
+                .andExpect(jsonPath("$.data.apiKeyMasked").value(""));
     }
 
     @Test
@@ -52,29 +46,20 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": "https://api.example.com/v1",
-                  "provider": "openai-compatible",
                   "model": "qwen-max",
-                  "apiKey": "sk-test-secret-1234",
-                  "timeoutMs": 45000,
-                  "maxTokens": 8192,
-                  "temperature": 0.6
+                  "apiKey": "sk-test-secret-1234"
                 }
                 """)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(true))
                 .andExpect(jsonPath("$.data.apiBaseUrl").value("https://api.example.com/v1"))
-                .andExpect(jsonPath("$.data.provider").value("openai-compatible"))
                 .andExpect(jsonPath("$.data.model").value("qwen-max"))
-                .andExpect(jsonPath("$.data.apiKeyMasked").value("sk-t****1234"))
-                .andExpect(jsonPath("$.data.timeoutMs").value(45000))
-                .andExpect(jsonPath("$.data.maxTokens").value(8192))
-                .andExpect(jsonPath("$.data.temperature").value(0.6));
+                .andExpect(jsonPath("$.data.apiKeyMasked").value("sk-t****1234"));
 
         assertRuntimeConfigGet("/api/v1/admin/agent/runtime-config", adminToken)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(true))
                 .andExpect(jsonPath("$.data.apiBaseUrl").value("https://api.example.com/v1"))
-                .andExpect(jsonPath("$.data.provider").value("openai-compatible"))
                 .andExpect(jsonPath("$.data.model").value("qwen-max"))
                 .andExpect(jsonPath("$.data.apiKeyMasked").value("sk-t****1234"));
 
@@ -90,17 +75,12 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": "https://api.agent.example.com/v1",
-                  "provider": "agent-provider",
-                  "model": "agent-model-x",
-                  "timeoutMs": 30000,
-                  "maxTokens": 4096,
-                  "temperature": 0.3
+                  "model": "agent-model-x"
                 }
                 """)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(true))
                 .andExpect(jsonPath("$.data.apiBaseUrl").value("https://api.agent.example.com/v1"))
-                .andExpect(jsonPath("$.data.provider").value("agent-provider"))
                 .andExpect(jsonPath("$.data.model").value("agent-model-x"))
                 .andExpect(jsonPath("$.data.apiKeyMasked").value("sk-t****1234"));
 
@@ -108,7 +88,6 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(true))
                 .andExpect(jsonPath("$.data.apiBaseUrl").value("https://api.agent.example.com/v1"))
-                .andExpect(jsonPath("$.data.provider").value("agent-provider"))
                 .andExpect(jsonPath("$.data.model").value("agent-model-x"))
                 .andExpect(jsonPath("$.data.apiKeyMasked").value("sk-t****1234"));
     }
@@ -119,12 +98,8 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": "https://api.example.com/v1",
-                  "provider": "openai-compatible",
                   "model": "qwen-max",
-                  "apiKey": "sk-test-secret-1234",
-                  "timeoutMs": 45000,
-                  "maxTokens": 8192,
-                  "temperature": 0.6
+                  "apiKey": "sk-test-secret-1234"
                 }
                 """)
                 .andExpect(status().isOk())
@@ -134,12 +109,8 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": false,
                   "apiBaseUrl": "https://api.agent.example.com/v1",
-                  "provider": "agent-provider",
                   "model": "agent-model-x",
-                  "apiKey": "   ",
-                  "timeoutMs": 30000,
-                  "maxTokens": 4096,
-                  "temperature": 0.3
+                  "apiKey": "   "
                 }
                 """)
                 .andExpect(status().isOk())
@@ -161,12 +132,8 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": "https://api.example.com/v1",
-                  "provider": "openai-compatible",
                   "model": "qwen-max",
-                  "apiKey": "sk-test-secret-1234",
-                  "timeoutMs": 45000,
-                  "maxTokens": 8192,
-                  "temperature": 0.6
+                  "apiKey": "sk-test-secret-1234"
                 }
                 """)
                 .andExpect(status().isForbidden())
@@ -176,11 +143,7 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": "https://api.agent.example.com/v1",
-                  "provider": "agent-provider",
-                  "model": "agent-model-x",
-                  "timeoutMs": 30000,
-                  "maxTokens": 4096,
-                  "temperature": 0.3
+                  "model": "agent-model-x"
                 }
                 """)
                 .andExpect(status().isForbidden())
@@ -193,11 +156,7 @@ class AgentRuntimeConfigIntegrationTest extends AbstractIntegrationTest {
                 {
                   "enabled": true,
                   "apiBaseUrl": " ",
-                  "provider": "openai-compatible",
-                  "model": "qwen-max",
-                  "timeoutMs": 999999,
-                  "maxTokens": 0,
-                  "temperature": 3
+                  "model": "qwen-max"
                 }
                 """)
                 .andExpect(status().isUnprocessableEntity());

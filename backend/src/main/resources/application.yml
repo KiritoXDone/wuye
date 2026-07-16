@@ -46,12 +46,8 @@ app:
     runtime:
       enabled: ${APP_AI_RUNTIME_ENABLED:false}
       api-base-url: ${APP_AI_RUNTIME_API_BASE_URL:https://api.openai.com/v1}
-      provider: ${APP_AI_RUNTIME_PROVIDER:openai}
       model: ${APP_AI_RUNTIME_MODEL:gpt-4o-mini}
       api-key: ${APP_AI_RUNTIME_API_KEY:}
-      timeout-ms: ${APP_AI_RUNTIME_TIMEOUT_MS:30000}
-      max-tokens: ${APP_AI_RUNTIME_MAX_TOKENS:4096}
-      temperature: ${APP_AI_RUNTIME_TEMPERATURE:0.2}
   auth:
     wechat:
       mode: ${APP_AUTH_WECHAT_MODE:real}

@@ -1351,23 +1351,15 @@ public class BuiltInAgentService {
             return new AiRuntimeSettings(
                     runtime.isEnabled(),
                     runtime.getApiBaseUrl(),
-                    runtime.getProvider(),
                     runtime.getModel(),
-                    runtime.getApiKey(),
-                    runtime.getTimeoutMs(),
-                    runtime.getMaxTokens(),
-                    runtime.getTemperature()
+                    runtime.getApiKey()
             );
         }
         return new AiRuntimeSettings(
                 config.getEnabled() != null && config.getEnabled() == 1,
                 config.getApiBaseUrl(),
-                config.getProvider(),
                 config.getModel(),
-                sensitiveConfigCipher.decrypt(config.getApiKeyCiphertext()),
-                config.getTimeoutMs() == null ? 30000 : config.getTimeoutMs(),
-                config.getMaxTokens() == null ? 4096 : config.getMaxTokens(),
-                config.getTemperature() == null ? 0.2D : config.getTemperature()
+                sensitiveConfigCipher.decrypt(config.getApiKeyCiphertext())
         );
     }
 

@@ -51,14 +51,10 @@ public class AiRuntimeConfigService {
         }
         config.setEnabled(Boolean.TRUE.equals(dto.getEnabled()) ? 1 : 0);
         config.setApiBaseUrl(dto.getApiBaseUrl().trim());
-        config.setProvider(dto.getProvider().trim());
         config.setModel(dto.getModel().trim());
         if (dto.getApiKey() != null && !dto.getApiKey().isBlank()) {
             config.setApiKeyCiphertext(sensitiveConfigCipher.encrypt(dto.getApiKey().trim()));
         }
-        config.setTimeoutMs(dto.getTimeoutMs());
-        config.setMaxTokens(dto.getMaxTokens());
-        config.setTemperature(dto.getTemperature());
         if (!existed) {
             aiRuntimeConfigMapper.insert(config);
         } else {
@@ -72,12 +68,8 @@ public class AiRuntimeConfigService {
         AiRuntimeConfigVO vo = new AiRuntimeConfigVO();
         vo.setEnabled(runtime.isEnabled());
         vo.setApiBaseUrl(runtime.getApiBaseUrl());
-        vo.setProvider(runtime.getProvider());
         vo.setModel(runtime.getModel());
         vo.setApiKeyMasked(mask(runtime.getApiKey()));
-        vo.setTimeoutMs(runtime.getTimeoutMs());
-        vo.setMaxTokens(runtime.getMaxTokens());
-        vo.setTemperature(runtime.getTemperature());
         return vo;
     }
 
@@ -85,12 +77,8 @@ public class AiRuntimeConfigService {
         AiRuntimeConfigVO vo = new AiRuntimeConfigVO();
         vo.setEnabled(config.getEnabled() != null && config.getEnabled() == 1);
         vo.setApiBaseUrl(config.getApiBaseUrl());
-        vo.setProvider(config.getProvider());
         vo.setModel(config.getModel());
         vo.setApiKeyMasked(mask(sensitiveConfigCipher.decrypt(config.getApiKeyCiphertext())));
-        vo.setTimeoutMs(config.getTimeoutMs() == null ? 30000 : config.getTimeoutMs());
-        vo.setMaxTokens(config.getMaxTokens() == null ? 4096 : config.getMaxTokens());
-        vo.setTemperature(config.getTemperature() == null ? 0.2D : config.getTemperature());
         return vo;
     }
 

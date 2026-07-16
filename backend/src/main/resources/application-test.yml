@@ -51,12 +51,8 @@ app:
     runtime:
       enabled: false
       api-base-url: https://api.openai.com/v1
-      provider: openai
       model: gpt-4o-mini
       api-key: ''
-      timeout-ms: 30000
-      max-tokens: 4096
-      temperature: 0.2
   auth:
     wechat:
       mode: mock

@@ -15,12 +15,8 @@ public class AppAiProperties {
         private boolean enabled;
         private String apiBaseUrl = "https://api.openai.com/v1";
         private String backendBaseUrl = "http://127.0.0.1:8081";
-        private String provider = "openai";
         private String model = "gpt-4o-mini";
         private String apiKey = "";
-        private int timeoutMs = 30000;
-        private int maxTokens = 4096;
-        private double temperature = 0.2D;
 
         public boolean isEnabled() {
             return enabled;
@@ -46,14 +42,6 @@ public class AppAiProperties {
             this.backendBaseUrl = backendBaseUrl;
         }
 
-        public String getProvider() {
-            return provider;
-        }
-
-        public void setProvider(String provider) {
-            this.provider = provider;
-        }
-
         public String getModel() {
             return model;
         }
@@ -68,30 +56,6 @@ public class AppAiProperties {
 
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
-        }
-
-        public int getTimeoutMs() {
-            return timeoutMs;
-        }
-
-        public void setTimeoutMs(int timeoutMs) {
-            this.timeoutMs = timeoutMs;
-        }
-
-        public int getMaxTokens() {
-            return maxTokens;
-        }
-
-        public void setMaxTokens(int maxTokens) {
-            this.maxTokens = maxTokens;
-        }
-
-        public double getTemperature() {
-            return temperature;
-        }
-
-        public void setTemperature(double temperature) {
-            this.temperature = temperature;
         }
     }
 }
